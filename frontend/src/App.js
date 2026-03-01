@@ -1,27 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import './App.css';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Import pages directly - no index file
+import Home from './pages/Home';
+import Login from './pages/user/Login';
+import StudentDashboard from './pages/user/StudentDashboard';
+import TutorDashboard from './pages/user/TutorDashboard';
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    // Test backend connection
-    fetch('http://localhost:8080/api/test/hello')
-      .then(response => response.text())
-      .then(data => setMessage(data))
-      .catch(error => console.log('Backend not running:', error));
-  }, []);
-
+  console.log('App is rendering');
+  console.log('Home component:', Home);
+  console.log('Login component:', Login);
+  
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>BrainHive Platform</h1>
-        {message && <p>Backend says: {message}</p>}
-        <p>
-          Frontend is working! Start building your modules.
-        </p>
-      </header>
-    </div>
+    <BrowserRouter>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard/student" element={<StudentDashboard />} />
+          <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 
