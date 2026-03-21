@@ -1,0 +1,1965 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+import authService from '../../services/auth.service';
+import './UploadResource.css';
+
+const UploadResource = () => {
+    const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    const [activeTab, setActiveTab] = useState('upload');
+    
+    const [uploadType, setUploadType] = useState('pdf');
+    const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [validationStatus, setValidationStatus] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
+    
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        subject: '',
+        semester: '',
+        type: 'pdf',
+        file: null,
+        link: '',
+        tags: '',
+        visibility: 'public',
+        courseCode: '',
+        allowRatings: true,
+        allowComments: true,
+        license: 'copyright'
+    });
+
+    const [uploads, setUploads] = useState([]);
+    const [loadingUploads, setLoadingUploads] = useState(true);
+    const [filter, setFilter] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [error, setError] = useState(null);
+    const [editingResource, setEditingResource] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [ratingModal, setRatingModal] = useState({ show: false, resourceId: null });
+    const [userRating, setUserRating] = useState(5);
+    const [review, setReview] = useState('');
+    const [detailsModal, setDetailsModal] = useState({ show: false, resource: null });
+    const [reviews, setReviews] = useState([]); // New state for storing reviews
+    
+    const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+    
+    const [stats, setStats] = useState({
+        total: 0,
+        pending: 0,
+        active: 0,
+        views: 0,
+        downloads: 0
+    });
+
+    // ============= DUMMY DATA FUNCTIONS =============
+    const loadDummyFormData = () => {
+        const dummySubjects = [
+            'Data Structures',
+            'Database Systems',
+            'Web Development',
+            'Artificial Intelligence',
+            'Software Engineering',
+            'Computer Networks',
+            'Machine Learning',
+            'Cyber Security'
+        ];
+        
+        const dummyTitles = [
+            'Complete Notes on Binary Trees',
+            'Database Normalization Explained with Examples',
+            'React Hooks Tutorial - Complete Guide',
+            'Machine Learning Algorithms Overview',
+            'Software Testing Best Practices',
+            'Computer Networks - OSI Model Explained',
+            'Introduction to Cyber Security',
+            'Full Stack Web Development Guide'
+        ];
+        
+        const dummyDescriptions = [
+            'Comprehensive notes covering all concepts of binary trees including traversal algorithms (inorder, preorder, postorder), BST implementation, AVL trees, and practice problems with detailed solutions.',
+            'Detailed explanation of database normalization forms (1NF, 2NF, 3NF, BCNF) with real-world examples, case studies, and practical implementation tips for database design.',
+            'Step-by-step guide to React Hooks (useState, useEffect, useContext, useReducer, useMemo) with practical examples, common patterns, and best practices for modern React development.',
+            'Overview of popular machine learning algorithms including linear regression, logistic regression, decision trees, random forests, and neural networks with implementation examples in Python.',
+            'Comprehensive guide to software testing including unit testing, integration testing, system testing, and end-to-end testing with Jest, React Testing Library, and Cypress.',
+            'Detailed explanation of OSI model layers (Physical, Data Link, Network, Transport, Session, Presentation, Application) with protocols and real-world examples.',
+            'Introduction to cyber security concepts including encryption, network security, application security, ethical hacking, and best practices for secure coding.',
+            'Complete guide to full stack web development covering HTML, CSS, JavaScript, React, Node.js, Express, MongoDB, and deployment strategies.'
+        ];
+        
+        const randomIndex = Math.floor(Math.random() * dummyTitles.length);
+        
+        setFormData({
+            title: dummyTitles[randomIndex],
+            description: dummyDescriptions[randomIndex],
+            subject: dummySubjects[Math.floor(Math.random() * dummySubjects.length)],
+            semester: semesters[Math.floor(Math.random() * semesters.length)],
+            type: uploadType,
+            file: null,
+            link: uploadType === 'link' || uploadType === 'video' || uploadType === 'article' 
+                ? 'https://example.com/sample-resource-' + (Math.floor(Math.random() * 1000)) 
+                : '',
+            tags: 'programming, notes, tutorial, examples, study-guide',
+            visibility: 'public',
+            courseCode: ['CS301', 'IT202', 'SE401', 'AI501', 'CS201', 'IT3040'][Math.floor(Math.random() * 6)],
+            allowRatings: true,
+            allowComments: true,
+            license: licenses[Math.floor(Math.random() * licenses.length)].value
+        });
+        
+        alert('✓ Dummy data loaded! You can now submit this as a test upload.');
+    };
+    
+    const quickFillPDF = () => {
+        setUploadType('pdf');
+        setFormData({
+            ...formData,
+            title: 'Sample PDF - Complete Lecture Notes',
+            description: 'This is a sample PDF document for demonstration purposes containing comprehensive lecture notes on the subject.',
+            subject: 'Web Development',
+            semester: 'Y2S1',
+            tags: 'demo, sample, notes, lecture',
+            courseCode: 'CS301',
+            type: 'pdf',
+            link: ''
+        });
+        alert('✓ Quick fill complete! Select a PDF file to upload or click upload to submit with file.');
+    };
+    
+    const quickFillLink = () => {
+        setUploadType('link');
+        setFormData({
+            ...formData,
+            title: 'Sample Link - Online Learning Resource',
+            description: 'This is a sample external link for demonstration purposes. Click the link to access valuable learning materials.',
+            subject: 'Software Engineering',
+            semester: 'Y3S2',
+            link: 'https://example.com/sample-learning-resource',
+            tags: 'demo, sample, link, resource',
+            courseCode: 'SE401',
+            type: 'link'
+        });
+        alert('✓ Quick fill complete! Click upload to submit this link resource.');
+    };
+    
+    const quickFillVideo = () => {
+        setUploadType('video');
+        setFormData({
+            ...formData,
+            title: 'Sample Video - Tutorial on React Hooks',
+            description: 'This is a sample video tutorial for demonstration purposes covering React Hooks concepts.',
+            subject: 'Web Development',
+            semester: 'Y3S1',
+            link: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            tags: 'demo, video, tutorial, react',
+            courseCode: 'CS401',
+            type: 'video'
+        });
+        alert('✓ Quick fill complete! Click upload to submit this video resource.');
+    };
+    
+    // Sample reviews data
+    const sampleReviews = [
+        {
+            id: 1,
+            userId: 'user1',
+            userName: 'John Doe',
+            userAvatar: 'JD',
+            rating: 5,
+            review: 'Excellent resource! Very comprehensive and well-organized. Helped me understand the concepts clearly.',
+            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            helpful: 12
+        },
+        {
+            id: 2,
+            userId: 'user2',
+            userName: 'Jane Smith',
+            userAvatar: 'JS',
+            rating: 4,
+            review: 'Great content overall. Would recommend to others. The examples are very practical.',
+            date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            helpful: 8
+        },
+        {
+            id: 3,
+            userId: 'user3',
+            userName: 'Mike Johnson',
+            userAvatar: 'MJ',
+            rating: 5,
+            review: 'Perfect study material! Covered everything I needed for my exam. Thank you!',
+            date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            helpful: 5
+        },
+        {
+            id: 4,
+            userId: 'currentUser',
+            userName: 'You',
+            userAvatar: 'YO',
+            rating: 5,
+            review: 'This is my review after studying this resource. Very helpful!',
+            date: new Date().toISOString(),
+            helpful: 0
+        }
+    ];
+    
+    const loadDummyUploads = () => {
+        const dummyUploads = [
+            {
+                id: 9991,
+                title: 'Complete Data Structures Notes',
+                description: 'Comprehensive notes covering arrays, linked lists, trees, graphs, and algorithms with practice problems and solutions.',
+                subject: 'Data Structures',
+                semester: 'Y2S1',
+                type: 'pdf',
+                status: 'active',
+                viewCount: 245,
+                downloadCount: 89,
+                averageRating: 4.5,
+                ratingCount: 32,
+                uploadedAt: new Date().toISOString(),
+                tags: 'data structures, algorithms, notes, programming',
+                courseCode: 'CS201',
+                license: 'cc-by',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                reviews: sampleReviews
+            },
+            {
+                id: 9992,
+                title: 'Database Systems - SQL Complete Tutorial',
+                description: 'Complete SQL tutorial with examples covering SELECT, JOIN, subqueries, indexes, and optimization techniques for better performance.',
+                subject: 'Database Systems',
+                semester: 'Y2S2',
+                type: 'document',
+                status: 'active',
+                viewCount: 189,
+                downloadCount: 67,
+                averageRating: 4.2,
+                ratingCount: 28,
+                uploadedAt: new Date().toISOString(),
+                tags: 'sql, database, queries, tutorial',
+                courseCode: 'CS301',
+                license: 'cc-by-sa',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                reviews: sampleReviews.slice(0, 2)
+            },
+            {
+                id: 9993,
+                title: 'React Native - Mobile App Development Guide',
+                description: 'Step-by-step guide to building mobile apps with React Native, including navigation, state management, API integration, and deployment.',
+                subject: 'Mobile Development',
+                semester: 'Y3S1',
+                type: 'link',
+                status: 'pending',
+                viewCount: 0,
+                downloadCount: 0,
+                averageRating: 0,
+                ratingCount: 0,
+                uploadedAt: new Date().toISOString(),
+                tags: 'react native, mobile, tutorial, app development',
+                courseCode: 'CS401',
+                license: 'copyright',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                link: 'https://reactnative.dev/docs/getting-started',
+                reviews: []
+            },
+            {
+                id: 9994,
+                title: 'Machine Learning Algorithms Visualized',
+                description: 'Visual explanation of ML algorithms including linear regression, decision trees, random forests, and neural networks with Python code examples.',
+                subject: 'Artificial Intelligence',
+                semester: 'Y3S2',
+                type: 'presentation',
+                status: 'active',
+                viewCount: 312,
+                downloadCount: 145,
+                averageRating: 4.8,
+                ratingCount: 56,
+                uploadedAt: new Date().toISOString(),
+                tags: 'machine learning, ai, algorithms, python',
+                courseCode: 'AI501',
+                license: 'cc-by-nc',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                reviews: sampleReviews.slice(0, 3)
+            },
+            {
+                id: 9995,
+                title: 'Computer Networks - Comprehensive Study Material',
+                description: 'Complete study material for computer networks covering OSI model, TCP/IP, routing protocols, and network security concepts.',
+                subject: 'Computer Networks',
+                semester: 'Y2S2',
+                type: 'pdf',
+                status: 'active',
+                viewCount: 178,
+                downloadCount: 92,
+                averageRating: 4.3,
+                ratingCount: 41,
+                uploadedAt: new Date().toISOString(),
+                tags: 'networks, osi, tcp/ip, routing',
+                courseCode: 'CS303',
+                license: 'cc-by',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                reviews: sampleReviews.slice(0, 1)
+            },
+            {
+                id: 9996,
+                title: 'Introduction to Cyber Security',
+                description: 'Comprehensive introduction to cyber security concepts, threats, and best practices for securing applications and networks.',
+                subject: 'Cyber Security',
+                semester: 'Y3S1',
+                type: 'video',
+                status: 'pending',
+                viewCount: 45,
+                downloadCount: 23,
+                averageRating: 4.0,
+                ratingCount: 12,
+                uploadedAt: new Date().toISOString(),
+                tags: 'security, cyber, encryption, network security',
+                courseCode: 'CS404',
+                license: 'copyright',
+                visibility: 'public',
+                allowRatings: true,
+                allowComments: true,
+                link: 'https://www.youtube.com/watch?v=example',
+                reviews: []
+            }
+        ];
+        
+        setUploads(dummyUploads);
+        setStats({
+            total: dummyUploads.length,
+            pending: dummyUploads.filter(u => u.status === 'pending').length,
+            active: dummyUploads.filter(u => u.status === 'active').length,
+            views: dummyUploads.reduce((sum, u) => sum + u.viewCount, 0),
+            downloads: dummyUploads.reduce((sum, u) => sum + u.downloadCount, 0)
+        });
+        
+        // Add some bookmarked IDs for demo
+        const demoBookmarked = new Set([9991, 9994]);
+        setBookmarkedIds(demoBookmarked);
+        
+        alert('✓ Dummy uploads loaded for demonstration! You can now test all features.');
+    };
+
+    // ============= SUBJECTS BY FACULTY =============
+    const subjectsByFaculty = {
+        'Faculty of Computing': [
+            'Data Structures',
+            'Database Systems',
+            'Programming (Java)',
+            'Programming (Python)',
+            'Web Development',
+            'Operating Systems',
+            'Computer Networks',
+            'Software Engineering',
+            'Algorithms',
+            'Artificial Intelligence',
+            'Machine Learning',
+            'Cyber Security',
+            'Cloud Computing',
+            'Mobile Development',
+            'Computer Architecture',
+            'Discrete Mathematics',
+        ],
+        'Faculty of Engineering': [
+            'Engineering Mathematics',
+            'Circuit Theory',
+            'Electronics',
+            'Digital Systems',
+            'Signals & Systems',
+            'Thermodynamics',
+            'Fluid Mechanics',
+            'Mechanics of Materials',
+            'Control Systems',
+            'Telecommunications',
+        ],
+        'Faculty of Business': [
+            'Accounting',
+            'Financial Management',
+            'Marketing',
+            'Business Statistics',
+            'Economics (Micro)',
+            'Economics (Macro)',
+            'Organizational Behavior',
+            'Operations Management',
+            'Business Law',
+            'Entrepreneurship',
+        ],
+        'Faculty of Science': [
+            'Calculus',
+            'Linear Algebra',
+            'Statistics & Probability',
+            'Physics',
+            'Chemistry',
+            'Biology',
+            'Environmental Science',
+        ],
+        'Faculty of Medicine': [
+            'Anatomy',
+            'Physiology',
+            'Biochemistry',
+            'Pharmacology',
+            'Pathology',
+            'Medical Ethics',
+            'Public Health',
+        ],
+        'Faculty of Law': [
+            'Constitutional Law',
+            'Criminal Law',
+            'Contract Law',
+            'International Law',
+            'Human Rights Law',
+        ],
+        'Faculty of Arts & Social Sciences': [
+            'Psychology',
+            'Sociology',
+            'Political Science',
+            'History',
+            'Philosophy',
+            'English Literature',
+            'Media Studies',
+            'Education',
+        ],
+        'General': [
+            'Mathematics',
+            'Research Methods',
+            'Communication Skills',
+            'Other',
+        ],
+    };
+
+    const semesters = [
+        'Y1S1', 'Y1S2',
+        'Y2S1', 'Y2S2',
+        'Y3S1', 'Y3S2',
+        'Y4S1', 'Y4S2'
+    ];
+
+    const licenses = [
+        { value: 'copyright', label: 'All Rights Reserved' },
+        { value: 'cc-by', label: 'Creative Commons Attribution' },
+        { value: 'cc-by-sa', label: 'Creative Commons ShareAlike' },
+        { value: 'cc-by-nc', label: 'Creative Commons NonCommercial' },
+        { value: 'public-domain', label: 'Public Domain' }
+    ];
+
+    // ============= USER ID MAPPING =============
+    const getDatabaseUserId = (authUser) => {
+        if (!authUser) return null;
+        return '1';
+    };
+
+    // ============= INITIALIZATION =============
+    useEffect(() => {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser) {
+            navigate('/login');
+            return;
+        }
+        setUser(currentUser);
+
+        const dbUserId = getDatabaseUserId(currentUser);
+        if (dbUserId) {
+            fetchAllUploads(dbUserId);
+        } else {
+            setError('Could not identify user. Please check your login.');
+            setLoadingUploads(false);
+        }
+    }, []);
+
+    // ============= FETCH BOOKMARK STATUS =============
+    const fetchBookmarkStatus = async (resources) => {
+        try {
+            const dbUserId = getDatabaseUserId(user);
+            const bookmarkStatus = {};
+            
+            for (const resource of resources) {
+                try {
+                    const response = await api.get(`/resources/${resource.id}/bookmarked/status?userId=${dbUserId}`);
+                    bookmarkStatus[resource.id] = response.data.isBookmarked;
+                } catch (error) {
+                    console.error(`Error checking bookmark status for ${resource.id}:`, error);
+                    bookmarkStatus[resource.id] = false;
+                }
+            }
+            
+            const bookmarked = new Set(
+                Object.keys(bookmarkStatus).filter(id => bookmarkStatus[id])
+            );
+            setBookmarkedIds(bookmarked);
+        } catch (error) {
+            console.error('Error fetching bookmark status:', error);
+        }
+    };
+
+    // ============= FETCH ALL UPLOADS =============
+    const fetchAllUploads = async (userId) => {
+        try {
+            setLoadingUploads(true);
+            setError(null);
+            
+            const response = await api.get(`/resources/user/${userId}`);
+            
+            let uploadsData = [];
+            if (Array.isArray(response.data)) {
+                uploadsData = response.data;
+            } else if (response.data && typeof response.data === 'object') {
+                uploadsData = response.data.content || response.data.data || [];
+            }
+            
+            setUploads(uploadsData);
+            await fetchBookmarkStatus(uploadsData);
+            
+            const pending = uploadsData.filter(u => u?.status === 'pending').length;
+            const active = uploadsData.filter(u => u?.status === 'active').length;
+            const totalViews = uploadsData.reduce((sum, u) => sum + (u?.viewCount || 0), 0);
+            const totalDownloads = uploadsData.reduce((sum, u) => sum + (u?.downloadCount || 0), 0);
+            
+            setStats({
+                total: uploadsData.length,
+                pending,
+                active,
+                views: totalViews,
+                downloads: totalDownloads
+            });
+            
+        } catch (error) {
+            console.error('Error fetching uploads:', error);
+            setError(error.response?.data?.message || error.message || 'Failed to fetch uploads');
+        } finally {
+            setLoadingUploads(false);
+        }
+    };
+
+    // ============= FORM VALIDATION =============
+    const validateForm = () => {
+        const errors = {};
+        
+        if (!formData.title.trim()) {
+            errors.title = 'Title is required';
+        } else if (formData.title.length < 5) {
+            errors.title = 'Title must be at least 5 characters';
+        } else if (formData.title.length > 100) {
+            errors.title = 'Title must be less than 100 characters';
+        }
+        
+        if (!formData.subject) {
+            errors.subject = 'Please select a subject';
+        }
+        
+        if (!formData.semester) {
+            errors.semester = 'Please select a semester';
+        }
+        
+        if ((uploadType === 'link' || uploadType === 'video' || uploadType === 'article') && !formData.link) {
+            errors.link = 'URL is required';
+        } else if ((uploadType === 'link' || uploadType === 'video' || uploadType === 'article') && formData.link) {
+            let urlToValidate = formData.link;
+            if (!urlToValidate.match(/^https?:\/\//i)) {
+                urlToValidate = 'https://' + urlToValidate;
+            }
+            try {
+                new URL(urlToValidate);
+                if (urlToValidate !== formData.link) {
+                    setFormData(prev => ({ ...prev, link: urlToValidate }));
+                }
+            } catch (e) {
+                errors.link = 'Please enter a valid URL';
+            }
+        }
+        
+        if (uploadType !== 'link' && uploadType !== 'video' && uploadType !== 'article') {
+            if (!formData.file) {
+                errors.file = 'Please select a file to upload';
+            } else {
+                if (formData.file.size > 50 * 1024 * 1024) {
+                    errors.file = 'File size must be less than 50MB';
+                }
+                if (uploadType === 'pdf' && !formData.file.type.includes('pdf') && !formData.file.name.toLowerCase().endsWith('.pdf')) {
+                    errors.file = 'Please upload a valid PDF file';
+                }
+                if (uploadType === 'document' && !formData.file.name.match(/\.(doc|docx)$/i)) {
+                    errors.file = 'Please upload a valid Word document (DOC/DOCX)';
+                }
+                if (uploadType === 'presentation' && !formData.file.name.match(/\.(ppt|pptx)$/i)) {
+                    errors.file = 'Please upload a valid PowerPoint presentation (PPT/PPTX)';
+                }
+                if (uploadType === 'image' && !formData.file.type.startsWith('image/')) {
+                    errors.file = 'Please upload a valid image file (JPG, PNG, GIF)';
+                }
+            }
+        }
+        
+        if (formData.tags) {
+            const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+            if (tagsArray.length > 0) {
+                if (tagsArray.some(tag => tag.length > 20)) {
+                    errors.tags = 'Each tag must be less than 20 characters';
+                }
+                if (tagsArray.length > 5) {
+                    errors.tags = 'Maximum 5 tags allowed';
+                }
+            }
+        }
+        
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    // ============= FILE UPLOAD HANDLER =============
+    const uploadFileWithProgress = async (file, formDataFields, userId) => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const API_URL = 'http://localhost:8080';
+            
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const progress = Math.round((event.loaded * 100) / event.total);
+                    setUploadProgress(progress);
+                }
+            });
+            
+            xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (e) {
+                        resolve(xhr.responseText);
+                    }
+                } else {
+                    let errorMessage = `Upload failed with status ${xhr.status}`;
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText || errorMessage;
+                    }
+                    reject(new Error(errorMessage));
+                }
+            });
+            
+            xhr.addEventListener('error', (event) => {
+                reject(new Error('Network error occurred - please check if backend is running on port 8080'));
+            });
+            
+            xhr.addEventListener('timeout', () => {
+                reject(new Error('Upload timeout - please try again with a smaller file'));
+            });
+            
+            xhr.timeout = 300000;
+            xhr.open('POST', `${API_URL}/api/resources/upload/file`);
+            
+            const token = localStorage.getItem('token');
+            if (token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', String(formDataFields.title));
+            formData.append('description', String(formDataFields.description || ''));
+            formData.append('subject', String(formDataFields.subject));
+            formData.append('semester', String(formDataFields.semester));
+            formData.append('type', String(formDataFields.type));
+            formData.append('tags', String(formDataFields.tags || ''));
+            formData.append('visibility', String(formDataFields.visibility));
+            formData.append('courseCode', String(formDataFields.courseCode || ''));
+            formData.append('license', String(formDataFields.license));
+            formData.append('allowRatings', String(formDataFields.allowRatings));
+            formData.append('allowComments', String(formDataFields.allowComments));
+            formData.append('userId', String(userId));
+            
+            xhr.send(formData);
+        });
+    };
+
+    // ============= UPLOAD HANDLERS =============
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+        if (formErrors[name]) {
+            setFormErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const fileSizeMB = file.size / (1024 * 1024);
+            
+            if (fileSizeMB > 50) {
+                alert(`File size (${fileSizeMB.toFixed(2)}MB) exceeds the maximum allowed size of 50MB. Please compress your file.`);
+                return;
+            }
+            
+            setFormData(prev => ({
+                ...prev,
+                file: file,
+                fileName: file.name,
+                fileSize: fileSizeMB.toFixed(2)
+            }));
+
+            if (uploadType === 'image' && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setShowPreview(true);
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            if (formErrors.file) {
+                setFormErrors(prev => ({ ...prev, file: null }));
+            }
+        }
+    };
+
+    const handleTypeChange = (type) => {
+        setUploadType(type);
+        setFormData(prev => ({
+            ...prev,
+            type: type,
+            file: null,
+            link: '',
+            fileName: null,
+            fileSize: null
+        }));
+        setShowPreview(false);
+        if (formErrors.file) setFormErrors(prev => ({ ...prev, file: null }));
+        if (formErrors.link) setFormErrors(prev => ({ ...prev, link: null }));
+    };
+
+    const validateResource = async () => {
+        setValidationStatus('validating');
+        setTimeout(() => {
+            setValidationStatus('valid');
+        }, 1500);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            const firstError = document.querySelector('.error-text');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        
+        setLoading(true);
+        setUploadProgress(0);
+        setValidationStatus('validating');
+
+        try {
+            const currentUser = authService.getCurrentUser();
+            if (!currentUser) {
+                navigate('/login');
+                return;
+            }
+
+            const dbUserId = getDatabaseUserId(currentUser);
+            if (!dbUserId) {
+                alert('Unable to identify user. Please log in again.');
+                return;
+            }
+
+            await validateResource();
+
+            if (uploadType === 'pdf' || uploadType === 'document' || uploadType === 'presentation' || uploadType === 'image') {
+                try {
+                    if (formData.file.size > 50 * 1024 * 1024) {
+                        throw new Error('File size exceeds 50MB limit');
+                    }
+
+                    const formDataFields = {
+                        title: formData.title,
+                        description: formData.description,
+                        subject: formData.subject,
+                        semester: formData.semester,
+                        type: uploadType,
+                        tags: formData.tags,
+                        visibility: formData.visibility,
+                        courseCode: formData.courseCode,
+                        license: formData.license,
+                        allowRatings: formData.allowRatings,
+                        allowComments: formData.allowComments
+                    };
+                    
+                    const response = await uploadFileWithProgress(formData.file, formDataFields, dbUserId);
+                    
+                    if (response) {
+                        alert('Resource uploaded successfully! It will be active after moderation review.');
+                        setFormData({
+                            title: '', description: '', subject: '', semester: '',
+                            type: 'pdf', file: null, link: '', tags: '',
+                            visibility: 'public', courseCode: '', allowRatings: true,
+                            allowComments: true, license: 'copyright'
+                        });
+                        setUploadType('pdf');
+                        setShowPreview(false);
+                        fetchAllUploads(dbUserId);
+                        setActiveTab('my-uploads');
+                    }
+                } catch (error) {
+                    let errorMessage = 'Failed to upload file: ';
+                    if (error.message.includes('413') || error.message.includes('large') || error.message.includes('size')) {
+                        errorMessage = 'File too large. Maximum file size is 50MB. Please compress your file and try again.';
+                    } else if (error.message.includes('Network')) {
+                        errorMessage = 'Network error. Please check if backend is running at http://localhost:8080';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    alert(errorMessage);
+                    setValidationStatus('failed');
+                }
+            } else {
+                const linkData = {
+                    title: formData.title,
+                    description: formData.description || '',
+                    subject: formData.subject,
+                    semester: formData.semester,
+                    type: uploadType,
+                    link: formData.link,
+                    tags: formData.tags || '',
+                    visibility: formData.visibility,
+                    courseCode: formData.courseCode || '',
+                    license: formData.license,
+                    allowRatings: formData.allowRatings,
+                    allowComments: formData.allowComments,
+                    userId: dbUserId
+                };
+
+                try {
+                    const response = await api.post('/resources/upload/link', linkData);
+                    if (response.data) {
+                        alert('Resource added successfully! It will be active after moderation review.');
+                        setFormData({
+                            title: '', description: '', subject: '', semester: '',
+                            type: 'pdf', file: null, link: '', tags: '',
+                            visibility: 'public', courseCode: '', allowRatings: true,
+                            allowComments: true, license: 'copyright'
+                        });
+                        setUploadType('pdf');
+                        fetchAllUploads(dbUserId);
+                        setActiveTab('my-uploads');
+                    }
+                } catch (error) {
+                    alert('Failed to add link: ' + (error.response?.data?.message || error.message));
+                    setValidationStatus('failed');
+                }
+            }
+        } catch (error) {
+            setValidationStatus('failed');
+            alert(error.response?.data?.message || error.message || 'Error uploading resource');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ============= CRUD OPERATIONS =============
+    const handleDelete = async (resourceId) => {
+        if (!window.confirm('Are you sure you want to delete this resource?')) return;
+        try {
+            await api.delete(`/resources/${resourceId}`);
+            fetchAllUploads(getDatabaseUserId(user));
+            alert('Resource deleted successfully');
+        } catch (error) {
+            alert('Failed to delete resource');
+        }
+    };
+
+    const handleEdit = (resource) => {
+        setEditingResource(resource);
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const updatedData = {
+                title: editingResource.title,
+                description: editingResource.description,
+                subject: editingResource.subject,
+                semester: editingResource.semester,
+                tags: editingResource.tags,
+                visibility: editingResource.visibility,
+                courseCode: editingResource.courseCode,
+                license: editingResource.license,
+                allowRatings: editingResource.allowRatings,
+                allowComments: editingResource.allowComments
+            };
+            await api.put(`/resources/${editingResource.id}`, updatedData);
+            alert('Resource updated successfully');
+            setShowEditModal(false);
+            fetchAllUploads(getDatabaseUserId(user));
+        } catch (error) {
+            alert('Failed to update resource');
+        }
+    };
+
+    // ============= BOOKMARK OPERATIONS =============
+    const handleBookmark = async (resourceId) => {
+        try {
+            const dbUserId = getDatabaseUserId(user);
+            if (bookmarkedIds.has(resourceId)) {
+                await api.delete(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
+                setBookmarkedIds(prev => { const s = new Set(prev); s.delete(resourceId); return s; });
+                alert('Bookmark removed');
+            } else {
+                await api.post(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
+                setBookmarkedIds(prev => new Set([...prev, resourceId]));
+                alert('Resource bookmarked!');
+            }
+        } catch (error) {
+            alert('Failed to update bookmark');
+        }
+    };
+
+    // ============= RATING OPERATIONS =============
+    const handleRate = async () => {
+        try {
+            const dbUserId = getDatabaseUserId(user);
+            const currentUser = authService.getCurrentUser();
+            
+            // Create new review
+            const newReview = {
+                id: Date.now(),
+                userId: dbUserId,
+                userName: currentUser?.name || currentUser?.fullName || 'Anonymous User',
+                userAvatar: (currentUser?.name?.charAt(0) || currentUser?.fullName?.charAt(0) || 'U').toUpperCase(),
+                rating: userRating,
+                review: review.trim() || 'No review provided.',
+                date: new Date().toISOString(),
+                helpful: 0
+            };
+            
+            // In a real app, you'd send this to the backend
+            // await api.post(`/resources/${ratingModal.resourceId}/rate`, newReview);
+            
+            // For demo, add to local state
+            setUploads(prevUploads => 
+                prevUploads.map(upload => {
+                    if (upload.id === ratingModal.resourceId) {
+                        const existingReviews = upload.reviews || [];
+                        const updatedReviews = [...existingReviews, newReview];
+                        const newAverageRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
+                        
+                        return {
+                            ...upload,
+                            reviews: updatedReviews,
+                            averageRating: newAverageRating,
+                            ratingCount: updatedReviews.length
+                        };
+                    }
+                    return upload;
+                })
+            );
+            
+            // Also update stats if needed
+            const updatedUploads = uploads.map(upload => {
+                if (upload.id === ratingModal.resourceId) {
+                    const existingReviews = upload.reviews || [];
+                    const updatedReviews = [...existingReviews, newReview];
+                    const newAverageRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
+                    
+                    return {
+                        ...upload,
+                        reviews: updatedReviews,
+                        averageRating: newAverageRating,
+                        ratingCount: updatedReviews.length
+                    };
+                }
+                return upload;
+            });
+            
+            setUploads(updatedUploads);
+            
+            // Update stats
+            const totalRatings = updatedUploads.reduce((sum, u) => sum + (u.ratingCount || 0), 0);
+            const totalReviews = updatedUploads.reduce((sum, u) => sum + (u.reviews?.length || 0), 0);
+            
+            alert(`✓ Rating submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review || 'No review'}`);
+            setRatingModal({ show: false, resourceId: null });
+            setUserRating(5);
+            setReview('');
+        } catch (error) {
+            console.error('Error submitting rating:', error);
+            alert('Failed to submit rating. Please try again.');
+        }
+    };
+
+    // ============= VIEW DETAILS & DOWNLOAD =============
+    const handleViewDetails = (resource) => {
+        setDetailsModal({ show: true, resource });
+    };
+
+    const handleDownload = async (resource) => {
+        try {
+            if (resource.filePath) {
+                window.open(`http://localhost:8080${resource.filePath}`, '_blank');
+                await api.post(`/resources/${resource.id}/download`);
+            } else if (resource.link) {
+                window.open(resource.link, '_blank');
+                await api.post(`/resources/${resource.id}/download`);
+            }
+        } catch (error) {
+            alert('Failed to download resource');
+        }
+    };
+
+    // ============= UTILITY FUNCTIONS =============
+    const getStatusBadgeClass = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'active': return 'status-badge active';
+            case 'pending': return 'status-badge pending';
+            case 'rejected': return 'status-badge rejected';
+            case 'flagged': return 'status-badge flagged';
+            default: return 'status-badge';
+        }
+    };
+
+    const getTypeIcon = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'pdf': return '📄';
+            case 'document': return '📝';
+            case 'presentation': return '📊';
+            case 'image': return '🖼️';
+            case 'video': return '🎥';
+            case 'link': return '🔗';
+            case 'article': return '📰';
+            default: return '📦';
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        } catch (e) {
+            return 'Invalid date';
+        }
+    };
+
+    const formatReviewDate = (dateString) => {
+        if (!dateString) return 'Recently';
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+            if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+            return `${Math.floor(diffDays / 365)} years ago`;
+        } catch (e) {
+            return 'Recently';
+        }
+    };
+
+    const getYearText = (sem) => {
+        if (sem.startsWith('Y1')) return ' (1st Year)';
+        if (sem.startsWith('Y2')) return ' (2nd Year)';
+        if (sem.startsWith('Y3')) return ' (3rd Year)';
+        if (sem.startsWith('Y4')) return ' (4th Year)';
+        return '';
+    };
+
+    // ============= REUSABLE SUBJECT SELECT =============
+    const SubjectSelect = ({ value, onChange, name, className }) => (
+        <select name={name} value={value} onChange={onChange} required className={className}>
+            <option value="">Select Subject</option>
+            {Object.entries(subjectsByFaculty).map(([faculty, subjects]) => (
+                <optgroup key={faculty} label={faculty}>
+                    {subjects.map(subject => (
+                        <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                </optgroup>
+            ))}
+        </select>
+    );
+
+    const filteredUploads = uploads.filter(upload => {
+        if (filter !== 'all' && upload.status !== filter) return false;
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return (upload.title?.toLowerCase() || '').includes(term) ||
+                   (upload.subject?.toLowerCase() || '').includes(term) ||
+                   (upload.description?.toLowerCase() || '').includes(term);
+        }
+        return true;
+    });
+
+    // Helper function to render stars
+    const renderStars = (rating) => {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        return (
+            <span className="stars-container">
+                {[...Array(fullStars)].map((_, i) => (
+                    <span key={`full-${i}`} className="star full">★</span>
+                ))}
+                {hasHalfStar && <span className="star half">½</span>}
+                {[...Array(emptyStars)].map((_, i) => (
+                    <span key={`empty-${i}`} className="star empty">☆</span>
+                ))}
+            </span>
+        );
+    };
+
+    return (
+        <div className="upload-container">
+            {/* Sidebar */}
+            <div className="sidebar">
+                <div className="sidebar-logo">BrainHive</div>
+                <div className="sidebar-user">
+                    <div className="user-avatar">
+                        {user?.name?.charAt(0) || user?.fullName?.charAt(0) || 'A'}
+                    </div>
+                    <div className="user-info">
+                        <h4>{user?.name || user?.fullName || 'User'}</h4>
+                        <p>Student</p>
+                    </div>
+                </div>
+                <nav className="sidebar-nav">
+                    <div className="nav-section">
+                        <h3>Resources</h3>
+                        <ul>
+                            <li onClick={() => navigate('/dashboard/student')}>Discovery</li>
+                            <li className={activeTab === 'upload' ? 'active' : ''} onClick={() => setActiveTab('upload')}>Upload</li>
+                            <li className={activeTab === 'my-uploads' ? 'active' : ''} onClick={() => setActiveTab('my-uploads')}>My Uploads</li>
+                            <li onClick={() => navigate('/resources/bookmarked')}>Bookmarked</li>
+                        </ul>
+                    </div>
+                    <div className="nav-section">
+                        <h3>Peer Help</h3>
+                        <ul>
+                            <li onClick={() => navigate('/request-help')}>Request Help</li>
+                            <li onClick={() => navigate('/find-tutors')}>Find Tutors</li>
+                        </ul>
+                    </div>
+                    <div className="nav-section">
+                        <h3>Study Groups</h3>
+                        <ul>
+                            <li onClick={() => navigate('/my-groups')}>My Groups</li>
+                            <li onClick={() => navigate('/create-group')}>Create Group</li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+
+            {/* Main Content */}
+            <div className="main-content">
+                <div className="content-header">
+                    <div>
+                        <h1 className="page-title">
+                            {activeTab === 'upload' ? 'Upload Resource' : 'My Uploads'}
+                        </h1>
+                        <p className="page-subtitle">
+                            {activeTab === 'upload'
+                                ? 'Share your study materials with the BrainHive community'
+                                : "Manage all resources you've uploaded"}
+                        </p>
+                    </div>
+                    <div className="header-actions">
+                        {activeTab === 'my-uploads' && (
+                            <>
+                                <button onClick={loadDummyUploads} className="secondary-btn">
+                                    📊 Load Demo Data
+                                </button>
+                                <button onClick={() => setActiveTab('upload')} className="primary-btn">
+                                    + Upload New
+                                </button>
+                            </>
+                        )}
+                        <button onClick={() => navigate('/dashboard/student')} className="back-btn">
+                            ← Dashboard
+                        </button>
+                    </div>
+                </div>
+
+                {activeTab === 'upload' ? (
+                    <div className="upload-content">
+                        {/* Type Selector */}
+                        <div className="type-selector-card">
+                            <h3 className="section-title">Select Resource Type</h3>
+                            <div className="type-grid">
+                                {[
+                                    { type: 'pdf', icon: '📄', label: 'PDF' },
+                                    { type: 'document', icon: '📝', label: 'Document' },
+                                    { type: 'presentation', icon: '📊', label: 'Presentation' },
+                                    { type: 'image', icon: '🖼️', label: 'Image' },
+                                    { type: 'video', icon: '🎥', label: 'Video' },
+                                    { type: 'link', icon: '🔗', label: 'Link' },
+                                    { type: 'article', icon: '📰', label: 'Article' },
+                                    { type: 'other', icon: '📦', label: 'Other' }
+                                ].map((item) => (
+                                    <button
+                                        key={item.type}
+                                        onClick={() => handleTypeChange(item.type)}
+                                        className={`type-btn ${uploadType === item.type ? 'active' : ''}`}
+                                    >
+                                        <span className="type-icon">{item.icon}</span>
+                                        <span className="type-label">{item.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Upload Form */}
+                        <form onSubmit={handleSubmit} className="upload-form">
+                            <div className="form-card">
+                                <h2 className="card-title">Basic Information</h2>
+
+                                <div className="form-group">
+                                    <label className="form-label">Title *</label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        value={formData.title}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., Binary Trees Complete Notes"
+                                        required
+                                        className={`form-input ${formErrors.title ? 'error' : ''}`}
+                                    />
+                                    {formErrors.title && <span className="error-text">{formErrors.title}</span>}
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Subject *</label>
+                                        <SubjectSelect
+                                            name="subject"
+                                            value={formData.subject}
+                                            onChange={handleInputChange}
+                                            className={`form-select ${formErrors.subject ? 'error' : ''}`}
+                                        />
+                                        {formErrors.subject && <span className="error-text">{formErrors.subject}</span>}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Semester *</label>
+                                        <select
+                                            name="semester"
+                                            value={formData.semester}
+                                            onChange={handleInputChange}
+                                            required
+                                            className={`form-select ${formErrors.semester ? 'error' : ''}`}
+                                        >
+                                            <option value="">Select Semester</option>
+                                            {semesters.map(sem => (
+                                                <option key={sem} value={sem}>
+                                                    {sem}{getYearText(sem)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {formErrors.semester && <span className="error-text">{formErrors.semester}</span>}
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Course Code</label>
+                                        <input
+                                            type="text"
+                                            name="courseCode"
+                                            value={formData.courseCode}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g., CS301"
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Tags</label>
+                                        <input
+                                            type="text"
+                                            name="tags"
+                                            value={formData.tags}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g., algorithms, exam, notes"
+                                            className={`form-input ${formErrors.tags ? 'error' : ''}`}
+                                        />
+                                        <p className="input-hint">Separate with commas (max 5 tags)</p>
+                                        {formErrors.tags && <span className="error-text">{formErrors.tags}</span>}
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleInputChange}
+                                        placeholder="Brief description of this resource..."
+                                        rows="3"
+                                        className="form-textarea"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* File Upload Section */}
+                            {(uploadType === 'pdf' || uploadType === 'document' || uploadType === 'presentation' || uploadType === 'image') && (
+                                <div className="form-card">
+                                    <h2 className="card-title">Upload File</h2>
+                                    <div className={`file-dropzone ${formErrors.file ? 'error' : ''}`}>
+                                        <input
+                                            type="file"
+                                            accept={
+                                                uploadType === 'pdf' ? '.pdf' :
+                                                uploadType === 'document' ? '.doc,.docx' :
+                                                uploadType === 'presentation' ? '.ppt,.pptx' :
+                                                uploadType === 'image' ? 'image/*' : '.pdf'
+                                            }
+                                            onChange={handleFileChange}
+                                            required
+                                            className="file-input"
+                                        />
+                                        <div className="dropzone-content">
+                                            <span className="upload-icon">📤</span>
+                                            <p className="dropzone-text">Click to browse or drag and drop</p>
+                                            <p className="dropzone-hint">
+                                                {uploadType === 'pdf' && 'PDF files only (Max 50MB)'}
+                                                {uploadType === 'document' && 'Word documents (DOC, DOCX) (Max 50MB)'}
+                                                {uploadType === 'presentation' && 'PowerPoint presentations (PPT, PPTX) (Max 50MB)'}
+                                                {uploadType === 'image' && 'Images (JPG, PNG, GIF) (Max 50MB)'}
+                                            </p>
+                                            {formData.fileName && (
+                                                <div className="selected-file">
+                                                    <span>📎</span>
+                                                    {formData.fileName} ({formData.fileSize} MB)
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {formErrors.file && <span className="error-text">{formErrors.file}</span>}
+                                    <p className="file-size-hint">Maximum file size: 50MB</p>
+                                    {showPreview && formData.file && uploadType === 'image' && (
+                                        <div className="preview-section">
+                                            <h3 className="preview-title">Preview</h3>
+                                            <img src={URL.createObjectURL(formData.file)} alt="Preview" className="image-preview" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Link Section */}
+                            {(uploadType === 'link' || uploadType === 'video' || uploadType === 'article') && (
+                                <div className="form-card">
+                                    <h2 className="card-title">Resource Link</h2>
+                                    <div className="form-group">
+                                        <label className="form-label">
+                                            {uploadType === 'video' ? 'Video URL *' : 'Resource URL *'}
+                                        </label>
+                                        <input
+                                            type="url"
+                                            name="link"
+                                            value={formData.link}
+                                            onChange={handleInputChange}
+                                            placeholder={uploadType === 'video' ? "https://youtube.com/watch?v=..." : "https://example.com/resource"}
+                                            required
+                                            className={`form-input ${formErrors.link ? 'error' : ''}`}
+                                        />
+                                        {formErrors.link && <span className="error-text">{formErrors.link}</span>}
+                                        {uploadType === 'video' && (
+                                            <p className="input-hint">Supports YouTube, Vimeo, and other video platforms</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Quick Demo Tools Section */}
+                            <div className="form-card">
+                                <h2 className="card-title">Quick Demo Tools</h2>
+                                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                                    <button type="button" onClick={quickFillPDF} className="secondary-btn" style={{ flex: 1 }}>
+                                        📄 Quick Fill PDF
+                                    </button>
+                                    <button type="button" onClick={quickFillLink} className="secondary-btn" style={{ flex: 1 }}>
+                                        🔗 Quick Fill Link
+                                    </button>
+                                    <button type="button" onClick={quickFillVideo} className="secondary-btn" style={{ flex: 1 }}>
+                                        🎥 Quick Fill Video
+                                    </button>
+                                </div>
+                                <div style={{ padding: '16px', background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', borderRadius: '12px', textAlign: 'center' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={loadDummyFormData} 
+                                        style={{ padding: '10px 20px', backgroundColor: '#f59e0b', border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                                    >
+                                        🧪 Load Random Dummy Data
+                                    </button>
+                                    <p style={{ fontSize: '12px', color: '#92400e', marginTop: '8px', marginBottom: 0 }}>Click to populate form with realistic sample data for presentation</p>
+                                </div>
+                            </div>
+
+                            {/* Settings */}
+                            <div className="form-card">
+                                <h2 className="card-title">Settings</h2>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Visibility</label>
+                                        <select name="visibility" value={formData.visibility} onChange={handleInputChange} className="form-select">
+                                            <option value="public">Public - Everyone can view</option>
+                                            <option value="private">Private - Only me</option>
+                                            <option value="study-group">Study Group Only</option>
+                                            <option value="course">Same Course Only</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">License</label>
+                                        <select name="license" value={formData.license} onChange={handleInputChange} className="form-select">
+                                            {licenses.map(license => (
+                                                <option key={license.value} value={license.value}>{license.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="checkbox-group">
+                                    <label className="checkbox-label">
+                                        <input type="checkbox" name="allowRatings" checked={formData.allowRatings} onChange={handleInputChange} className="checkbox-input" />
+                                        <span>Allow ratings and reviews</span>
+                                    </label>
+                                    <label className="checkbox-label">
+                                        <input type="checkbox" name="allowComments" checked={formData.allowComments} onChange={handleInputChange} className="checkbox-input" />
+                                        <span>Allow comments and discussions</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Validation Status */}
+                            {validationStatus && (
+                                <div className={`validation-message ${validationStatus}`}>
+                                    <div className="validation-content">
+                                        {validationStatus === 'validating' && (<><div className="spinner"></div><span>Validating your resource...</span></>)}
+                                        {validationStatus === 'valid' && (<><span className="status-icon">✅</span><span>Resource validated! Ready for upload.</span></>)}
+                                        {validationStatus === 'failed' && (<><span className="status-icon">❌</span><span>Validation failed. Please check your resource and try again.</span></>)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Progress Bar */}
+                            {loading && uploadType !== 'link' && (
+                                <div className="progress-card">
+                                    <div className="progress-header">
+                                        <span className="progress-label">Uploading...</span>
+                                        <span className="progress-percentage">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="progress-track">
+                                        <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Form Actions */}
+                            <div className="form-card">
+                                <div className="guidelines-section">
+                                    <h3 className="guidelines-title">📋 Upload Guidelines</h3>
+                                    <ul className="guidelines-list">
+                                        <li>Ensure you have the rights to share the resource</li>
+                                        <li>Provide accurate and descriptive titles</li>
+                                        <li>Add relevant tags to help others find your resource</li>
+                                        <li>Resources will be reviewed by moderators before going public</li>
+                                        <li>Inappropriate content will be removed</li>
+                                        <li>Maximum file size: 50MB</li>
+                                    </ul>
+                                </div>
+                                <div className="form-actions">
+                                    <button type="button" onClick={() => {
+                                        setFormData({
+                                            title: '', description: '', subject: '', semester: '',
+                                            type: 'pdf', file: null, link: '', tags: '',
+                                            visibility: 'public', courseCode: '', allowRatings: true,
+                                            allowComments: true, license: 'copyright'
+                                        });
+                                        setUploadType('pdf');
+                                        setShowPreview(false);
+                                        setFormErrors({});
+                                    }} className="cancel-btn">
+                                        Clear Form
+                                    </button>
+                                    <button type="submit" disabled={loading} className="submit-btn">
+                                        {loading ? `Uploading ${uploadProgress}%...` : 'Upload Resource'}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                ) : (
+                    /* ============= MY UPLOADS SECTION ============= */
+                    <div className="my-uploads-content">
+                        {error && (
+                            <div className="error-message">
+                                <strong>Error:</strong> {error}
+                            </div>
+                        )}
+
+                        {/* Stats Cards */}
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-icon blue"><span className="icon">📚</span></div>
+                                <div><div className="stat-value">{stats.total}</div><div className="stat-label">Total Uploads</div></div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon green"><span className="icon">✅</span></div>
+                                <div><div className="stat-value">{stats.active}</div><div className="stat-label">Active</div></div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon orange"><span className="icon">⏳</span></div>
+                                <div><div className="stat-value">{stats.pending}</div><div className="stat-label">Pending Review</div></div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon purple"><span className="icon">👁️</span></div>
+                                <div><div className="stat-value">{stats.views}</div><div className="stat-label">Total Views</div></div>
+                            </div>
+                        </div>
+
+                        {/* Filters and Search */}
+                        <div className="filters-section">
+                            <div className="search-box">
+                                <input
+                                    type="text"
+                                    placeholder="Search your uploads..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="search-input"
+                                />
+                            </div>
+                            <div className="filter-tabs">
+                                <button className={`filter-tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All ({stats.total})</button>
+                                <button className={`filter-tab ${filter === 'pending' ? 'active' : ''}`} onClick={() => setFilter('pending')}>Pending ({stats.pending})</button>
+                                <button className={`filter-tab ${filter === 'active' ? 'active' : ''}`} onClick={() => setFilter('active')}>Active ({stats.active})</button>
+                            </div>
+                        </div>
+
+                        {/* Uploads Grid */}
+                        {loadingUploads ? (
+                            <div className="loading-spinner">Loading your uploads...</div>
+                        ) : filteredUploads.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">📭</div>
+                                <h3>No uploads found</h3>
+                                <p>
+                                    {searchTerm
+                                        ? `No results for "${searchTerm}"`
+                                        : uploads.length === 0
+                                            ? "You haven't uploaded any resources yet. Click 'Load Demo Data' to see examples!"
+                                            : "No resources match the selected filter."}
+                                </p>
+                                {!searchTerm && uploads.length === 0 && (
+                                    <>
+                                        <button onClick={loadDummyUploads} className="secondary-btn" style={{ marginRight: '10px' }}>
+                                            📊 Load Demo Data
+                                        </button>
+                                        <button onClick={() => setActiveTab('upload')} className="primary-btn">
+                                            Upload Your First Resource
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="uploads-grid">
+                                {filteredUploads.map((upload) => (
+                                    <div key={upload.id} className="resource-card" onClick={() => handleViewDetails(upload)}>
+                                        <div className="resource-card-header">
+                                            <div className="resource-type-icon">{getTypeIcon(upload.type)}</div>
+                                            <div className="resource-card-actions">
+                                                <span className={getStatusBadgeClass(upload.status)}>{upload.status || 'pending'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="resource-card-body">
+                                            <h3 className="resource-card-title">{upload.title}</h3>
+                                            <div className="resource-meta">
+                                                <span className="resource-subject">{upload.subject}</span>
+                                                <span className="resource-semester">{upload.semester}</span>
+                                            </div>
+                                            {upload.description && (
+                                                <p className="resource-description">
+                                                    {upload.description.substring(0, 100)}{upload.description.length > 100 ? '...' : ''}
+                                                </p>
+                                            )}
+                                            {upload.tags && (
+                                                <div className="resource-tags">
+                                                    {upload.tags.split(',').map((tag, i) => (
+                                                        <span key={i} className="tag">{tag.trim()}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="resource-stats">
+                                                <div className="stat-item" title="Views"><span>👁️</span> {upload.viewCount || 0}</div>
+                                                <div className="stat-item" title="Downloads"><span>📥</span> {upload.downloadCount || 0}</div>
+                                                <div className="stat-item" title="Rating">
+                                                    <span>⭐</span> 
+                                                    {upload.averageRating?.toFixed(1) || 0} 
+                                                    <span style={{ fontSize: '10px', marginLeft: '4px' }}>
+                                                        ({upload.ratingCount || 0} {upload.ratingCount === 1 ? 'review' : 'reviews'})
+                                                    </span>
+                                                </div>
+                                                <div className="stat-item" title="Uploaded"><span>📅</span> {formatDate(upload.uploadedAt)}</div>
+                                            </div>
+                                        </div>
+                                        <div className="resource-card-footer">
+                                            <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    className={`action-btn bookmark ${bookmarkedIds.has(upload.id) ? 'bookmarked' : ''}`}
+                                                    onClick={() => handleBookmark(upload.id)}
+                                                    title={bookmarkedIds.has(upload.id) ? "Remove Bookmark" : "Add Bookmark"}
+                                                >🔖</button>
+                                                <button className="action-btn rate" onClick={() => setRatingModal({ show: true, resourceId: upload.id })} title="Rate">⭐</button>
+                                                <button className="action-btn edit" onClick={() => handleEdit(upload)} title="Edit">✏️</button>
+                                                <button className="action-btn delete" onClick={() => handleDelete(upload.id)} title="Delete">🗑️</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Edit Modal */}
+            {showEditModal && editingResource && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h2>Edit Resource</h2>
+                        <form onSubmit={handleUpdate}>
+                            <div className="form-group">
+                                <label>Title</label>
+                                <input
+                                    type="text"
+                                    value={editingResource.title}
+                                    onChange={(e) => setEditingResource({...editingResource, title: e.target.value})}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea
+                                    value={editingResource.description || ''}
+                                    onChange={(e) => setEditingResource({...editingResource, description: e.target.value})}
+                                    rows="3"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Subject</label>
+                                <SubjectSelect
+                                    name="subject"
+                                    value={editingResource.subject}
+                                    onChange={(e) => setEditingResource({...editingResource, subject: e.target.value})}
+                                    className="form-select"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Tags</label>
+                                <input
+                                    type="text"
+                                    value={editingResource.tags || ''}
+                                    onChange={(e) => setEditingResource({...editingResource, tags: e.target.value})}
+                                    placeholder="Comma separated"
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setShowEditModal(false)} className="cancel-btn">Cancel</button>
+                                <button type="submit" className="submit-btn">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+{/* Rating Modal - Clean Version */}
+{ratingModal.show && (
+    <div className="modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null })}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>⭐ Rate this Resource</h2>
+            
+            <div className="rating-input">
+                <label>Your Rating:</label>
+                <div className="rating-stars">
+                    {[5, 4, 3, 2, 1].map((star) => (
+                        <button
+                            key={star}
+                            type="button"
+                            className={`star-btn ${userRating >= star ? 'active' : ''}`}
+                            onClick={() => setUserRating(star)}
+                            title={`${star} star${star !== 1 ? 's' : ''}`}
+                        >
+                            ★
+                        </button>
+                    ))}
+                </div>
+                <select value={userRating} onChange={(e) => setUserRating(parseInt(e.target.value))} className="rating-select">
+                    <option value={5}>5 Stars - Excellent</option>
+                    <option value={4}>4 Stars - Very Good</option>
+                    <option value={3}>3 Stars - Good</option>
+                    <option value={2}>2 Stars - Fair</option>
+                    <option value={1}>1 Star - Poor</option>
+                </select>
+            </div>
+            
+            <div className="form-group">
+                <label>Write a Review:</label>
+                <textarea 
+                    value={review} 
+                    onChange={(e) => setReview(e.target.value)} 
+                    placeholder="What did you think about this resource? Share your experience to help others..." 
+                    rows="4"
+                    style={{ resize: 'vertical' }}
+                />
+                <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '8px', display: 'block' }}>
+                    📝 Your review will be visible to other users and helps the community.
+                </small>
+            </div>
+            
+            <div className="modal-actions">
+                <button 
+                    type="button" 
+                    onClick={() => { 
+                        setRatingModal({ show: false, resourceId: null }); 
+                        setUserRating(5); 
+                        setReview(''); 
+                    }} 
+                    className="cancel-btn"
+                >
+                    Cancel
+                </button>
+                <button type="button" onClick={handleRate} className="submit-btn">
+                    Submit Rating & Review
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
+            {/* Resource Details Modal with Reviews Section */}
+            {detailsModal.show && detailsModal.resource && (
+                <div className="modal-overlay" onClick={() => setDetailsModal({ show: false, resource: null })}>
+                    <div className="details-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="details-modal-header">
+                            <div className="details-type-icon">{getTypeIcon(detailsModal.resource.type)}</div>
+                            <div className="details-title-section">
+                                <h2>{detailsModal.resource.title}</h2>
+                                <div className="details-meta">
+                                    <span className="details-subject">{detailsModal.resource.subject}</span>
+                                    <span className="details-semester">{detailsModal.resource.semester}</span>
+                                    <span className={getStatusBadgeClass(detailsModal.resource.status)}>{detailsModal.resource.status}</span>
+                                </div>
+                            </div>
+                            <button className="modal-close-btn" onClick={() => setDetailsModal({ show: false, resource: null })}>✕</button>
+                        </div>
+
+                        <div className="details-modal-body">
+                            {detailsModal.resource.description && (
+                                <div className="details-section">
+                                    <h3>Description</h3>
+                                    <p>{detailsModal.resource.description}</p>
+                                </div>
+                            )}
+                            
+                            {detailsModal.resource.tags && (
+                                <div className="details-section">
+                                    <h3>Tags</h3>
+                                    <div className="details-tags">
+                                        {detailsModal.resource.tags.split(',').map((tag, i) => (
+                                            <span key={i} className="tag">{tag.trim()}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {detailsModal.resource.courseCode && (
+                                <div className="details-section">
+                                    <h3>Course Code</h3>
+                                    <p className="course-code">{detailsModal.resource.courseCode}</p>
+                                </div>
+                            )}
+                            
+                            <div className="details-section">
+                                <h3>Resource Content</h3>
+                                <div className="details-content">
+                                    {(detailsModal.resource.type === 'link' || detailsModal.resource.type === 'video') ? (
+                                        <div className="link-preview">
+                                            <div className="link-icon">🔗</div>
+                                            <a href={detailsModal.resource.link} target="_blank" rel="noopener noreferrer" className="resource-link">{detailsModal.resource.link}</a>
+                                        </div>
+                                    ) : detailsModal.resource.type === 'image' ? (
+                                        <div className="image-preview-large">
+                                            <img
+                                                src={`http://localhost:8080${detailsModal.resource.filePath}`}
+                                                alt={detailsModal.resource.title}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x300?text=Image+Preview+Not+Available'; }}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="file-info">
+                                            <div className="file-icon">📄</div>
+                                            <div className="file-details">
+                                                <p className="file-name">{detailsModal.resource.fileName || 'Document'}</p>
+                                                <p className="file-size">{detailsModal.resource.fileSize ? `${detailsModal.resource.fileSize} MB` : 'Size not available'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="details-section">
+                                <h3>Resource Details</h3>
+                                <div className="details-grid">
+                                    <div className="detail-item">
+                                        <span className="detail-label">License:</span>
+                                        <span className="detail-value">{detailsModal.resource.license || 'Not specified'}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <span className="detail-label">Visibility:</span>
+                                        <span className="detail-value">{detailsModal.resource.visibility || 'public'}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <span className="detail-label">Uploaded:</span>
+                                        <span className="detail-value">{formatDate(detailsModal.resource.uploadedAt)}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <span className="detail-label">Ratings:</span>
+                                        <span className="detail-value">
+                                            {renderStars(detailsModal.resource.averageRating || 0)}
+                                            <span style={{ marginLeft: '8px' }}>⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0} ({detailsModal.resource.ratingCount || 0} reviews)</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="details-section">
+                                <h3>Settings</h3>
+                                <div className="settings-indicators">
+                                    <span className={`setting-badge ${detailsModal.resource.allowRatings ? 'enabled' : 'disabled'}`}>
+                                        {detailsModal.resource.allowRatings ? '✅ Ratings Allowed' : '❌ Ratings Disabled'}
+                                    </span>
+                                    <span className={`setting-badge ${detailsModal.resource.allowComments ? 'enabled' : 'disabled'}`}>
+                                        {detailsModal.resource.allowComments ? '💬 Comments Allowed' : '🔇 Comments Disabled'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="details-section">
+                                <h3>Statistics</h3>
+                                <div className="stats-row">
+                                    <div className="stat-box">
+                                        <span className="stat-number">{detailsModal.resource.viewCount || 0}</span>
+                                        <span className="stat-label">Views</span>
+                                    </div>
+                                    <div className="stat-box">
+                                        <span className="stat-number">{detailsModal.resource.downloadCount || 0}</span>
+                                        <span className="stat-label">Downloads</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Reviews Section */}
+                            <div className="details-section reviews-section">
+                                <h3>
+                                    📝 Reviews & Feedback 
+                                    <span style={{ fontSize: '14px', fontWeight: 'normal', marginLeft: '10px', color: '#6b7280' }}>
+                                        ({detailsModal.resource.reviews?.length || 0} {detailsModal.resource.reviews?.length === 1 ? 'review' : 'reviews'})
+                                    </span>
+                                </h3>
+                                
+                                {detailsModal.resource.reviews && detailsModal.resource.reviews.length > 0 ? (
+                                    <div className="reviews-list">
+                                        {detailsModal.resource.reviews.map((review, index) => (
+                                            <div key={review.id || index} className="review-item">
+                                                <div className="review-header">
+                                                    <div className="reviewer-avatar">
+                                                        {review.userAvatar || review.userName?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <div className="reviewer-info">
+                                                        <div className="reviewer-name">{review.userName || 'Anonymous User'}</div>
+                                                        <div className="review-date">{formatReviewDate(review.date)}</div>
+                                                    </div>
+                                                    <div className="review-rating">
+                                                        {renderStars(review.rating)}
+                                                        <span style={{ marginLeft: '4px', fontSize: '12px', color: '#f59e0b' }}>
+                                                            {review.rating}/5
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="review-content">
+                                                    <p>{review.review}</p>
+                                                </div>
+                                                <div className="review-footer">
+                                                    <button className="helpful-btn" onClick={() => alert('Thanks for feedback!')}>
+                                                        👍 Helpful ({review.helpful || 0})
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="no-reviews">
+                                        <p>No reviews yet. Be the first to review this resource!</p>
+                                        <button 
+                                            className="secondary-btn" 
+                                            onClick={() => {
+                                                setDetailsModal({ show: false, resource: null });
+                                                setRatingModal({ show: true, resourceId: detailsModal.resource.id });
+                                            }}
+                                            style={{ marginTop: '10px' }}
+                                        >
+                                            ⭐ Write a Review
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {/* Add Review Button */}
+                                {detailsModal.resource.allowRatings && (
+                                    <div className="add-review-button" style={{ marginTop: '16px', textAlign: 'center' }}>
+                                        <button 
+                                            className="secondary-btn"
+                                            onClick={() => {
+                                                setDetailsModal({ show: false, resource: null });
+                                                setRatingModal({ show: true, resourceId: detailsModal.resource.id });
+                                            }}
+                                        >
+                                            ✍️ Write a Review
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="details-modal-footer">
+                            <button className="download-btn" onClick={() => handleDownload(detailsModal.resource)}>
+                                📥 Download Resource
+                            </button>
+                            <button className="close-btn" onClick={() => setDetailsModal({ show: false, resource: null })}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default UploadResource;
