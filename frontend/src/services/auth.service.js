@@ -1,25 +1,27 @@
 import api from './api';
 
-class AuthService {
+const authService = {
+    // Existing login method (preserved exactly)
     async login(email, password, role) {
         try {
-            console.log('Sending login request to backend...'); // Debug log
+            console.log('Sending login request to backend...');
             const response = await api.post('/auth/login', {
                 email: email.trim(),
                 password: password,
                 role: role
             });
             
-            console.log('Raw response:', response); // Debug log
+            console.log('Raw response:', response);
             
             if (response.data && response.data.success) {
-                // Store basic info in localStorage
+                // Store basic info in localStorage - using fullName to match existing
                 localStorage.setItem('user', JSON.stringify({
-                    name: response.data.fullName,
+                    name: response.data.fullName,  // Keep as fullName for compatibility
                     email: response.data.email,
-                    role: response.data.role
+                    role: response.data.role,
+                    redirectUrl: response.data.redirectUrl
                 }));
-                console.log('User stored in localStorage'); // Debug log
+                console.log('User stored in localStorage');
             }
             
             return response.data;
@@ -31,23 +33,61 @@ class AuthService {
             }
             
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
                 console.error('Error response data:', error.response.data);
                 console.error('Error response status:', error.response.status);
                 return error.response.data;
             } else if (error.request) {
-                // The request was made but no response was received
                 console.error('No response received:', error.request);
                 throw new Error('No response from server. Please check if backend is running.');
             } else {
-                // Something happened in setting up the request that triggered an Error
                 console.error('Error setting up request:', error.message);
                 throw error;
             }
         }
-    }
+    },
     
+    // New registration methods
+    async registerStudent(formData) {
+        try {
+            const response = await api.post('/auth/register/student', formData);
+            return response.data;
+        } catch (error) {
+            console.error('Student registration error:', error);
+            throw error;
+        }
+    },
+    
+    async registerTutor(formData) {
+        try {
+            const response = await api.post('/auth/register/tutor', formData);
+            return response.data;
+        } catch (error) {
+            console.error('Tutor registration error:', error);
+            throw error;
+        }
+    },
+    
+    async completeStudentProfile(formData) {
+        try {
+            const response = await api.post('/auth/complete-profile/student', formData);
+            return response.data;
+        } catch (error) {
+            console.error('Profile completion error:', error);
+            throw error;
+        }
+    },
+    
+    async getAllSubjects() {
+        try {
+            const response = await api.get('/auth/subjects');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching subjects:', error);
+            throw error;
+        }
+    },
+    
+    // Existing logout method
     async logout() {
         try {
             await api.post('/auth/logout');
@@ -55,16 +95,17 @@ class AuthService {
             console.log('Logged out successfully');
         } catch (error) {
             console.error('Logout error:', error);
-            localStorage.removeItem('user'); // Still remove local storage
+            localStorage.removeItem('user');
         }
-    }
+    },
     
+    // Existing checkAuth method
     async checkAuth() {
         try {
             const response = await api.get('/auth/check');
             if (response.data && response.data.success) {
                 localStorage.setItem('user', JSON.stringify({
-                    name: response.data.fullName,
+                    name: response.data.fullName,  // Keep as fullName for consistency
                     email: response.data.email,
                     role: response.data.role
                 }));
@@ -74,12 +115,18 @@ class AuthService {
             console.error('Check auth error:', error);
             return { success: false };
         }
-    }
+    },
     
+    // Existing getCurrentUser method
     getCurrentUser() {
         const user = localStorage.getItem('user');
         return user ? JSON.parse(user) : null;
+    },
+    
+    // Existing isAuthenticated method
+    isAuthenticated() {
+        return localStorage.getItem('user') !== null;
     }
-}
+};
 
-export default new AuthService();
+export default authService;
