@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
+import TutorSidebar from '../peerhelp/TutorSidebar';
+import TutorHeader from '../peerhelp/TutorHeader';
+import TutorStatsCards from '../peerhelp/TutorStatsCards';
+import TutorHelpRequestsPanel from '../peerhelp/TutorHelpRequestsPanel';
+import TutorLecturesPanel from '../peerhelp/TutorLecturesPanel';
 import './Dashboard.css';
 
 const TutorDashboard = () => {
@@ -344,222 +349,42 @@ const TutorDashboard = () => {
 
     return (
         <div className="dashboard">
-            {/* Sidebar */}
-            <div className="sidebar">
-                <div className="sidebar-logo">BrainHive</div>
-                
-                <div className="sidebar-user">
-                    <div className="user-avatar">
-                        {user?.name?.charAt(0) || 'S'}
-                    </div>
-                    <div className="user-info">
-                        <h4>Dr. {user?.name || 'Sarah Mitchell'}</h4>
-                        <p>Tutor</p>
-                    </div>
-                </div>
-
-                <nav className="sidebar-nav">
-                    <div className="nav-section">
-                        <h3>Teaching & Schedule</h3>
-                        <ul>
-                            <li
-                                className={activeTab === 'help-requests' ? 'active' : ''}
-                                onClick={() => setActiveTab('help-requests')}
-                            >
-                                Help Requests
-                            </li>
-                            <li
-                                className={activeTab === 'my-sessions' ? 'active' : ''}
-                                onClick={() => setActiveTab('my-sessions')}
-                            >
-                                My Sessions
-                            </li>
-                            <li
-                                className={activeTab === 'availability' ? 'active' : ''}
-                                onClick={() => setActiveTab('availability')}
-                            >
-                                Availability
-                            </li>
-                            <li
-                                className={activeTab === 'lectures' ? 'active' : ''}
-                                onClick={() => setActiveTab('lectures')}
-                            >
-                                Lectures
-                            </li>
-                            <li
-                                className={activeTab === 'ratings' ? 'active' : ''}
-                                onClick={() => setActiveTab('ratings')}
-                            >
-                                Ratings & Feedback
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div className="nav-section">
-                        <h3>Profile</h3>
-                        <ul>
-                            <li>My Profile</li>
-                            <li>Settings</li>
-                            <li onClick={handleLogout} style={{ cursor: 'pointer', color: '#e53e3e' }}>
-                                Logout
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </div>
+            <TutorSidebar
+                user={user}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                handleLogout={handleLogout}
+            />
 
             {/* Main Content */}
             <div className="main-content">
-                <header className="dashboard-header">
-                    <div>
-                        <h1>Welcome back, Dr. {user?.name || 'Mitchell'}!</h1>
-                        <p className="header-subtitle">
-                            {dashboardData?.user?.department || user?.email || 'Tutor Portal'}
-                        </p>
-                    </div>
-                    <div className="header-actions">
-                        <span className="status-badge online">Online & Available</span>
-                    </div>
-                </header>
+                <TutorHeader user={user} dashboardData={dashboardData} />
 
-                {/* Stats Cards */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <h3>{upcomingSessions.length}</h3>
-                        <p>Upcoming Sessions</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>{availableRequests.length}</h3>
-                        <p>Available Requests</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>{myLectures.length}</h3>
-                        <p>My Lectures</p>
-                    </div>
-                </div>
+                <TutorStatsCards
+                    upcomingSessionsCount={upcomingSessions.length}
+                    availableRequestsCount={availableRequests.length}
+                    myLecturesCount={myLectures.length}
+                />
 
                 {fetchError && <p className="header-subtitle">{fetchError}</p>}
 
                 {activeTab === 'help-requests' && (
-                <div className="dashboard-grid">
-                    {/* Pending Help Requests */}
-                    <div className="dashboard-card">
-                        <div className="card-header">
-                            <h2>Pending Help Requests</h2>
-                            <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
-                        </div>
-                        <div className="card-content">
-                            {availableRequests.length === 0 && (
-                                <p className="header-subtitle">No live help requests found in database.</p>
-                            )}
-                            {acceptMessage && <p className="lecture-message">{acceptMessage}</p>}
-                            {availableRequests.map((request) => (
-                                <div key={request.id} className="request-block">
-                                    <div className="request-item">
-                                        <div className="request-info">
-                                            <h3>{request.student}</h3>
-                                            <p>{request.subject}</p>
-                                            <span className="request-time">📅 {request.time}</span>
-                                        </div>
-                                        <div className="request-actions">
-                                            <button 
-                                                className="btn-decline"
-                                                onClick={() => handleDecline(request.student)}
-                                            >
-                                                Decline
-                                            </button>
-                                            <button
-                                                className="btn-accept"
-                                                onClick={() => openAcceptForm(request.id)}
-                                            >
-                                                Accept
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {acceptingRequestId === request.id && (
-                                        <form
-                                            className="accept-request-form"
-                                            onSubmit={(event) => {
-                                                event.preventDefault();
-                                                submitAcceptForm(request);
-                                            }}
-                                        >
-                                            <label className="lecture-label" htmlFor={`start-${request.id}`}>Session Start</label>
-                                            <input
-                                                id={`start-${request.id}`}
-                                                type="datetime-local"
-                                                value={acceptForm.scheduledStartTime}
-                                                onChange={(e) => handleAcceptInput('scheduledStartTime', e.target.value)}
-                                            />
-                                            {acceptErrors.scheduledStartTime && <p className="form-error">{acceptErrors.scheduledStartTime}</p>}
-
-                                            <label className="lecture-label" htmlFor={`end-${request.id}`}>Session End</label>
-                                            <input
-                                                id={`end-${request.id}`}
-                                                type="datetime-local"
-                                                value={acceptForm.scheduledEndTime}
-                                                onChange={(e) => handleAcceptInput('scheduledEndTime', e.target.value)}
-                                            />
-                                            {acceptErrors.scheduledEndTime && <p className="form-error">{acceptErrors.scheduledEndTime}</p>}
-
-                                            <label className="lecture-label" htmlFor={`link-${request.id}`}>Meeting Link (optional)</label>
-                                            <input
-                                                id={`link-${request.id}`}
-                                                type="url"
-                                                value={acceptForm.meetingLink}
-                                                onChange={(e) => handleAcceptInput('meetingLink', e.target.value)}
-                                                placeholder="https://..."
-                                            />
-
-                                            <label className="lecture-label" htmlFor={`notes-${request.id}`}>Notes (optional)</label>
-                                            <textarea
-                                                id={`notes-${request.id}`}
-                                                rows={3}
-                                                value={acceptForm.notes}
-                                                onChange={(e) => handleAcceptInput('notes', e.target.value)}
-                                            />
-
-                                            <div className="request-actions">
-                                                <button
-                                                    type="button"
-                                                    className="btn-decline"
-                                                    onClick={() => setAcceptingRequestId(null)}
-                                                    disabled={acceptSubmitting}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button type="submit" className="btn-accept" disabled={acceptSubmitting}>
-                                                    {acceptSubmitting ? 'Scheduling...' : 'Confirm Accept'}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-                                    </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Upcoming Sessions */}
-                    <div className="dashboard-card">
-                        <div className="card-header">
-                            <h2>Upcoming Sessions</h2>
-                            <button type="button" className="view-all" onClick={() => setActiveTab('my-sessions')}>View schedule →</button>
-                        </div>
-                        <div className="card-content">
-                            {upcomingSessions.length === 0 && (
-                                <p className="header-subtitle">No live upcoming sessions found in database.</p>
-                            )}
-                            {upcomingSessions.map((session) => (
-                                <div key={session.id} className="session-item">
-                                    <h3>{session.title}</h3>
-                                    <p>With: {session.student}</p>
-                                    <span className="session-time">📅 {session.time}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                    <TutorHelpRequestsPanel
+                        availableRequests={availableRequests}
+                        acceptMessage={acceptMessage}
+                        fetchPeerHelpData={fetchPeerHelpData}
+                        handleDecline={handleDecline}
+                        openAcceptForm={openAcceptForm}
+                        acceptingRequestId={acceptingRequestId}
+                        submitAcceptForm={submitAcceptForm}
+                        acceptForm={acceptForm}
+                        acceptErrors={acceptErrors}
+                        handleAcceptInput={handleAcceptInput}
+                        setAcceptingRequestId={setAcceptingRequestId}
+                        acceptSubmitting={acceptSubmitting}
+                        upcomingSessions={upcomingSessions}
+                        setActiveTab={setActiveTab}
+                    />
                 )}
 
                 {activeTab === 'my-sessions' && (
@@ -616,108 +441,17 @@ const TutorDashboard = () => {
                 )}
 
                 {activeTab === 'lectures' && (
-                    <div className="dashboard-grid">
-                        <div className="dashboard-card">
-                            <div className="card-header">
-                                <h2>Create Lecture</h2>
-                            </div>
-                            <form className="lecture-form" onSubmit={handleCreateLecture}>
-                                <label className="lecture-label" htmlFor="subjectId">Subject</label>
-                                <select
-                                    id="subjectId"
-                                    value={lectureForm.subjectId}
-                                    onChange={(e) => handleLectureInput('subjectId', e.target.value)}
-                                >
-                                    <option value="">Select subject</option>
-                                    {lectureSubjects.map((subject) => (
-                                        <option key={subject.id} value={subject.id}>{subject.name}</option>
-                                    ))}
-                                </select>
-                                {lectureErrors.subjectId && <p className="form-error">{lectureErrors.subjectId}</p>}
-
-                                <label className="lecture-label" htmlFor="title">Lecture Title</label>
-                                <input
-                                    id="title"
-                                    type="text"
-                                    value={lectureForm.title}
-                                    onChange={(e) => handleLectureInput('title', e.target.value)}
-                                    placeholder="e.g. Introduction to Binary Trees"
-                                />
-                                {lectureErrors.title && <p className="form-error">{lectureErrors.title}</p>}
-
-                                <label className="lecture-label" htmlFor="description">Description</label>
-                                <textarea
-                                    id="description"
-                                    value={lectureForm.description}
-                                    onChange={(e) => handleLectureInput('description', e.target.value)}
-                                    placeholder="What students will learn in this lecture"
-                                    rows={4}
-                                />
-                                {lectureErrors.description && <p className="form-error">{lectureErrors.description}</p>}
-
-                                <label className="lecture-label" htmlFor="scheduledAt">Date & Time</label>
-                                <input
-                                    id="scheduledAt"
-                                    type="datetime-local"
-                                    value={lectureForm.scheduledAt}
-                                    onChange={(e) => handleLectureInput('scheduledAt', e.target.value)}
-                                />
-                                {lectureErrors.scheduledAt && <p className="form-error">{lectureErrors.scheduledAt}</p>}
-
-                                <label className="lecture-label" htmlFor="durationMinutes">Duration (minutes)</label>
-                                <input
-                                    id="durationMinutes"
-                                    type="number"
-                                    min="15"
-                                    max="240"
-                                    value={lectureForm.durationMinutes}
-                                    onChange={(e) => handleLectureInput('durationMinutes', e.target.value)}
-                                />
-                                {lectureErrors.durationMinutes && <p className="form-error">{lectureErrors.durationMinutes}</p>}
-
-                                <label className="lecture-label" htmlFor="meetingLink">Meeting Link (optional)</label>
-                                <input
-                                    id="meetingLink"
-                                    type="url"
-                                    value={lectureForm.meetingLink}
-                                    onChange={(e) => handleLectureInput('meetingLink', e.target.value)}
-                                    placeholder="https://..."
-                                />
-                                {lectureErrors.meetingLink && <p className="form-error">{lectureErrors.meetingLink}</p>}
-
-                                {lectureMessage && <p className="lecture-message">{lectureMessage}</p>}
-
-                                <button type="submit" className="btn-accept" disabled={lectureSubmitting}>
-                                    {lectureSubmitting ? 'Creating...' : 'Create Lecture'}
-                                </button>
-                            </form>
-                        </div>
-
-                        <div className="dashboard-card">
-                            <div className="card-header">
-                                <h2>My Lectures</h2>
-                                <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
-                            </div>
-                            <div className="card-content">
-                                {myLectures.length === 0 && (
-                                    <p className="header-subtitle">You have not created any lectures yet.</p>
-                                )}
-                                {myLectures.map((lecture) => (
-                                    <div key={lecture.id} className="session-item">
-                                        <h3>{lecture.title}</h3>
-                                        <p><strong>Subject:</strong> {lecture.subjectName}</p>
-                                        <p>{lecture.description}</p>
-                                        <span className="session-time">📅 {lecture.scheduledAt} • {lecture.durationMinutes} mins</span>
-                                        {lecture.meetingLink && (
-                                            <p>
-                                                <a href={lecture.meetingLink} target="_blank" rel="noreferrer">Join meeting</a>
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <TutorLecturesPanel
+                        lectureSubjects={lectureSubjects}
+                        lectureForm={lectureForm}
+                        handleLectureInput={handleLectureInput}
+                        lectureErrors={lectureErrors}
+                        lectureMessage={lectureMessage}
+                        handleCreateLecture={handleCreateLecture}
+                        lectureSubmitting={lectureSubmitting}
+                        myLectures={myLectures}
+                        fetchPeerHelpData={fetchPeerHelpData}
+                    />
                 )}
             </div>
         </div>
