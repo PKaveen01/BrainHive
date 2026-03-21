@@ -15,6 +15,7 @@ const UploadResource = () => {
     const [validationStatus, setValidationStatus] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [formErrors, setFormErrors] = useState({});
+    const [touched, setTouched] = useState({});
     
     const [formData, setFormData] = useState({
         title: '',
@@ -43,7 +44,7 @@ const UploadResource = () => {
     const [userRating, setUserRating] = useState(5);
     const [review, setReview] = useState('');
     const [detailsModal, setDetailsModal] = useState({ show: false, resource: null });
-    const [reviews, setReviews] = useState([]); // New state for storing reviews
+    const [reviews, setReviews] = useState([]);
     
     const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
     
@@ -110,6 +111,10 @@ const UploadResource = () => {
             license: licenses[Math.floor(Math.random() * licenses.length)].value
         });
         
+        // Clear touched state for new form
+        setTouched({});
+        setFormErrors({});
+        
         alert('✓ Dummy data loaded! You can now submit this as a test upload.');
     };
     
@@ -126,6 +131,8 @@ const UploadResource = () => {
             type: 'pdf',
             link: ''
         });
+        setTouched({});
+        setFormErrors({});
         alert('✓ Quick fill complete! Select a PDF file to upload or click upload to submit with file.');
     };
     
@@ -142,6 +149,8 @@ const UploadResource = () => {
             courseCode: 'SE401',
             type: 'link'
         });
+        setTouched({});
+        setFormErrors({});
         alert('✓ Quick fill complete! Click upload to submit this link resource.');
     };
     
@@ -158,6 +167,8 @@ const UploadResource = () => {
             courseCode: 'CS401',
             type: 'video'
         });
+        setTouched({});
+        setFormErrors({});
         alert('✓ Quick fill complete! Click upload to submit this video resource.');
     };
     
@@ -346,7 +357,6 @@ const UploadResource = () => {
             downloads: dummyUploads.reduce((sum, u) => sum + u.downloadCount, 0)
         });
         
-        // Add some bookmarked IDs for demo
         const demoBookmarked = new Set([9991, 9994]);
         setBookmarkedIds(demoBookmarked);
         
@@ -543,79 +553,123 @@ const UploadResource = () => {
         }
     };
 
-    // ============= FORM VALIDATION =============
+    // ============= ENHANCED FORM VALIDATION =============
+    const validateField = (name, value) => {
+        switch (name) {
+            case 'title':
+                if (!value || !value.trim()) return 'Title is required';
+                if (value.trim().length < 5) return 'Title must be at least 5 characters';
+                if (value.trim().length > 100) return 'Title must be less than 100 characters';
+                return null;
+                
+            case 'subject':
+                if (!value) return 'Please select a subject';
+                return null;
+                
+            case 'semester':
+                if (!value) return 'Please select a semester';
+                return null;
+                
+            case 'link':
+                if (uploadType === 'link' || uploadType === 'video' || uploadType === 'article') {
+                    if (!value) return 'URL is required';
+                    let urlToValidate = value;
+                    if (!urlToValidate.match(/^https?:\/\//i)) {
+                        urlToValidate = 'https://' + urlToValidate;
+                    }
+                    try {
+                        new URL(urlToValidate);
+                        return null;
+                    } catch (e) {
+                        return 'Please enter a valid URL';
+                    }
+                }
+                return null;
+                
+            case 'file':
+                if (uploadType !== 'link' && uploadType !== 'video' && uploadType !== 'article') {
+                    if (!value) return 'Please select a file to upload';
+                    if (value.size > 50 * 1024 * 1024) return 'File size must be less than 50MB';
+                    
+                    if (uploadType === 'pdf') {
+                        if (!value.type.includes('pdf') && !value.name.toLowerCase().endsWith('.pdf')) {
+                            return 'Please upload a valid PDF file';
+                        }
+                    }
+                    if (uploadType === 'document') {
+                        if (!value.name.match(/\.(doc|docx)$/i)) {
+                            return 'Please upload a valid Word document (DOC/DOCX)';
+                        }
+                    }
+                    if (uploadType === 'presentation') {
+                        if (!value.name.match(/\.(ppt|pptx)$/i)) {
+                            return 'Please upload a valid PowerPoint presentation (PPT/PPTX)';
+                        }
+                    }
+                    if (uploadType === 'image') {
+                        if (!value.type.startsWith('image/')) {
+                            return 'Please upload a valid image file (JPG, PNG, GIF)';
+                        }
+                    }
+                }
+                return null;
+                
+            case 'tags':
+                if (value) {
+                    const tagsArray = value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    if (tagsArray.length > 0) {
+                        if (tagsArray.some(tag => tag.length > 20)) {
+                            return 'Each tag must be less than 20 characters';
+                        }
+                        if (tagsArray.length > 5) {
+                            return 'Maximum 5 tags allowed';
+                        }
+                    }
+                }
+                return null;
+                
+            default:
+                return null;
+        }
+    };
+
     const validateForm = () => {
         const errors = {};
         
-        if (!formData.title.trim()) {
-            errors.title = 'Title is required';
-        } else if (formData.title.length < 5) {
-            errors.title = 'Title must be at least 5 characters';
-        } else if (formData.title.length > 100) {
-            errors.title = 'Title must be less than 100 characters';
+        // Validate all required fields
+        errors.title = validateField('title', formData.title);
+        errors.subject = validateField('subject', formData.subject);
+        errors.semester = validateField('semester', formData.semester);
+        
+        if (uploadType === 'link' || uploadType === 'video' || uploadType === 'article') {
+            errors.link = validateField('link', formData.link);
+        } else {
+            errors.file = validateField('file', formData.file);
         }
         
-        if (!formData.subject) {
-            errors.subject = 'Please select a subject';
-        }
+        errors.tags = validateField('tags', formData.tags);
         
-        if (!formData.semester) {
-            errors.semester = 'Please select a semester';
-        }
-        
-        if ((uploadType === 'link' || uploadType === 'video' || uploadType === 'article') && !formData.link) {
-            errors.link = 'URL is required';
-        } else if ((uploadType === 'link' || uploadType === 'video' || uploadType === 'article') && formData.link) {
-            let urlToValidate = formData.link;
-            if (!urlToValidate.match(/^https?:\/\//i)) {
-                urlToValidate = 'https://' + urlToValidate;
-            }
-            try {
-                new URL(urlToValidate);
-                if (urlToValidate !== formData.link) {
-                    setFormData(prev => ({ ...prev, link: urlToValidate }));
-                }
-            } catch (e) {
-                errors.link = 'Please enter a valid URL';
-            }
-        }
-        
-        if (uploadType !== 'link' && uploadType !== 'video' && uploadType !== 'article') {
-            if (!formData.file) {
-                errors.file = 'Please select a file to upload';
-            } else {
-                if (formData.file.size > 50 * 1024 * 1024) {
-                    errors.file = 'File size must be less than 50MB';
-                }
-                if (uploadType === 'pdf' && !formData.file.type.includes('pdf') && !formData.file.name.toLowerCase().endsWith('.pdf')) {
-                    errors.file = 'Please upload a valid PDF file';
-                }
-                if (uploadType === 'document' && !formData.file.name.match(/\.(doc|docx)$/i)) {
-                    errors.file = 'Please upload a valid Word document (DOC/DOCX)';
-                }
-                if (uploadType === 'presentation' && !formData.file.name.match(/\.(ppt|pptx)$/i)) {
-                    errors.file = 'Please upload a valid PowerPoint presentation (PPT/PPTX)';
-                }
-                if (uploadType === 'image' && !formData.file.type.startsWith('image/')) {
-                    errors.file = 'Please upload a valid image file (JPG, PNG, GIF)';
-                }
-            }
-        }
-        
-        if (formData.tags) {
-            const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-            if (tagsArray.length > 0) {
-                if (tagsArray.some(tag => tag.length > 20)) {
-                    errors.tags = 'Each tag must be less than 20 characters';
-                }
-                if (tagsArray.length > 5) {
-                    errors.tags = 'Maximum 5 tags allowed';
-                }
-            }
-        }
+        // Remove null values
+        Object.keys(errors).forEach(key => {
+            if (errors[key] === null) delete errors[key];
+        });
         
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
+    };
+
+    const handleBlur = (fieldName) => {
+        setTouched(prev => ({ ...prev, [fieldName]: true }));
+        const error = validateField(fieldName, formData[fieldName]);
+        if (error) {
+            setFormErrors(prev => ({ ...prev, [fieldName]: error }));
+        } else {
+            setFormErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[fieldName];
+                return newErrors;
+            });
+        }
     };
 
     // ============= FILE UPLOAD HANDLER =============
@@ -689,12 +743,25 @@ const UploadResource = () => {
     // ============= UPLOAD HANDLERS =============
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
+        const newValue = type === 'checkbox' ? checked : value;
+        
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: newValue
         }));
-        if (formErrors[name]) {
-            setFormErrors(prev => ({ ...prev, [name]: null }));
+        
+        // Validate on change after field has been touched
+        if (touched[name]) {
+            const error = validateField(name, newValue);
+            setFormErrors(prev => {
+                if (error) {
+                    return { ...prev, [name]: error };
+                } else {
+                    const newErrors = { ...prev };
+                    delete newErrors[name];
+                    return newErrors;
+                }
+            });
         }
     };
 
@@ -723,8 +790,17 @@ const UploadResource = () => {
                 reader.readAsDataURL(file);
             }
             
-            if (formErrors.file) {
-                setFormErrors(prev => ({ ...prev, file: null }));
+            if (touched.file) {
+                const error = validateField('file', file);
+                setFormErrors(prev => {
+                    if (error) {
+                        return { ...prev, file: error };
+                    } else {
+                        const newErrors = { ...prev };
+                        delete newErrors.file;
+                        return newErrors;
+                    }
+                });
             }
         }
     };
@@ -740,8 +816,14 @@ const UploadResource = () => {
             fileSize: null
         }));
         setShowPreview(false);
-        if (formErrors.file) setFormErrors(prev => ({ ...prev, file: null }));
-        if (formErrors.link) setFormErrors(prev => ({ ...prev, link: null }));
+        
+        // Clear relevant errors
+        setFormErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.file;
+            delete newErrors.link;
+            return newErrors;
+        });
     };
 
     const validateResource = async () => {
@@ -753,6 +835,19 @@ const UploadResource = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Mark all fields as touched
+        const allFields = ['title', 'subject', 'semester'];
+        if (uploadType === 'link' || uploadType === 'video' || uploadType === 'article') {
+            allFields.push('link');
+        } else {
+            allFields.push('file');
+        }
+        if (formData.tags) allFields.push('tags');
+        
+        const newTouched = {};
+        allFields.forEach(field => { newTouched[field] = true; });
+        setTouched(newTouched);
         
         if (!validateForm()) {
             const firstError = document.querySelector('.error-text');
@@ -788,8 +883,8 @@ const UploadResource = () => {
                     }
 
                     const formDataFields = {
-                        title: formData.title,
-                        description: formData.description,
+                        title: formData.title.trim(),
+                        description: formData.description.trim(),
                         subject: formData.subject,
                         semester: formData.semester,
                         type: uploadType,
@@ -804,15 +899,8 @@ const UploadResource = () => {
                     const response = await uploadFileWithProgress(formData.file, formDataFields, dbUserId);
                     
                     if (response) {
-                        alert('Resource uploaded successfully! It will be active after moderation review.');
-                        setFormData({
-                            title: '', description: '', subject: '', semester: '',
-                            type: 'pdf', file: null, link: '', tags: '',
-                            visibility: 'public', courseCode: '', allowRatings: true,
-                            allowComments: true, license: 'copyright'
-                        });
-                        setUploadType('pdf');
-                        setShowPreview(false);
+                        alert('✓ Resource uploaded successfully! It will be active after moderation review.');
+                        resetForm();
                         fetchAllUploads(dbUserId);
                         setActiveTab('my-uploads');
                     }
@@ -830,8 +918,8 @@ const UploadResource = () => {
                 }
             } else {
                 const linkData = {
-                    title: formData.title,
-                    description: formData.description || '',
+                    title: formData.title.trim(),
+                    description: formData.description.trim() || '',
                     subject: formData.subject,
                     semester: formData.semester,
                     type: uploadType,
@@ -848,14 +936,8 @@ const UploadResource = () => {
                 try {
                     const response = await api.post('/resources/upload/link', linkData);
                     if (response.data) {
-                        alert('Resource added successfully! It will be active after moderation review.');
-                        setFormData({
-                            title: '', description: '', subject: '', semester: '',
-                            type: 'pdf', file: null, link: '', tags: '',
-                            visibility: 'public', courseCode: '', allowRatings: true,
-                            allowComments: true, license: 'copyright'
-                        });
-                        setUploadType('pdf');
+                        alert('✓ Resource added successfully! It will be active after moderation review.');
+                        resetForm();
                         fetchAllUploads(dbUserId);
                         setActiveTab('my-uploads');
                     }
@@ -871,14 +953,28 @@ const UploadResource = () => {
             setLoading(false);
         }
     };
+    
+    const resetForm = () => {
+        setFormData({
+            title: '', description: '', subject: '', semester: '',
+            type: 'pdf', file: null, link: '', tags: '',
+            visibility: 'public', courseCode: '', allowRatings: true,
+            allowComments: true, license: 'copyright'
+        });
+        setUploadType('pdf');
+        setShowPreview(false);
+        setFormErrors({});
+        setTouched({});
+        setValidationStatus(null);
+    };
 
     // ============= CRUD OPERATIONS =============
     const handleDelete = async (resourceId) => {
-        if (!window.confirm('Are you sure you want to delete this resource?')) return;
+        if (!window.confirm('⚠️ Are you sure you want to delete this resource? This action cannot be undone.')) return;
         try {
             await api.delete(`/resources/${resourceId}`);
             fetchAllUploads(getDatabaseUserId(user));
-            alert('Resource deleted successfully');
+            alert('✓ Resource deleted successfully');
         } catch (error) {
             alert('Failed to delete resource');
         }
@@ -893,8 +989,8 @@ const UploadResource = () => {
         e.preventDefault();
         try {
             const updatedData = {
-                title: editingResource.title,
-                description: editingResource.description,
+                title: editingResource.title.trim(),
+                description: editingResource.description?.trim() || '',
                 subject: editingResource.subject,
                 semester: editingResource.semester,
                 tags: editingResource.tags,
@@ -905,7 +1001,7 @@ const UploadResource = () => {
                 allowComments: editingResource.allowComments
             };
             await api.put(`/resources/${editingResource.id}`, updatedData);
-            alert('Resource updated successfully');
+            alert('✓ Resource updated successfully');
             setShowEditModal(false);
             fetchAllUploads(getDatabaseUserId(user));
         } catch (error) {
@@ -920,11 +1016,11 @@ const UploadResource = () => {
             if (bookmarkedIds.has(resourceId)) {
                 await api.delete(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
                 setBookmarkedIds(prev => { const s = new Set(prev); s.delete(resourceId); return s; });
-                alert('Bookmark removed');
+                alert('✓ Bookmark removed');
             } else {
                 await api.post(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
                 setBookmarkedIds(prev => new Set([...prev, resourceId]));
-                alert('Resource bookmarked!');
+                alert('✓ Resource bookmarked!');
             }
         } catch (error) {
             alert('Failed to update bookmark');
@@ -933,26 +1029,26 @@ const UploadResource = () => {
 
     // ============= RATING OPERATIONS =============
     const handleRate = async () => {
+        if (!review.trim()) {
+            alert('Please write a review before submitting.');
+            return;
+        }
+        
         try {
             const dbUserId = getDatabaseUserId(user);
             const currentUser = authService.getCurrentUser();
             
-            // Create new review
             const newReview = {
                 id: Date.now(),
                 userId: dbUserId,
                 userName: currentUser?.name || currentUser?.fullName || 'Anonymous User',
                 userAvatar: (currentUser?.name?.charAt(0) || currentUser?.fullName?.charAt(0) || 'U').toUpperCase(),
                 rating: userRating,
-                review: review.trim() || 'No review provided.',
+                review: review.trim(),
                 date: new Date().toISOString(),
                 helpful: 0
             };
             
-            // In a real app, you'd send this to the backend
-            // await api.post(`/resources/${ratingModal.resourceId}/rate`, newReview);
-            
-            // For demo, add to local state
             setUploads(prevUploads => 
                 prevUploads.map(upload => {
                     if (upload.id === ratingModal.resourceId) {
@@ -971,30 +1067,7 @@ const UploadResource = () => {
                 })
             );
             
-            // Also update stats if needed
-            const updatedUploads = uploads.map(upload => {
-                if (upload.id === ratingModal.resourceId) {
-                    const existingReviews = upload.reviews || [];
-                    const updatedReviews = [...existingReviews, newReview];
-                    const newAverageRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
-                    
-                    return {
-                        ...upload,
-                        reviews: updatedReviews,
-                        averageRating: newAverageRating,
-                        ratingCount: updatedReviews.length
-                    };
-                }
-                return upload;
-            });
-            
-            setUploads(updatedUploads);
-            
-            // Update stats
-            const totalRatings = updatedUploads.reduce((sum, u) => sum + (u.ratingCount || 0), 0);
-            const totalReviews = updatedUploads.reduce((sum, u) => sum + (u.reviews?.length || 0), 0);
-            
-            alert(`✓ Rating submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review || 'No review'}`);
+            alert(`✓ Review submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review}`);
             setRatingModal({ show: false, resourceId: null });
             setUserRating(5);
             setReview('');
@@ -1087,7 +1160,7 @@ const UploadResource = () => {
 
     // ============= REUSABLE SUBJECT SELECT =============
     const SubjectSelect = ({ value, onChange, name, className }) => (
-        <select name={name} value={value} onChange={onChange} required className={className}>
+        <select name={name} value={value} onChange={onChange} required className={className} onBlur={() => handleBlur('subject')}>
             <option value="">Select Subject</option>
             {Object.entries(subjectsByFaculty).map(([faculty, subjects]) => (
                 <optgroup key={faculty} label={faculty}>
@@ -1240,11 +1313,12 @@ const UploadResource = () => {
                                         name="title"
                                         value={formData.title}
                                         onChange={handleInputChange}
+                                        onBlur={() => handleBlur('title')}
                                         placeholder="e.g., Binary Trees Complete Notes"
                                         required
-                                        className={`form-input ${formErrors.title ? 'error' : ''}`}
+                                        className={`form-input ${formErrors.title && touched.title ? 'error' : ''}`}
                                     />
-                                    {formErrors.title && <span className="error-text">{formErrors.title}</span>}
+                                    {formErrors.title && touched.title && <span className="error-text">{formErrors.title}</span>}
                                 </div>
 
                                 <div className="form-row">
@@ -1254,9 +1328,9 @@ const UploadResource = () => {
                                             name="subject"
                                             value={formData.subject}
                                             onChange={handleInputChange}
-                                            className={`form-select ${formErrors.subject ? 'error' : ''}`}
+                                            className={`form-select ${formErrors.subject && touched.subject ? 'error' : ''}`}
                                         />
-                                        {formErrors.subject && <span className="error-text">{formErrors.subject}</span>}
+                                        {formErrors.subject && touched.subject && <span className="error-text">{formErrors.subject}</span>}
                                     </div>
 
                                     <div className="form-group">
@@ -1265,8 +1339,9 @@ const UploadResource = () => {
                                             name="semester"
                                             value={formData.semester}
                                             onChange={handleInputChange}
+                                            onBlur={() => handleBlur('semester')}
                                             required
-                                            className={`form-select ${formErrors.semester ? 'error' : ''}`}
+                                            className={`form-select ${formErrors.semester && touched.semester ? 'error' : ''}`}
                                         >
                                             <option value="">Select Semester</option>
                                             {semesters.map(sem => (
@@ -1275,7 +1350,7 @@ const UploadResource = () => {
                                                 </option>
                                             ))}
                                         </select>
-                                        {formErrors.semester && <span className="error-text">{formErrors.semester}</span>}
+                                        {formErrors.semester && touched.semester && <span className="error-text">{formErrors.semester}</span>}
                                     </div>
                                 </div>
 
@@ -1298,11 +1373,12 @@ const UploadResource = () => {
                                             name="tags"
                                             value={formData.tags}
                                             onChange={handleInputChange}
+                                            onBlur={() => handleBlur('tags')}
                                             placeholder="e.g., algorithms, exam, notes"
-                                            className={`form-input ${formErrors.tags ? 'error' : ''}`}
+                                            className={`form-input ${formErrors.tags && touched.tags ? 'error' : ''}`}
                                         />
-                                        <p className="input-hint">Separate with commas (max 5 tags)</p>
-                                        {formErrors.tags && <span className="error-text">{formErrors.tags}</span>}
+                                        <p className="input-hint">Separate with commas (max 5 tags, each max 20 characters)</p>
+                                        {formErrors.tags && touched.tags && <span className="error-text">{formErrors.tags}</span>}
                                     </div>
                                 </div>
 
@@ -1323,7 +1399,7 @@ const UploadResource = () => {
                             {(uploadType === 'pdf' || uploadType === 'document' || uploadType === 'presentation' || uploadType === 'image') && (
                                 <div className="form-card">
                                     <h2 className="card-title">Upload File</h2>
-                                    <div className={`file-dropzone ${formErrors.file ? 'error' : ''}`}>
+                                    <div className={`file-dropzone ${formErrors.file && touched.file ? 'error' : ''}`}>
                                         <input
                                             type="file"
                                             accept={
@@ -1333,6 +1409,7 @@ const UploadResource = () => {
                                                 uploadType === 'image' ? 'image/*' : '.pdf'
                                             }
                                             onChange={handleFileChange}
+                                            onBlur={() => handleBlur('file')}
                                             required
                                             className="file-input"
                                         />
@@ -1353,7 +1430,7 @@ const UploadResource = () => {
                                             )}
                                         </div>
                                     </div>
-                                    {formErrors.file && <span className="error-text">{formErrors.file}</span>}
+                                    {formErrors.file && touched.file && <span className="error-text">{formErrors.file}</span>}
                                     <p className="file-size-hint">Maximum file size: 50MB</p>
                                     {showPreview && formData.file && uploadType === 'image' && (
                                         <div className="preview-section">
@@ -1377,11 +1454,12 @@ const UploadResource = () => {
                                             name="link"
                                             value={formData.link}
                                             onChange={handleInputChange}
+                                            onBlur={() => handleBlur('link')}
                                             placeholder={uploadType === 'video' ? "https://youtube.com/watch?v=..." : "https://example.com/resource"}
                                             required
-                                            className={`form-input ${formErrors.link ? 'error' : ''}`}
+                                            className={`form-input ${formErrors.link && touched.link ? 'error' : ''}`}
                                         />
-                                        {formErrors.link && <span className="error-text">{formErrors.link}</span>}
+                                        {formErrors.link && touched.link && <span className="error-text">{formErrors.link}</span>}
                                         {uploadType === 'video' && (
                                             <p className="input-hint">Supports YouTube, Vimeo, and other video platforms</p>
                                         )}
@@ -1487,17 +1565,7 @@ const UploadResource = () => {
                                     </ul>
                                 </div>
                                 <div className="form-actions">
-                                    <button type="button" onClick={() => {
-                                        setFormData({
-                                            title: '', description: '', subject: '', semester: '',
-                                            type: 'pdf', file: null, link: '', tags: '',
-                                            visibility: 'public', courseCode: '', allowRatings: true,
-                                            allowComments: true, license: 'copyright'
-                                        });
-                                        setUploadType('pdf');
-                                        setShowPreview(false);
-                                        setFormErrors({});
-                                    }} className="cancel-btn">
+                                    <button type="button" onClick={resetForm} className="cancel-btn">
                                         Clear Form
                                     </button>
                                     <button type="submit" disabled={loading} className="submit-btn">
@@ -1647,7 +1715,7 @@ const UploadResource = () => {
                         <h2>Edit Resource</h2>
                         <form onSubmit={handleUpdate}>
                             <div className="form-group">
-                                <label>Title</label>
+                                <label>Title *</label>
                                 <input
                                     type="text"
                                     value={editingResource.title}
@@ -1664,7 +1732,7 @@ const UploadResource = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Subject</label>
+                                <label>Subject *</label>
                                 <SubjectSelect
                                     name="subject"
                                     value={editingResource.subject}
@@ -1680,6 +1748,7 @@ const UploadResource = () => {
                                     onChange={(e) => setEditingResource({...editingResource, tags: e.target.value})}
                                     placeholder="Comma separated"
                                 />
+                                <small className="input-hint">Max 5 tags, each under 20 characters</small>
                             </div>
                             <div className="modal-actions">
                                 <button type="button" onClick={() => setShowEditModal(false)} className="cancel-btn">Cancel</button>
@@ -1689,69 +1758,71 @@ const UploadResource = () => {
                     </div>
                 </div>
             )}
-{/* Rating Modal - Clean Version */}
-{ratingModal.show && (
-    <div className="modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null })}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>⭐ Rate this Resource</h2>
-            
-            <div className="rating-input">
-                <label>Your Rating:</label>
-                <div className="rating-stars">
-                    {[5, 4, 3, 2, 1].map((star) => (
-                        <button
-                            key={star}
-                            type="button"
-                            className={`star-btn ${userRating >= star ? 'active' : ''}`}
-                            onClick={() => setUserRating(star)}
-                            title={`${star} star${star !== 1 ? 's' : ''}`}
-                        >
-                            ★
-                        </button>
-                    ))}
+
+            {/* Rating Modal - Clean Version */}
+            {ratingModal.show && (
+                <div className="modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null })}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h2>⭐ Rate this Resource</h2>
+                        
+                        <div className="rating-input">
+                            <label>Your Rating:</label>
+                            <div className="rating-stars">
+                                {[5, 4, 3, 2, 1].map((star) => (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        className={`star-btn ${userRating >= star ? 'active' : ''}`}
+                                        onClick={() => setUserRating(star)}
+                                        title={`${star} star${star !== 1 ? 's' : ''}`}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                            </div>
+                            <select value={userRating} onChange={(e) => setUserRating(parseInt(e.target.value))} className="rating-select">
+                                <option value={5}>5 Stars - Excellent</option>
+                                <option value={4}>4 Stars - Very Good</option>
+                                <option value={3}>3 Stars - Good</option>
+                                <option value={2}>2 Stars - Fair</option>
+                                <option value={1}>1 Star - Poor</option>
+                            </select>
+                        </div>
+                        
+                        <div className="form-group">
+                            <label>Write a Review *</label>
+                            <textarea 
+                                value={review} 
+                                onChange={(e) => setReview(e.target.value)} 
+                                placeholder="What did you think about this resource? Share your experience to help others..." 
+                                rows="4"
+                                style={{ resize: 'vertical' }}
+                                required
+                            />
+                            <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '8px', display: 'block' }}>
+                                📝 Your review will be visible to other users and helps the community.
+                            </small>
+                        </div>
+                        
+                        <div className="modal-actions">
+                            <button 
+                                type="button" 
+                                onClick={() => { 
+                                    setRatingModal({ show: false, resourceId: null }); 
+                                    setUserRating(5); 
+                                    setReview(''); 
+                                }} 
+                                className="cancel-btn"
+                            >
+                                Cancel
+                            </button>
+                            <button type="button" onClick={handleRate} className="submit-btn">
+                                Submit Rating & Review
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <select value={userRating} onChange={(e) => setUserRating(parseInt(e.target.value))} className="rating-select">
-                    <option value={5}>5 Stars - Excellent</option>
-                    <option value={4}>4 Stars - Very Good</option>
-                    <option value={3}>3 Stars - Good</option>
-                    <option value={2}>2 Stars - Fair</option>
-                    <option value={1}>1 Star - Poor</option>
-                </select>
-            </div>
-            
-            <div className="form-group">
-                <label>Write a Review:</label>
-                <textarea 
-                    value={review} 
-                    onChange={(e) => setReview(e.target.value)} 
-                    placeholder="What did you think about this resource? Share your experience to help others..." 
-                    rows="4"
-                    style={{ resize: 'vertical' }}
-                />
-                <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '8px', display: 'block' }}>
-                    📝 Your review will be visible to other users and helps the community.
-                </small>
-            </div>
-            
-            <div className="modal-actions">
-                <button 
-                    type="button" 
-                    onClick={() => { 
-                        setRatingModal({ show: false, resourceId: null }); 
-                        setUserRating(5); 
-                        setReview(''); 
-                    }} 
-                    className="cancel-btn"
-                >
-                    Cancel
-                </button>
-                <button type="button" onClick={handleRate} className="submit-btn">
-                    Submit Rating & Review
-                </button>
-            </div>
-        </div>
-    </div>
-)}
+            )}
 
             {/* Resource Details Modal with Reviews Section */}
             {detailsModal.show && detailsModal.resource && (
