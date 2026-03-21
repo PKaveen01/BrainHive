@@ -1,15 +1,16 @@
 package com.brainhive.modules.peerhelp.repository;
 
-import com.brainhive.modules.peerhelp.model.HelpRequest;
-import com.brainhive.modules.peerhelp.model.HelpRequestStatus;
-import com.brainhive.modules.peerhelp.model.Subject;
-import com.brainhive.modules.user.model.User;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.brainhive.modules.peerhelp.model.HelpRequest;
+import com.brainhive.modules.peerhelp.model.HelpRequestStatus;
+import com.brainhive.modules.peerhelp.model.Subject;
+import com.brainhive.modules.user.model.User;
 
 @Repository
 public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> {
@@ -38,6 +39,12 @@ public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> 
     
     @Query("SELECT hr FROM HelpRequest hr WHERE hr.subject.id = :subjectId AND hr.status = :status ORDER BY hr.urgencyLevel DESC, hr.createdAt ASC")
     List<HelpRequest> findPendingRequestsBySubjectOrderByPriority(@Param("subjectId") Long subjectId, @Param("status") HelpRequestStatus status);
+
+    @Query("SELECT hr FROM HelpRequest hr WHERE hr.status = :status AND ((hr.subject.id = :subjectId AND hr.assignedTutor IS NULL) OR (hr.assignedTutor.id = :tutorId)) ORDER BY hr.urgencyLevel DESC, hr.createdAt ASC")
+    List<HelpRequest> findPendingRequestsForTutor(@Param("subjectId") Long subjectId, @Param("tutorId") Long tutorId, @Param("status") HelpRequestStatus status);
+
+    @Query("SELECT hr FROM HelpRequest hr WHERE hr.status = :status AND hr.assignedTutor.id = :tutorId ORDER BY hr.urgencyLevel DESC, hr.createdAt ASC")
+    List<HelpRequest> findPendingAssignedRequestsForTutor(@Param("tutorId") Long tutorId, @Param("status") HelpRequestStatus status);
     
     @Query("SELECT hr FROM HelpRequest hr WHERE hr.status = 'PENDING' ORDER BY hr.urgencyLevel DESC, hr.createdAt ASC")
     List<HelpRequest> findAllPendingOrderByPriority();

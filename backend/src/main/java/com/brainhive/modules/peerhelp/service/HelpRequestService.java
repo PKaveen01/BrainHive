@@ -1,18 +1,29 @@
 package com.brainhive.modules.peerhelp.service;
 
-import com.brainhive.modules.peerhelp.dto.*;
-import com.brainhive.modules.peerhelp.model.*;
-import com.brainhive.modules.peerhelp.repository.*;
-import com.brainhive.modules.user.model.User;
-import com.brainhive.modules.user.model.UserRole;
-import com.brainhive.modules.user.repository.UserRepository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.brainhive.modules.peerhelp.dto.ApproveRequestDTO;
+import com.brainhive.modules.peerhelp.dto.CreateHelpRequestDTO;
+import com.brainhive.modules.peerhelp.dto.HelpRequestResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorSessionResponseDTO;
+import com.brainhive.modules.peerhelp.model.HelpRequest;
+import com.brainhive.modules.peerhelp.model.HelpRequestStatus;
+import com.brainhive.modules.peerhelp.model.Subject;
+import com.brainhive.modules.peerhelp.model.TutorSession;
+import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
+import com.brainhive.modules.peerhelp.repository.SubjectRepository;
+import com.brainhive.modules.peerhelp.repository.TutorProfileRepository;
+import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
+import com.brainhive.modules.user.model.User;
+import com.brainhive.modules.user.model.UserRole;
+import com.brainhive.modules.user.repository.UserRepository;
 
 @Service
 @Transactional
@@ -64,9 +75,11 @@ public class HelpRequestService {
         request.setTopic(dto.getTopic());
         request.setDescription(dto.getDescription());
         request.setStatus(HelpRequestStatus.PENDING);
-        request.setUrgencyLevel(dto.getUrgencyLevel() != null ? dto.getUrgencyLevel() : 3);
+        Integer urgency = dto.getUrgencyLevel();
+        request.setUrgencyLevel(urgency == null ? 3 : urgency);
         request.setPreferredDateTime(dto.getPreferredDateTime());
-        request.setEstimatedDuration(dto.getEstimatedDuration() != null ? dto.getEstimatedDuration() : 60);
+        Integer duration = dto.getEstimatedDuration();
+        request.setEstimatedDuration(duration == null ? 60 : duration);
 
         HelpRequest saved = helpRequestRepository.save(request);
         return HelpRequestResponseDTO.fromEntity(saved);
@@ -96,16 +109,19 @@ public class HelpRequestService {
      * Get available pending requests for a tutor based on their subject expertise.
      */
     public List<HelpRequestResponseDTO> getAvailableRequestsForTutor(Long tutorId) {
-        TutorProfile profile = tutorProfileRepository.findByTutorId(tutorId)
-                .orElseThrow(() -> new IllegalArgumentException("Tutor profile not found. Please create a profile first."));
-
-        return helpRequestRepository.findPendingRequestsBySubjectOrderByPriority(
-                        profile.getSubject().getId(), 
-                        HelpRequestStatus.PENDING
-                )
-                .stream()
-                .map(HelpRequestResponseDTO::fromEntity)
-                .collect(Collectors.toList());
+        return tutorProfileRepository.findByTutorId(tutorId)
+            .map(profile -> helpRequestRepository.findPendingRequestsForTutor(
+                profile.getSubject().getId(),
+                tutorId,
+                HelpRequestStatus.PENDING
+            ))
+            .orElseGet(() -> helpRequestRepository.findPendingAssignedRequestsForTutor(
+                tutorId,
+                HelpRequestStatus.PENDING
+            ))
+            .stream()
+            .map(HelpRequestResponseDTO::fromEntity)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -136,6 +152,10 @@ public class HelpRequestService {
 
         if (request.getStatus() != HelpRequestStatus.PENDING) {
             throw new IllegalArgumentException("Request is not in PENDING status");
+        }
+
+        if (request.getAssignedTutor() != null && !request.getAssignedTutor().getId().equals(tutorId)) {
+            throw new IllegalArgumentException("You are not authorized to approve this request");
         }
 
         User tutor = userRepository.findById(tutorId)
