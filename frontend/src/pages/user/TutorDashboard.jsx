@@ -9,10 +9,65 @@ const TutorDashboard = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
+    const [activeTab, setActiveTab] = useState('help-requests');
+    const [availableRequests, setAvailableRequests] = useState([]);
+    const [upcomingSessions, setUpcomingSessions] = useState([]);
+    const [availabilitySlots, setAvailabilitySlots] = useState([]);
+    const [fetchError, setFetchError] = useState('');
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
+    const formatDateTime = (value) => {
+        if (!value) {
+            return 'Not scheduled';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleString();
+    };
+
+    const mapRequestFromApi = (item) => ({
+        id: item.id,
+        student: item.studentName,
+        subject: `${item.subjectName} : ${item.topic}`,
+        time: formatDateTime(item.preferredDateTime),
+        raw: item
+    });
+
+    const mapSessionFromApi = (item) => ({
+        id: item.id,
+        title: item.requestTopic,
+        student: item.studentName,
+        time: formatDateTime(item.scheduledStartTime)
+    });
+
+    const mapAvailabilityFromApi = (item) => ({
+        id: item.id,
+        day: item.dayOfWeek,
+        time: `${item.startTime} - ${item.endTime}`,
+        type: item.isRecurring ? 'Recurring' : 'One-time'
+    });
+
+    const fetchPeerHelpData = async () => {
+        try {
+            setFetchError('');
+            const [availableRes, sessionsRes, availabilityRes] = await Promise.all([
+                api.get('/peerhelp/requests/available'),
+                api.get('/peerhelp/sessions/upcoming'),
+                api.get('/peerhelp/availability/me')
+            ]);
+
+            setAvailableRequests((availableRes.data?.data || []).map(mapRequestFromApi));
+            setUpcomingSessions((sessionsRes.data?.data || []).map(mapSessionFromApi));
+            setAvailabilitySlots((availabilityRes.data?.data || []).map(mapAvailabilityFromApi));
+        } catch (error) {
+            console.error('Error fetching peerhelp data:', error);
+            setFetchError(error.response?.data?.message || 'Unable to load live tutor data from backend.');
+            if (error.response?.status === 401) {
+                navigate('/login');
+            }
+        }
+    };
 
     const fetchDashboardData = async () => {
         try {
@@ -33,9 +88,15 @@ const TutorDashboard = () => {
                 navigate('/login');
             }
         } finally {
+            await fetchPeerHelpData();
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleLogout = async () => {
         await authService.logout();
@@ -43,11 +104,11 @@ const TutorDashboard = () => {
     };
 
     const handleAccept = (student) => {
-        alert(`Accepted help request from ${student}`);
+        alert(`You selected help request from ${student}. Session approval flow can be added next.`);
     };
 
     const handleDecline = (student) => {
-        alert(`Declined help request from ${student}`);
+        alert(`Decline action for ${student} is not exposed in current peerhelp API.`);
     };
 
     if (loading) {
@@ -74,10 +135,30 @@ const TutorDashboard = () => {
                     <div className="nav-section">
                         <h3>Teaching & Schedule</h3>
                         <ul>
-                            <li className="active">Help Requests</li>
-                            <li>My Sessions</li>
-                            <li>Availability</li>
-                            <li>Ratings & Feedback</li>
+                            <li
+                                className={activeTab === 'help-requests' ? 'active' : ''}
+                                onClick={() => setActiveTab('help-requests')}
+                            >
+                                Help Requests
+                            </li>
+                            <li
+                                className={activeTab === 'my-sessions' ? 'active' : ''}
+                                onClick={() => setActiveTab('my-sessions')}
+                            >
+                                My Sessions
+                            </li>
+                            <li
+                                className={activeTab === 'availability' ? 'active' : ''}
+                                onClick={() => setActiveTab('availability')}
+                            >
+                                Availability
+                            </li>
+                            <li
+                                className={activeTab === 'ratings' ? 'active' : ''}
+                                onClick={() => setActiveTab('ratings')}
+                            >
+                                Ratings & Feedback
+                            </li>
                         </ul>
                     </div>
 
@@ -100,7 +181,7 @@ const TutorDashboard = () => {
                     <div>
                         <h1>Welcome back, Dr. {user?.name || 'Mitchell'}!</h1>
                         <p className="header-subtitle">
-                            {dashboardData?.user?.department || 'Computer Science Department'} • {dashboardData?.user?.date || 'Tuesday, Oct 24'}
+                            {dashboardData?.user?.department || user?.email || 'Tutor Portal'}
                         </p>
                     </div>
                     <div className="header-actions">
@@ -111,28 +192,31 @@ const TutorDashboard = () => {
                 {/* Stats Cards */}
                 <div className="stats-grid">
                     <div className="stat-card">
-                        <h3>{dashboardData?.stats?.totalCompleted || 124}</h3>
-                        <p>Total Completed</p>
+                        <h3>{upcomingSessions.length}</h3>
+                        <p>Upcoming Sessions</p>
                     </div>
                     <div className="stat-card">
-                        <h3>{dashboardData?.stats?.averageRating || 4.9}</h3>
-                        <p>Average Rating</p>
+                        <h3>{availableRequests.length}</h3>
+                        <p>Available Requests</p>
                     </div>
                 </div>
 
+                {fetchError && <p className="header-subtitle">{fetchError}</p>}
+
+                {activeTab === 'help-requests' && (
                 <div className="dashboard-grid">
                     {/* Pending Help Requests */}
                     <div className="dashboard-card">
                         <div className="card-header">
                             <h2>Pending Help Requests</h2>
-                            <a href="#" className="view-all">View all →</a>
+                            <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
                         </div>
                         <div className="card-content">
-                            {(dashboardData?.pendingRequests || [
-                                { student: 'Alex Johnson', subject: 'Data Structures : AVL Trees', time: 'Tomorrow, 2:00 PM' },
-                                { student: 'Emma Davis', subject: 'Algorithms : Dynamic Programming', time: 'Thursday, 10:00 AM' }
-                            ]).map((request, index) => (
-                                <div key={index} className="request-item">
+                            {availableRequests.length === 0 && (
+                                <p className="header-subtitle">No live help requests found in database.</p>
+                            )}
+                            {availableRequests.map((request) => (
+                                <div key={request.id} className="request-item">
                                     <div className="request-info">
                                         <h3>{request.student}</h3>
                                         <p>{request.subject}</p>
@@ -161,22 +245,76 @@ const TutorDashboard = () => {
                     <div className="dashboard-card">
                         <div className="card-header">
                             <h2>Upcoming Sessions</h2>
-                            <a href="#" className="view-all">View schedule →</a>
+                            <button type="button" className="view-all" onClick={() => setActiveTab('my-sessions')}>View schedule →</button>
                         </div>
                         <div className="card-content">
-                            <div className="session-item">
-                                <h3>Data Structures Review</h3>
-                                <p>With: Alex Johnson</p>
-                                <span className="session-time">📅 Today, 4:00 PM</span>
-                            </div>
-                            <div className="session-item">
-                                <h3>Algorithms Tutoring</h3>
-                                <p>With: Emma Davis</p>
-                                <span className="session-time">📅 Tomorrow, 10:00 AM</span>
-                            </div>
+                            {upcomingSessions.length === 0 && (
+                                <p className="header-subtitle">No live upcoming sessions found in database.</p>
+                            )}
+                            {upcomingSessions.map((session) => (
+                                <div key={session.id} className="session-item">
+                                    <h3>{session.title}</h3>
+                                    <p>With: {session.student}</p>
+                                    <span className="session-time">📅 {session.time}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
+                )}
+
+                {activeTab === 'my-sessions' && (
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h2>My Upcoming Sessions</h2>
+                            <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
+                        </div>
+                        <div className="card-content">
+                            {upcomingSessions.length === 0 && (
+                                <p className="header-subtitle">No live upcoming sessions found in database.</p>
+                            )}
+                            {upcomingSessions.map((session) => (
+                                <div key={session.id} className="session-item">
+                                    <h3>{session.title}</h3>
+                                    <p>With: {session.student}</p>
+                                    <span className="session-time">📅 {session.time}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'availability' && (
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h2>My Availability</h2>
+                            <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
+                        </div>
+                        <div className="card-content">
+                            {availabilitySlots.length === 0 && (
+                                <p className="header-subtitle">No live availability slots found in database.</p>
+                            )}
+                            {availabilitySlots.map((slot) => (
+                                <div key={slot.id} className="session-item">
+                                    <h3>{slot.day}</h3>
+                                    <p>{slot.time}</p>
+                                    <span className="session-time">{slot.type}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'ratings' && (
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h2>Ratings & Feedback</h2>
+                        </div>
+                        <div className="card-content">
+                            <p className="header-subtitle">Ratings API integration can be added next from /api/peerhelp/ratings endpoints.</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
