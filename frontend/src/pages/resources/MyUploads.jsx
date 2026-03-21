@@ -11,6 +11,7 @@ const MyUploads = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchError, setSearchError] = useState('');
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState({ show: false, resourceId: null, resourceTitle: '' });
@@ -34,13 +35,19 @@ const MyUploads = () => {
     const getDatabaseUserId = (authUser) => {
         if (!authUser) return null;
 
+        // Validate authUser object
+        if (typeof authUser !== 'object') {
+            console.error('Invalid authUser object');
+            return null;
+        }
+
         const possibleIds = [
             authUser.id,
             authUser.userId,
             authUser._id,
             authUser.uid,
             authUser.sub
-        ].filter(id => id);
+        ].filter(id => id && typeof id === 'string' || typeof id === 'number');
 
         for (const id of possibleIds) {
             if (AUTH_TO_DB_ID_MAP[id]) {
@@ -53,21 +60,58 @@ const MyUploads = () => {
         }
 
         for (const id of possibleIds) {
-            if (/^\d+$/.test(id)) {
-                return id;
+            if (/^\d+$/.test(String(id))) {
+                return String(id);
             }
         }
 
         return null;
     };
 
+    // ============= SEARCH VALIDATION =============
+    const validateSearchTerm = (term) => {
+        if (term.length > 0 && term.length < 2) {
+            setSearchError('Search term must be at least 2 characters');
+            return false;
+        } else if (term.length > 50) {
+            setSearchError('Search term must be less than 50 characters');
+            return false;
+        } else if (/[<>{}()]/.test(term)) {
+            setSearchError('Search term contains invalid characters');
+            return false;
+        } else {
+            setSearchError('');
+            return true;
+        }
+    };
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        validateSearchTerm(value);
+    };
+
+    const clearSearch = () => {
+        setSearchTerm('');
+        setSearchError('');
+    };
+
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
         
+        // Validate user exists
         if (!currentUser) {
             navigate('/login');
             return;
         }
+        
+        // Validate user object structure
+        if (!currentUser.email && !currentUser.id && !currentUser.userId) {
+            setError('Invalid user data. Please log in again.');
+            setLoading(false);
+            return;
+        }
+        
         setUser(currentUser);
 
         const dbUserId = getDatabaseUserId(currentUser);
@@ -75,7 +119,7 @@ const MyUploads = () => {
         if (dbUserId) {
             fetchUploads(dbUserId);
         } else {
-            setError('Could not identify user. Please check your login.');
+            setError('Could not identify user. Please check your login or contact support.');
             setLoading(false);
         }
 
@@ -86,13 +130,36 @@ const MyUploads = () => {
         return () => clearTimeout(timer);
     }, []);
 
+    // ============= DATA VALIDATION =============
+    const validateUploadData = (data) => {
+        if (!data) return false;
+        
+        // Validate each upload has required fields
+        return data.every(upload => 
+            upload && 
+            typeof upload === 'object' &&
+            upload.id !== undefined &&
+            upload.title !== undefined
+        );
+    };
+
     const fetchUploads = async (userId) => {
         try {
             setLoading(true);
             setError(null);
             
+            // Validate userId
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+            
             const userIdStr = String(userId);
             const response = await api.get(`/resources/user/${userIdStr}`);
+            
+            // Validate response
+            if (!response || !response.data) {
+                throw new Error('Invalid response from server');
+            }
             
             let uploadsData = [];
             if (Array.isArray(response.data)) {
@@ -101,12 +168,18 @@ const MyUploads = () => {
                 uploadsData = response.data.content || response.data.data || [];
             }
             
+            // Validate uploads data structure
+            if (!validateUploadData(uploadsData)) {
+                console.warn('Some uploads have invalid data structure');
+            }
+            
             setUploads(uploadsData);
             
+            // Calculate stats with validation
             const pending = uploadsData.filter(u => u?.status === 'pending').length;
             const active = uploadsData.filter(u => u?.status === 'active').length;
-            const totalViews = uploadsData.reduce((sum, u) => sum + (u?.viewCount || 0), 0);
-            const totalDownloads = uploadsData.reduce((sum, u) => sum + (u?.downloadCount || 0), 0);
+            const totalViews = uploadsData.reduce((sum, u) => sum + (Number(u?.viewCount) || 0), 0);
+            const totalDownloads = uploadsData.reduce((sum, u) => sum + (Number(u?.downloadCount) || 0), 0);
             
             setStats({
                 total: uploadsData.length,
@@ -119,11 +192,16 @@ const MyUploads = () => {
         } catch (error) {
             console.error('Error fetching uploads:', error);
             
+            // Enhanced error handling
             if (error.response?.status === 404) {
                 setError('No uploads found. Start by uploading your first resource!');
             } else if (error.response?.status === 401) {
                 setError('Session expired. Please log in again.');
                 setTimeout(() => navigate('/login'), 2000);
+            } else if (error.response?.status === 500) {
+                setError('Server error. Please try again later.');
+            } else if (error.code === 'ECONNABORTED') {
+                setError('Request timeout. Please check your internet connection.');
             } else {
                 setError(error.response?.data?.message || error.message || 'Failed to fetch uploads');
             }
@@ -135,15 +213,33 @@ const MyUploads = () => {
     const handleDelete = async () => {
         const { resourceId } = deleteConfirm;
         
+        // Validate resource ID
+        if (!resourceId) {
+            setError('Invalid resource ID');
+            return;
+        }
+        
         try {
             await api.delete(`/resources/${resourceId}`);
             const dbUserId = getDatabaseUserId(user);
+            
+            if (!dbUserId) {
+                throw new Error('Unable to identify user');
+            }
+            
             await fetchUploads(dbUserId);
             setSuccessMessage('✓ Resource deleted successfully!');
             setDeleteConfirm({ show: false, resourceId: null, resourceTitle: '' });
         } catch (error) {
             console.error('Error deleting resource:', error);
-            setError('Failed to delete resource. Please try again.');
+            
+            if (error.response?.status === 404) {
+                setError('Resource not found. It may have been already deleted.');
+            } else if (error.response?.status === 403) {
+                setError('You do not have permission to delete this resource.');
+            } else {
+                setError('Failed to delete resource. Please try again.');
+            }
         }
     };
 
@@ -152,10 +248,20 @@ const MyUploads = () => {
     };
 
     const handleEdit = (resourceId) => {
+        // Validate resource ID
+        if (!resourceId) {
+            setError('Invalid resource ID');
+            return;
+        }
         navigate(`/resources/edit/${resourceId}`);
     };
 
     const handleView = (resourceId) => {
+        // Validate resource ID
+        if (!resourceId) {
+            setError('Invalid resource ID');
+            return;
+        }
         navigate(`/resources/${resourceId}`);
     };
 
@@ -163,10 +269,15 @@ const MyUploads = () => {
         const dbUserId = getDatabaseUserId(user);
         if (dbUserId) {
             fetchUploads(dbUserId);
+        } else {
+            setError('Unable to identify user. Please log in again.');
         }
     };
 
     const getStatusBadgeClass = (status) => {
+        // Validate status
+        if (!status) return 'status-badge';
+        
         switch (status?.toLowerCase()) {
             case 'active': return 'status-badge active';
             case 'pending': return 'status-badge pending';
@@ -177,6 +288,9 @@ const MyUploads = () => {
     };
 
     const getTypeIcon = (type) => {
+        // Validate type
+        if (!type) return '📦';
+        
         switch (type?.toLowerCase()) {
             case 'pdf': return '📄';
             case 'document': return '📝';
@@ -190,9 +304,17 @@ const MyUploads = () => {
     };
 
     const formatDate = (dateString) => {
+        // Validate date
         if (!dateString) return 'N/A';
+        
         try {
             const date = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                return 'Invalid date';
+            }
+            
             const now = new Date();
             const diffTime = Math.abs(now - date);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -211,17 +333,19 @@ const MyUploads = () => {
     };
 
     const renderStars = (rating) => {
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
+        // Validate rating
+        const validRating = Number(rating) || 0;
+        const fullStars = Math.floor(validRating);
+        const hasHalfStar = validRating % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
         
         return (
             <span className="stars-container">
-                {[...Array(fullStars)].map((_, i) => (
+                {[...Array(Math.max(0, fullStars))].map((_, i) => (
                     <span key={`full-${i}`} className="star full">★</span>
                 ))}
                 {hasHalfStar && <span className="star half">½</span>}
-                {[...Array(emptyStars)].map((_, i) => (
+                {[...Array(Math.max(0, emptyStars))].map((_, i) => (
                     <span key={`empty-${i}`} className="star empty">☆</span>
                 ))}
             </span>
@@ -229,9 +353,12 @@ const MyUploads = () => {
     };
 
     const filteredUploads = uploads.filter(upload => {
+        // Skip if upload is invalid
+        if (!upload) return false;
+        
         if (filter !== 'all' && upload.status !== filter) return false;
         
-        if (searchTerm) {
+        if (searchTerm && validateSearchTerm(searchTerm)) {
             const term = searchTerm.toLowerCase();
             return (upload.title?.toLowerCase() || '').includes(term) ||
                    (upload.subject?.toLowerCase() || '').includes(term) ||
@@ -241,11 +368,14 @@ const MyUploads = () => {
         
         return true;
     }).sort((a, b) => {
+        // Validate sorting
+        if (!a || !b) return 0;
+        
         switch (sortBy) {
             case 'date_desc':
-                return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+                return new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0);
             case 'date_asc':
-                return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+                return new Date(a.uploadedAt || 0) - new Date(b.uploadedAt || 0);
             case 'title_asc':
                 return (a.title || '').localeCompare(b.title || '');
             case 'title_desc':
@@ -412,22 +542,25 @@ const MyUploads = () => {
 
                 {/* Filters and Search */}
                 <div className="filters-section">
-                    {/* Search Box */}
+                    {/* Search Box with Validation */}
                     <div className="search-box-wrapper">
                         <input
                             type="text"
                             placeholder="Search your uploads by title, subject, or course code..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
+                            onChange={handleSearchChange}
+                            className={`search-input ${searchError ? 'error' : ''}`}
                         />
                         {searchTerm && (
                             <button 
                                 className="clear-search-btn"
-                                onClick={() => setSearchTerm('')}
+                                onClick={clearSearch}
                             >
                                 ✕
                             </button>
+                        )}
+                        {searchError && (
+                            <div className="search-error">{searchError}</div>
                         )}
                     </div>
                     
@@ -476,7 +609,7 @@ const MyUploads = () => {
                             </button>
                         )}
                         {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="secondary-btn">
+                            <button onClick={clearSearch} className="secondary-btn">
                                 Clear Search
                             </button>
                         )}
