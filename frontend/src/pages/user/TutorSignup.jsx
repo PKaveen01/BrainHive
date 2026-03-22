@@ -21,22 +21,29 @@ const TutorSignup = () => {
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
     const [subjects, setSubjects] = useState([]);
-    const [availability, setAvailability] = useState({
-        monday: [],
-        tuesday: [],
-        wednesday: [],
-        thursday: [],
-        friday: [],
-        saturday: [],
-        sunday: []
-    });
+    
+    // State for availability slots (simplified for demo)
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 
     // Fetch subjects on component mount
     React.useEffect(() => {
         const fetchSubjects = async () => {
             try {
-                const data = await authService.getAllSubjects();
-                setSubjects(data);
+                // Dummy subjects for demo
+                const dummySubjects = [
+                    { id: 1, name: 'Data Structures' },
+                    { id: 2, name: 'Algorithms' },
+                    { id: 3, name: 'Database Systems' },
+                    { id: 4, name: 'Operating Systems' },
+                    { id: 5, name: 'Computer Networks' },
+                    { id: 6, name: 'Web Development' },
+                    { id: 7, name: 'Software Engineering' },
+                    { id: 8, name: 'Artificial Intelligence' },
+                    { id: 9, name: 'Machine Learning' },
+                    { id: 10, name: 'Cybersecurity' },
+                ];
+                setSubjects(dummySubjects);
             } catch (error) {
                 console.error('Error fetching subjects:', error);
             }
@@ -146,7 +153,7 @@ const TutorSignup = () => {
             const response = await authService.registerTutor(formData);
             
             if (response && response.success) {
-                // Store user data and redirect to login
+                // Show success message and redirect
                 alert('Tutor registration successful! Your account will be reviewed by an admin. You can login after approval.');
                 navigate('/login');
             } else {
@@ -166,182 +173,278 @@ const TutorSignup = () => {
         }
     };
 
+    // Password strength indicators
+    const passwordStrength = {
+        length: formData.password.length >= 8,
+        uppercase: /[A-Z]/.test(formData.password),
+        number: /[0-9]/.test(formData.password)
+    };
+    const strengthCount = Object.values(passwordStrength).filter(Boolean).length;
+
     return (
-        <div className="signup-container tutor-signup">
-            <div className="signup-card">
-                <div className="signup-header">
-                    <h1>Register as Tutor</h1>
-                    <p>Share your expertise and help students succeed</p>
-                    <div className="warning-banner">
-                        ⚠️ Your account will be reviewed by an admin before you can accept tutoring requests. 
-                        This typically takes 24-48 hours.
+        <div className="auth-container">
+            <div className="auth-card tutor-signup-card">
+                <div className="auth-header">
+                    <div className="auth-logo">🧠 BrainHive</div>
+                    <h2>Register as Tutor</h2>
+                    <p className="auth-subtitle">Share your expertise and help students succeed</p>
+                    <div className="signup-badge tutor-badge">
+                        👨‍🏫 Tutor Registration
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="signup-form">
-                    <h2>Account Information</h2>
-                    
-                    <div className="form-group">
-                        <label htmlFor="fullName">Full Name</label>
-                        <input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            placeholder="Dr. Sarah Mitchell"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            className={errors.fullName ? 'error' : ''}
-                            disabled={loading}
-                        />
-                        {errors.fullName && <span className="error-message">{errors.fullName}</span>}
+                {/* Verification Warning Banner */}
+                <div className="alert alert-warning">
+                    <span className="alert-icon">⚠️</span>
+                    <div className="alert-content">
+                        <strong>Account Verification Required</strong>
+                        <p>Your account will be reviewed by an admin before you can accept tutoring requests. This typically takes 24-48 hours.</p>
                     </div>
+                </div>
 
-                    <div className="form-group">
-                        <label htmlFor="email">University Email</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="sarah.m@university.edu"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className={errors.email ? 'error' : ''}
-                            disabled={loading}
-                        />
-                        {errors.email && <span className="error-message">{errors.email}</span>}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="**********"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className={errors.password ? 'error' : ''}
-                            disabled={loading}
-                        />
-                        {errors.password && <span className="error-message">{errors.password}</span>}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="confirmPassword">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            placeholder="**********"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            className={errors.confirmPassword ? 'error' : ''}
-                            disabled={loading}
-                        />
-                        {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-                    </div>
-
-                    <h2>Expertise & Verification</h2>
-
-                    <div className="form-group">
-                        <label htmlFor="qualification">Highest Qualification</label>
-                        <input
-                            type="text"
-                            id="qualification"
-                            name="qualification"
-                            placeholder="e.g., M.Sc. in Mathematics, PhD Candidate"
-                            value={formData.qualification}
-                            onChange={handleChange}
-                            className={errors.qualification ? 'error' : ''}
-                            disabled={loading}
-                        />
-                        {errors.qualification && <span className="error-message">{errors.qualification}</span>}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="yearsOfExperience">Years of Experience (Optional)</label>
-                        <input
-                            type="number"
-                            id="yearsOfExperience"
-                            name="yearsOfExperience"
-                            placeholder="e.g., 5"
-                            value={formData.yearsOfExperience}
-                            onChange={handleChange}
-                            disabled={loading}
-                            min="0"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Subjects You Can Teach *</label>
-                        <div className="subjects-grid">
-                            {subjects.map(subject => (
-                                <label key={subject.id} className="subject-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.expertSubjects.includes(subject.id)}
-                                        onChange={() => handleSubjectToggle(subject.id)}
-                                        disabled={loading}
-                                    />
-                                    <span>{subject.name}</span>
-                                </label>
-                            ))}
+                <form onSubmit={handleSubmit} className="auth-form">
+                    {/* Account Information Section */}
+                    <div className="form-section">
+                        <h3 className="section-title">Account Information</h3>
+                        
+                        <div className="form-group">
+                            <label>Full Name *</label>
+                            <div className="input-icon">
+                                <span className="icon">👤</span>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    placeholder="Dr. Sarah Mitchell"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    className={errors.fullName ? 'error' : ''}
+                                    disabled={loading}
+                                />
+                            </div>
+                            {errors.fullName && <span className="error-message">{errors.fullName}</span>}
                         </div>
-                        {errors.expertSubjects && <span className="error-message">{errors.expertSubjects}</span>}
+
+                        <div className="form-group">
+                            <label>University Email *</label>
+                            <div className="input-icon">
+                                <span className="icon">📧</span>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="sarah.mitchell@university.edu"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className={errors.email ? 'error' : ''}
+                                    disabled={loading}
+                                />
+                            </div>
+                            {errors.email && <span className="error-message">{errors.email}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Password *</label>
+                            <div className="input-icon">
+                                <span className="icon">🔒</span>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    placeholder="Create a strong password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className={errors.password ? 'error' : ''}
+                                    disabled={loading}
+                                />
+                            </div>
+                            {errors.password && <span className="error-message">{errors.password}</span>}
+                            
+                            {/* Password Strength Indicator */}
+                            {formData.password && (
+                                <div className="password-strength">
+                                    <div className="strength-bars">
+                                        <div className={`strength-bar ${strengthCount >= 1 ? 'active' : ''}`}></div>
+                                        <div className={`strength-bar ${strengthCount >= 2 ? 'active' : ''}`}></div>
+                                        <div className={`strength-bar ${strengthCount >= 3 ? 'active' : ''}`}></div>
+                                    </div>
+                                    <div className="strength-text">
+                                        {strengthCount === 0 && 'Very Weak'}
+                                        {strengthCount === 1 && 'Weak'}
+                                        {strengthCount === 2 && 'Medium'}
+                                        {strengthCount === 3 && 'Strong'}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="password-requirements">
+                                <p>Password must contain:</p>
+                                <ul>
+                                    <li className={passwordStrength.length ? 'valid' : ''}>
+                                        {passwordStrength.length ? '✓' : '○'} At least 8 characters
+                                    </li>
+                                    <li className={passwordStrength.uppercase ? 'valid' : ''}>
+                                        {passwordStrength.uppercase ? '✓' : '○'} At least one uppercase letter
+                                    </li>
+                                    <li className={passwordStrength.number ? 'valid' : ''}>
+                                        {passwordStrength.number ? '✓' : '○'} At least one number
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Confirm Password *</label>
+                            <div className="input-icon">
+                                <span className="icon">✓</span>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    placeholder="Confirm your password"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    className={errors.confirmPassword ? 'error' : ''}
+                                    disabled={loading}
+                                />
+                            </div>
+                            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="bio">Short Bio / Teaching Summary</label>
-                        <textarea
-                            id="bio"
-                            name="bio"
-                            rows="4"
-                            placeholder="Describe your teaching experience and approach..."
-                            value={formData.bio}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength="1000"
-                        />
-                        <small>{formData.bio.length}/1000 characters</small>
+                    {/* Expertise & Verification Section */}
+                    <div className="form-section">
+                        <h3 className="section-title">Expertise & Verification</h3>
+
+                        <div className="form-group">
+                            <label>Highest Qualification *</label>
+                            <div className="input-icon">
+                                <span className="icon">🎓</span>
+                                <input
+                                    type="text"
+                                    name="qualification"
+                                    placeholder="e.g., M.Sc. in Computer Science, PhD Candidate"
+                                    value={formData.qualification}
+                                    onChange={handleChange}
+                                    className={errors.qualification ? 'error' : ''}
+                                    disabled={loading}
+                                />
+                            </div>
+                            {errors.qualification && <span className="error-message">{errors.qualification}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Years of Experience (Optional)</label>
+                            <div className="input-icon">
+                                <span className="icon">📅</span>
+                                <input
+                                    type="number"
+                                    name="yearsOfExperience"
+                                    placeholder="e.g., 5"
+                                    value={formData.yearsOfExperience}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Subjects You Can Teach *</label>
+                            <div className="subjects-grid">
+                                {subjects.map(subject => (
+                                    <label key={subject.id} className="subject-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.expertSubjects.includes(subject.id)}
+                                            onChange={() => handleSubjectToggle(subject.id)}
+                                            disabled={loading}
+                                        />
+                                        <span>{subject.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            {errors.expertSubjects && <span className="error-message">{errors.expertSubjects}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Short Bio / Teaching Summary</label>
+                            <textarea
+                                name="bio"
+                                rows="4"
+                                placeholder="Describe your teaching experience, approach, and what makes you a great tutor..."
+                                value={formData.bio}
+                                onChange={handleChange}
+                                disabled={loading}
+                                maxLength="1000"
+                                className="bio-textarea"
+                            />
+                            <div className="char-counter">
+                                {formData.bio.length}/1000 characters
+                            </div>
+                        </div>
                     </div>
 
-                    <h2>Availability & Settings</h2>
+                    {/* Availability & Settings Section */}
+                    <div className="form-section">
+                        <h3 className="section-title">Availability & Settings</h3>
 
-                    <div className="form-group">
-                        <label htmlFor="maxConcurrentStudents">Max Concurrent Students</label>
-                        <input
-                            type="number"
-                            id="maxConcurrentStudents"
-                            name="maxConcurrentStudents"
-                            value={formData.maxConcurrentStudents}
-                            onChange={handleChange}
-                            disabled={loading}
-                            min="1"
-                            max="20"
-                        />
+                        <div className="form-group">
+                            <label>Max Concurrent Students</label>
+                            <div className="input-icon">
+                                <span className="icon">👥</span>
+                                <input
+                                    type="number"
+                                    name="maxConcurrentStudents"
+                                    value={formData.maxConcurrentStudents}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    min="1"
+                                    max="20"
+                                />
+                            </div>
+                            <small className="form-hint">Maximum number of students you can tutor simultaneously</small>
+                        </div>
                     </div>
 
                     {serverError && (
-                        <div className="server-error">
-                            <strong>Error:</strong> {serverError}
+                        <div className="alert alert-error">
+                            <span className="alert-icon">⚠️</span>
+                            {serverError}
                         </div>
                     )}
 
                     <button 
                         type="submit" 
-                        className="signup-btn"
+                        className="btn-primary tutor-submit-btn"
                         disabled={loading}
                     >
                         {loading ? 'Creating Account...' : 'Create Tutor Account →'}
                     </button>
                 </form>
 
-                <div className="signup-footer">
-                    <p>Already have an account? <Link to="/login">Sign in</Link></p>
-                    <p className="register-link">
-                        Want to register as a student instead? <Link to="/register/student">Register as Student</Link>
-                    </p>
+                <div className="register-section">
+                    <p>Already have an account? <Link to="/login" className="auth-link">Sign in</Link></p>
+                    <div className="alternative-registration">
+                        <p className="alternative-text">Want to register as a student instead?</p>
+                        <Link to="/register/student" className="alternative-link student-link">
+                            Register as Student →
+                        </Link>
+                    </div>
                 </div>
+
+                <div className="help-section">
+                    <p>Need help with registration?</p>
+                    <button 
+                        type="button" 
+                        className="link-button"
+                        onClick={() => window.location.href = 'mailto:support@brainhive.com'}
+                    >
+                        Contact Support
+                    </button>
+                </div>
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="auth-decoration">
+                <div className="decoration-circle"></div>
+                <div className="decoration-circle-2"></div>
             </div>
         </div>
     );

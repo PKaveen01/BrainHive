@@ -102,11 +102,10 @@ const StudentSignup = () => {
                 localStorage.setItem('user', JSON.stringify(userData));
                 console.log('User stored in localStorage:', userData);
                 
-                // FIXED: Redirect to the correct route based on profile completion
+                // Redirect to the correct route based on profile completion
                 if (response.profileCompleted) {
                     navigate('/dashboard/student');
                 } else {
-                    // Use the correct route path that matches App.js
                     navigate('/complete-profile/student');
                 }
             } else {
@@ -127,102 +126,175 @@ const StudentSignup = () => {
         }
     };
 
+    // Password strength indicators
+    const passwordStrength = {
+        length: formData.password.length >= 8,
+        uppercase: /[A-Z]/.test(formData.password),
+        number: /[0-9]/.test(formData.password)
+    };
+
+    const strengthCount = Object.values(passwordStrength).filter(Boolean).length;
+
     return (
-        <div className="signup-container">
-            <div className="signup-card">
-                <div className="signup-header">
-                    <h1>Create your account</h1>
-                    <p>Join thousands of students on BrainHive</p>
-                    <p className="signup-note">
-                        Your academic profile will be completed after signup to personalize your experience.
-                    </p>
+        <div className="auth-container">
+            <div className="auth-card">
+                <div className="auth-header">
+                    <div className="auth-logo">🧠 BrainHive</div>
+                    <h2>Create Student Account</h2>
+                    <p className="auth-subtitle">Join thousands of students on BrainHive</p>
+                    <div className="signup-badge student-badge">
+                        🎓 Student Registration
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="signup-form">
+                <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
-                        <label htmlFor="fullName">Full Name</label>
-                        <input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            placeholder="Alex Johnson"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            className={errors.fullName ? 'error' : ''}
-                            disabled={loading}
-                        />
+                        <label>Full Name</label>
+                        <div className="input-icon">
+                            <span className="icon">👤</span>
+                            <input
+                                type="text"
+                                name="fullName"
+                                placeholder="Alex Johnson"
+                                value={formData.fullName}
+                                onChange={handleChange}
+                                className={errors.fullName ? 'error' : ''}
+                                disabled={loading}
+                            />
+                        </div>
                         {errors.fullName && <span className="error-message">{errors.fullName}</span>}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="email">University Email</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="student@university.edu"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className={errors.email ? 'error' : ''}
-                            disabled={loading}
-                        />
+                        <label>University Email</label>
+                        <div className="input-icon">
+                            <span className="icon">📧</span>
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="student@university.edu"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className={errors.email ? 'error' : ''}
+                                disabled={loading}
+                            />
+                        </div>
                         {errors.email && <span className="error-message">{errors.email}</span>}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="**********"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className={errors.password ? 'error' : ''}
-                            disabled={loading}
-                        />
+                        <label>Password</label>
+                        <div className="input-icon">
+                            <span className="icon">🔒</span>
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Create a strong password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className={errors.password ? 'error' : ''}
+                                disabled={loading}
+                            />
+                        </div>
                         {errors.password && <span className="error-message">{errors.password}</span>}
-                        <small className="password-hint">
-                            Password must be at least 8 characters with 1 uppercase letter and 1 number
-                        </small>
+                        
+                        {/* Password Strength Indicator */}
+                        {formData.password && (
+                            <div className="password-strength">
+                                <div className="strength-bars">
+                                    <div className={`strength-bar ${strengthCount >= 1 ? 'active' : ''}`}></div>
+                                    <div className={`strength-bar ${strengthCount >= 2 ? 'active' : ''}`}></div>
+                                    <div className={`strength-bar ${strengthCount >= 3 ? 'active' : ''}`}></div>
+                                </div>
+                                <div className="strength-text">
+                                    {strengthCount === 0 && 'Very Weak'}
+                                    {strengthCount === 1 && 'Weak'}
+                                    {strengthCount === 2 && 'Medium'}
+                                    {strengthCount === 3 && 'Strong'}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="password-requirements">
+                            <p>Password must contain:</p>
+                            <ul>
+                                <li className={passwordStrength.length ? 'valid' : ''}>
+                                    {passwordStrength.length ? '✓' : '○'} At least 8 characters
+                                </li>
+                                <li className={passwordStrength.uppercase ? 'valid' : ''}>
+                                    {passwordStrength.uppercase ? '✓' : '○'} At least one uppercase letter
+                                </li>
+                                <li className={passwordStrength.number ? 'valid' : ''}>
+                                    {passwordStrength.number ? '✓' : '○'} At least one number
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="confirmPassword">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            placeholder="**********"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            className={errors.confirmPassword ? 'error' : ''}
-                            disabled={loading}
-                        />
+                        <label>Confirm Password</label>
+                        <div className="input-icon">
+                            <span className="icon">✓</span>
+                            <input
+                                type="password"
+                                name="confirmPassword"
+                                placeholder="Confirm your password"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                className={errors.confirmPassword ? 'error' : ''}
+                                disabled={loading}
+                            />
+                        </div>
                         {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                     </div>
 
                     {serverError && (
-                        <div className="server-error">
-                            <strong>Error:</strong> {serverError}
+                        <div className="alert alert-error">
+                            <span className="alert-icon">⚠️</span>
+                            {serverError}
                         </div>
                     )}
 
+                    <div className="signup-note">
+                        <span className="note-icon">📝</span>
+                        <p>Your academic profile will be completed after signup to personalize your experience.</p>
+                    </div>
+
                     <button 
                         type="submit" 
-                        className="signup-btn"
+                        className="btn-primary"
                         disabled={loading}
                     >
                         {loading ? 'Creating Account...' : 'Create Account →'}
                     </button>
                 </form>
 
-                <div className="signup-footer">
-                    <p>Already have an account? <Link to="/login">Sign in</Link></p>
-                    <p className="register-link">
-                        Want to register as a tutor instead? <Link to="/register/tutor">Register as Tutor</Link>
-                    </p>
+                <div className="register-section">
+                    <p>Already have an account? <Link to="/login" className="auth-link">Sign in</Link></p>
+                    <div className="alternative-registration">
+                        <p className="alternative-text">Want to register as a tutor instead?</p>
+                        <Link to="/register/tutor" className="alternative-link">
+                            Register as Tutor →
+                        </Link>
+                    </div>
                 </div>
+
+                <div className="help-section">
+                    <p>Need help?</p>
+                    <button 
+                        type="button" 
+                        className="link-button"
+                        onClick={() => window.location.href = 'mailto:support@brainhive.com'}
+                    >
+                        Contact Support
+                    </button>
+                </div>
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="auth-decoration">
+                <div className="decoration-circle"></div>
+                <div className="decoration-circle-2"></div>
             </div>
         </div>
     );

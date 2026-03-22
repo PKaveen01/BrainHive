@@ -15,7 +15,7 @@ const Login = () => {
 
     const handleRoleChange = (selectedRole) => {
         setRole(selectedRole);
-        setError(''); // Clear error when switching roles
+        setError('');
     };
 
     const handleInputChange = (e) => {
@@ -23,7 +23,16 @@ const Login = () => {
             ...formData,
             [e.target.name]: e.target.value
         });
-        setError(''); // Clear error when typing
+        setError('');
+    };
+
+    // Check if it's admin login
+    const checkAdminLogin = (email, password) => {
+        // Admin credentials
+        const adminEmail = 'admin@brainhive.com';
+        const adminPassword = 'Admin123';
+        
+        return email === adminEmail && password === adminPassword;
     };
 
     const handleSubmit = async (e) => {
@@ -31,8 +40,27 @@ const Login = () => {
         setLoading(true);
         setError('');
 
-        console.log('Attempting login with:', { email: formData.email, role }); // Debug log
+        console.log('Attempting login with:', { email: formData.email, role });
 
+        // Check for admin login first
+        if (checkAdminLogin(formData.email, formData.password)) {
+            console.log('Admin login detected, redirecting to admin dashboard');
+            // Store admin info in localStorage
+            const adminData = {
+                name: 'Admin User',
+                email: formData.email,
+                role: 'ADMIN',
+                isAdmin: true
+            };
+            localStorage.setItem('user', JSON.stringify(adminData));
+            localStorage.setItem('adminAuthenticated', 'true');
+            
+            setLoading(false);
+            navigate('/dashboard/admin');
+            return;
+        }
+
+        // If not admin, proceed with normal login
         try {
             const response = await authService.login(
                 formData.email,
@@ -40,7 +68,7 @@ const Login = () => {
                 role
             );
 
-            console.log('Login response:', response); // Debug log
+            console.log('Login response:', response);
 
             if (response && response.success) {
                 console.log('Login successful, redirecting to:', response.redirectUrl);
@@ -67,91 +95,112 @@ const Login = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <div className="login-header">
-                    <h1>Welcome back</h1>
-                    <p>Sign in to your academic workspace</p>
+        <div className="auth-container">
+            <div className="auth-card">
+                <div className="auth-header">
+                    <div className="auth-logo">🧠 BrainHive</div>
+                    <h2>Welcome back</h2>
+                    <p className="auth-subtitle">Sign in to your academic workspace</p>
                 </div>
 
-                <div className="role-selector">
-                    <button
-                        type="button"
-                        className={`role-btn ${role === 'STUDENT' ? 'active' : ''}`}
-                        onClick={() => handleRoleChange('STUDENT')}
-                    >
-                        Student
-                    </button>
-                    <button
-                        type="button"
-                        className={`role-btn ${role === 'TUTOR' ? 'active' : ''}`}
-                        onClick={() => handleRoleChange('TUTOR')}
-                    >
-                        Tutor
-                    </button>
+                {/* Role Selector with Styled Toggle */}
+                <div className="role-selector-container">
+                    <div className="role-selector">
+                        <button
+                            type="button"
+                            className={`role-btn ${role === 'STUDENT' ? 'active' : ''}`}
+                            onClick={() => handleRoleChange('STUDENT')}
+                            disabled={loading}
+                        >
+                            <span className="role-icon">🎓</span>
+                            Student
+                        </button>
+                        <button
+                            type="button"
+                            className={`role-btn ${role === 'TUTOR' ? 'active' : ''}`}
+                            onClick={() => handleRoleChange('TUTOR')}
+                            disabled={loading}
+                        >
+                            <span className="role-icon">👨‍🏫</span>
+                            Tutor
+                        </button>
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="login-form">
+                <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label>University Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder={role === 'STUDENT' ? 'student@university.edu' : 'tutor@university.edu'}
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
-                            disabled={loading}
-                        />
+                        <div className="input-icon">
+                            <span className="icon">📧</span>
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder={role === 'STUDENT' ? 'student@university.edu' : 'tutor@university.edu'}
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                required
+                                disabled={loading}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
                         <label>Password</label>
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="**********"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            required
-                            disabled={loading}
-                        />
+                        <div className="input-icon">
+                            <span className="icon">🔒</span>
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                required
+                                disabled={loading}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-options">
                         <label className="remember-me">
-                            <input type="checkbox" disabled={loading} /> Remember me
+                            <input type="checkbox" disabled={loading} />
+                            <span className="checkmark"></span>
+                            Remember me
                         </label>
-                        <a href="/forgot-password" className="forgot-password">
-                            Forgot your password?
+                        <a href="/forgot-password" className="forgot-password-link">
+                            Forgot password?
                         </a>
                     </div>
 
                     {error && (
-                        <div className="error-message">
-                            <strong>Error:</strong> {error}
+                        <div className="alert alert-error">
+                            <span className="alert-icon">⚠️</span>
+                            {error}
                         </div>
                     )}
 
                     <button 
                         type="submit" 
-                        className="signin-btn"
+                        className="btn-primary"
                         disabled={loading}
                     >
                         {loading ? 'Signing in...' : 'Sign in →'}
                     </button>
                 </form>
 
-                <div className="register-links">
+                <div className="register-section">
                     <p>Don't have an account?</p>
                     <div className="register-buttons">
                         <button 
+                            type="button"
+                            className="register-btn student-btn"
                             onClick={() => navigate('/register/student')}
                             disabled={loading}
                         >
                             Register as Student
                         </button>
                         <button 
+                            type="button"
+                            className="register-btn tutor-btn"
                             onClick={() => navigate('/register/tutor')}
                             disabled={loading}
                         >
@@ -159,6 +208,23 @@ const Login = () => {
                         </button>
                     </div>
                 </div>
+
+                <div className="help-section">
+                    <p>Need help?</p>
+                    <button 
+                        type="button" 
+                        className="link-button"
+                        onClick={() => window.location.href = 'mailto:support@brainhive.com'}
+                    >
+                        Contact Support
+                    </button>
+                </div>
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="auth-decoration">
+                <div className="decoration-circle"></div>
+                <div className="decoration-circle-2"></div>
             </div>
         </div>
     );

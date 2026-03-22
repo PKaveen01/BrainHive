@@ -14,6 +14,7 @@ import StudentProfileEdit from './pages/user/StudentProfileEdit';
 import TutorProfileView from './pages/user/TutorProfileView';
 import TutorProfileEdit from './pages/user/TutorProfileEdit';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import AdminDashboard from './pages/user/AdminDashboard';
 
 function App() {
   console.log('App is rendering');
@@ -34,6 +35,7 @@ function App() {
           <Route path="/tutor/profile" element={<TutorProfileView />} />
           <Route path="/tutor/profile/edit" element={<TutorProfileEdit />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/dashboard/admin" element={<AdminDashboard />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
