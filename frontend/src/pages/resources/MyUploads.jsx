@@ -35,7 +35,6 @@ const MyUploads = () => {
     const getDatabaseUserId = (authUser) => {
         if (!authUser) return null;
 
-        // Validate authUser object
         if (typeof authUser !== 'object') {
             console.error('Invalid authUser object');
             return null;
@@ -99,13 +98,11 @@ const MyUploads = () => {
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
         
-        // Validate user exists
         if (!currentUser) {
             navigate('/login');
             return;
         }
         
-        // Validate user object structure
         if (!currentUser.email && !currentUser.id && !currentUser.userId) {
             setError('Invalid user data. Please log in again.');
             setLoading(false);
@@ -134,7 +131,6 @@ const MyUploads = () => {
     const validateUploadData = (data) => {
         if (!data) return false;
         
-        // Validate each upload has required fields
         return data.every(upload => 
             upload && 
             typeof upload === 'object' &&
@@ -148,7 +144,6 @@ const MyUploads = () => {
             setLoading(true);
             setError(null);
             
-            // Validate userId
             if (!userId) {
                 throw new Error('User ID is required');
             }
@@ -156,7 +151,6 @@ const MyUploads = () => {
             const userIdStr = String(userId);
             const response = await api.get(`/resources/user/${userIdStr}`);
             
-            // Validate response
             if (!response || !response.data) {
                 throw new Error('Invalid response from server');
             }
@@ -168,14 +162,12 @@ const MyUploads = () => {
                 uploadsData = response.data.content || response.data.data || [];
             }
             
-            // Validate uploads data structure
             if (!validateUploadData(uploadsData)) {
                 console.warn('Some uploads have invalid data structure');
             }
             
             setUploads(uploadsData);
             
-            // Calculate stats with validation
             const pending = uploadsData.filter(u => u?.status === 'pending').length;
             const active = uploadsData.filter(u => u?.status === 'active').length;
             const totalViews = uploadsData.reduce((sum, u) => sum + (Number(u?.viewCount) || 0), 0);
@@ -192,7 +184,6 @@ const MyUploads = () => {
         } catch (error) {
             console.error('Error fetching uploads:', error);
             
-            // Enhanced error handling
             if (error.response?.status === 404) {
                 setError('No uploads found. Start by uploading your first resource!');
             } else if (error.response?.status === 401) {
@@ -213,7 +204,6 @@ const MyUploads = () => {
     const handleDelete = async () => {
         const { resourceId } = deleteConfirm;
         
-        // Validate resource ID
         if (!resourceId) {
             setError('Invalid resource ID');
             return;
@@ -228,7 +218,7 @@ const MyUploads = () => {
             }
             
             await fetchUploads(dbUserId);
-            setSuccessMessage('✓ Resource deleted successfully!');
+            setSuccessMessage('Resource deleted successfully!');
             setDeleteConfirm({ show: false, resourceId: null, resourceTitle: '' });
         } catch (error) {
             console.error('Error deleting resource:', error);
@@ -248,7 +238,6 @@ const MyUploads = () => {
     };
 
     const handleEdit = (resourceId) => {
-        // Validate resource ID
         if (!resourceId) {
             setError('Invalid resource ID');
             return;
@@ -257,7 +246,6 @@ const MyUploads = () => {
     };
 
     const handleView = (resourceId) => {
-        // Validate resource ID
         if (!resourceId) {
             setError('Invalid resource ID');
             return;
@@ -275,7 +263,6 @@ const MyUploads = () => {
     };
 
     const getStatusBadgeClass = (status) => {
-        // Validate status
         if (!status) return 'status-badge';
         
         switch (status?.toLowerCase()) {
@@ -287,30 +274,27 @@ const MyUploads = () => {
         }
     };
 
-    const getTypeIcon = (type) => {
-        // Validate type
-        if (!type) return '📦';
+    const getFileTypeLabel = (type) => {
+        if (!type) return 'Document';
         
         switch (type?.toLowerCase()) {
-            case 'pdf': return '📄';
-            case 'document': return '📝';
-            case 'presentation': return '📊';
-            case 'image': return '🖼️';
-            case 'video': return '🎥';
-            case 'link': return '🔗';
-            case 'article': return '📰';
-            default: return '📦';
+            case 'pdf': return 'PDF';
+            case 'document': return 'Document';
+            case 'presentation': return 'Presentation';
+            case 'image': return 'Image';
+            case 'video': return 'Video';
+            case 'link': return 'Link';
+            case 'article': return 'Article';
+            default: return 'Document';
         }
     };
 
     const formatDate = (dateString) => {
-        // Validate date
         if (!dateString) return 'N/A';
         
         try {
             const date = new Date(dateString);
             
-            // Check if date is valid
             if (isNaN(date.getTime())) {
                 return 'Invalid date';
             }
@@ -333,7 +317,6 @@ const MyUploads = () => {
     };
 
     const renderStars = (rating) => {
-        // Validate rating
         const validRating = Number(rating) || 0;
         const fullStars = Math.floor(validRating);
         const hasHalfStar = validRating % 1 >= 0.5;
@@ -353,7 +336,6 @@ const MyUploads = () => {
     };
 
     const filteredUploads = uploads.filter(upload => {
-        // Skip if upload is invalid
         if (!upload) return false;
         
         if (filter !== 'all' && upload.status !== filter) return false;
@@ -368,7 +350,6 @@ const MyUploads = () => {
         
         return true;
     }).sort((a, b) => {
-        // Validate sorting
         if (!a || !b) return 0;
         
         switch (sortBy) {
@@ -502,7 +483,7 @@ const MyUploads = () => {
                 {/* Success Message */}
                 {successMessage && (
                     <div className="success-message">
-                        <span className="success-icon">✅</span>
+                        <span className="success-icon">✓</span>
                         {successMessage}
                     </div>
                 )}
@@ -511,7 +492,7 @@ const MyUploads = () => {
                 {error && (
                     <div className="error-message">
                         <div className="error-content">
-                            <span className="error-icon">⚠️</span>
+                            <span className="error-icon">⚠</span>
                             <span><strong>Error:</strong> {error}</span>
                             <button onClick={handleRetry} className="retry-btn">
                                 Retry
@@ -523,20 +504,51 @@ const MyUploads = () => {
                 {/* Stats Cards */}
                 <div className="stats-grid">
                     <div className="stat-card">
-                        <div className="stat-icon blue"><span className="icon">📚</span></div>
-                        <div><div className="stat-value">{stats.total}</div><div className="stat-label">Total Uploads</div></div>
+                        <div className="stat-icon blue">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="stat-value">{stats.total}</div>
+                            <div className="stat-label">Total Uploads</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-icon green"><span className="icon">✅</span></div>
-                        <div><div className="stat-value">{stats.active}</div><div className="stat-label">Active</div></div>
+                        <div className="stat-icon green">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="stat-value">{stats.active}</div>
+                            <div className="stat-label">Active</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-icon orange"><span className="icon">⏳</span></div>
-                        <div><div className="stat-value">{stats.pending}</div><div className="stat-label">Pending Review</div></div>
+                        <div className="stat-icon orange">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="stat-value">{stats.pending}</div>
+                            <div className="stat-label">Pending Review</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-icon purple"><span className="icon">👁️</span></div>
-                        <div><div className="stat-value">{stats.views}</div><div className="stat-label">Total Views</div></div>
+                        <div className="stat-icon purple">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2"/>
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="stat-value">{stats.views}</div>
+                            <div className="stat-label">Total Views</div>
+                        </div>
                     </div>
                 </div>
 
@@ -555,8 +567,9 @@ const MyUploads = () => {
                             <button 
                                 className="clear-search-btn"
                                 onClick={clearSearch}
+                                aria-label="Clear search"
                             >
-                                ✕
+                                ×
                             </button>
                         )}
                         {searchError && (
@@ -594,7 +607,12 @@ const MyUploads = () => {
                 {/* Uploads Grid */}
                 {filteredUploads.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">📭</div>
+                        <div className="empty-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="1.5"/>
+                                <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="1.5"/>
+                            </svg>
+                        </div>
                         <h3>No uploads found</h3>
                         <p>
                             {searchTerm 
@@ -617,13 +635,15 @@ const MyUploads = () => {
                 ) : (
                     <>
                         <div className="uploads-stats">
-                            📊 Showing {filteredUploads.length} of {uploads.length} uploads
+                            Showing {filteredUploads.length} of {uploads.length} uploads
                         </div>
                         <div className="uploads-grid">
                             {filteredUploads.map((upload) => (
                                 <div key={upload.id} className="upload-card" onClick={() => handleView(upload.id)}>
                                     <div className="upload-card-header">
-                                        <div className="upload-type-icon">{getTypeIcon(upload.type)}</div>
+                                        <div className="upload-type-badge">
+                                            {getFileTypeLabel(upload.type)}
+                                        </div>
                                         <div className="upload-info">
                                             <h3 className="upload-title">{upload.title}</h3>
                                             <div className="upload-meta">
@@ -659,16 +679,30 @@ const MyUploads = () => {
                                     
                                     <div className="upload-stats">
                                         <div className="stat-item" title="Upload Date">
-                                            <span>📅</span> {formatDate(upload.uploadedAt)}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                                                <path d="M8 2V6M16 2V6M3 10H21" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
+                                            {formatDate(upload.uploadedAt)}
                                         </div>
                                         <div className="stat-item" title="Views">
-                                            <span>👁️</span> {upload.viewCount || 0}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2"/>
+                                                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
+                                            {upload.viewCount || 0}
                                         </div>
                                         <div className="stat-item" title="Downloads">
-                                            <span>📥</span> {upload.downloadCount || 0}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 3V12M12 12L9 9M12 12L15 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                                <path d="M5 17V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V17" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
+                                            {upload.downloadCount || 0}
                                         </div>
                                         <div className="stat-item" title="Rating">
-                                            <span>⭐</span> 
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
                                             {renderStars(upload.averageRating || 0)}
                                             <span className="rating-count">
                                                 ({upload.ratingCount || 0})
@@ -679,24 +713,30 @@ const MyUploads = () => {
                                     <div className="upload-actions">
                                         <button 
                                             className="action-btn view"
-                                            onClick={() => handleView(upload.id)}
-                                            title="View details"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleView(upload.id);
+                                            }}
                                         >
-                                            👁️ View
+                                            View Details
                                         </button>
                                         <button 
                                             className="action-btn edit"
-                                            onClick={() => handleEdit(upload.id)}
-                                            title="Edit resource"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEdit(upload.id);
+                                            }}
                                         >
-                                            ✏️ Edit
+                                            Edit Resource
                                         </button>
                                         <button 
                                             className="action-btn delete"
-                                            onClick={() => setDeleteConfirm({ show: true, resourceId: upload.id, resourceTitle: upload.title })}
-                                            title="Delete resource"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirm({ show: true, resourceId: upload.id, resourceTitle: upload.title });
+                                            }}
                                         >
-                                            🗑️ Delete
+                                            Delete
                                         </button>
                                     </div>
                                 </div>
@@ -712,7 +752,7 @@ const MyUploads = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <h2>Confirm Delete</h2>
                         <p>Are you sure you want to delete <strong>"{deleteConfirm.resourceTitle}"</strong>?</p>
-                        <p className="warning-text">⚠️ This action cannot be undone.</p>
+                        <p className="warning-text">This action cannot be undone.</p>
                         <div className="modal-actions">
                             <button type="button" onClick={cancelDelete} className="cancel-btn">
                                 Cancel

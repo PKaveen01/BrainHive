@@ -56,313 +56,6 @@ const UploadResource = () => {
         downloads: 0
     });
 
-    // ============= DUMMY DATA FUNCTIONS =============
-    const loadDummyFormData = () => {
-        const dummySubjects = [
-            'Data Structures',
-            'Database Systems',
-            'Web Development',
-            'Artificial Intelligence',
-            'Software Engineering',
-            'Computer Networks',
-            'Machine Learning',
-            'Cyber Security'
-        ];
-        
-        const dummyTitles = [
-            'Complete Notes on Binary Trees',
-            'Database Normalization Explained with Examples',
-            'React Hooks Tutorial - Complete Guide',
-            'Machine Learning Algorithms Overview',
-            'Software Testing Best Practices',
-            'Computer Networks - OSI Model Explained',
-            'Introduction to Cyber Security',
-            'Full Stack Web Development Guide'
-        ];
-        
-        const dummyDescriptions = [
-            'Comprehensive notes covering all concepts of binary trees including traversal algorithms (inorder, preorder, postorder), BST implementation, AVL trees, and practice problems with detailed solutions.',
-            'Detailed explanation of database normalization forms (1NF, 2NF, 3NF, BCNF) with real-world examples, case studies, and practical implementation tips for database design.',
-            'Step-by-step guide to React Hooks (useState, useEffect, useContext, useReducer, useMemo) with practical examples, common patterns, and best practices for modern React development.',
-            'Overview of popular machine learning algorithms including linear regression, logistic regression, decision trees, random forests, and neural networks with implementation examples in Python.',
-            'Comprehensive guide to software testing including unit testing, integration testing, system testing, and end-to-end testing with Jest, React Testing Library, and Cypress.',
-            'Detailed explanation of OSI model layers (Physical, Data Link, Network, Transport, Session, Presentation, Application) with protocols and real-world examples.',
-            'Introduction to cyber security concepts including encryption, network security, application security, ethical hacking, and best practices for secure coding.',
-            'Complete guide to full stack web development covering HTML, CSS, JavaScript, React, Node.js, Express, MongoDB, and deployment strategies.'
-        ];
-        
-        const randomIndex = Math.floor(Math.random() * dummyTitles.length);
-        
-        setFormData({
-            title: dummyTitles[randomIndex],
-            description: dummyDescriptions[randomIndex],
-            subject: dummySubjects[Math.floor(Math.random() * dummySubjects.length)],
-            semester: semesters[Math.floor(Math.random() * semesters.length)],
-            type: uploadType,
-            file: null,
-            link: uploadType === 'link' || uploadType === 'video' || uploadType === 'article' 
-                ? 'https://example.com/sample-resource-' + (Math.floor(Math.random() * 1000)) 
-                : '',
-            tags: 'programming, notes, tutorial, examples, study-guide',
-            visibility: 'public',
-            courseCode: ['CS301', 'IT202', 'SE401', 'AI501', 'CS201', 'IT3040'][Math.floor(Math.random() * 6)],
-            allowRatings: true,
-            allowComments: true,
-            license: licenses[Math.floor(Math.random() * licenses.length)].value
-        });
-        
-        // Clear touched state for new form
-        setTouched({});
-        setFormErrors({});
-        
-        alert('✓ Dummy data loaded! You can now submit this as a test upload.');
-    };
-    
-    const quickFillPDF = () => {
-        setUploadType('pdf');
-        setFormData({
-            ...formData,
-            title: 'Sample PDF - Complete Lecture Notes',
-            description: 'This is a sample PDF document for demonstration purposes containing comprehensive lecture notes on the subject.',
-            subject: 'Web Development',
-            semester: 'Y2S1',
-            tags: 'demo, sample, notes, lecture',
-            courseCode: 'CS301',
-            type: 'pdf',
-            link: ''
-        });
-        setTouched({});
-        setFormErrors({});
-        alert('✓ Quick fill complete! Select a PDF file to upload or click upload to submit with file.');
-    };
-    
-    const quickFillLink = () => {
-        setUploadType('link');
-        setFormData({
-            ...formData,
-            title: 'Sample Link - Online Learning Resource',
-            description: 'This is a sample external link for demonstration purposes. Click the link to access valuable learning materials.',
-            subject: 'Software Engineering',
-            semester: 'Y3S2',
-            link: 'https://example.com/sample-learning-resource',
-            tags: 'demo, sample, link, resource',
-            courseCode: 'SE401',
-            type: 'link'
-        });
-        setTouched({});
-        setFormErrors({});
-        alert('✓ Quick fill complete! Click upload to submit this link resource.');
-    };
-    
-    const quickFillVideo = () => {
-        setUploadType('video');
-        setFormData({
-            ...formData,
-            title: 'Sample Video - Tutorial on React Hooks',
-            description: 'This is a sample video tutorial for demonstration purposes covering React Hooks concepts.',
-            subject: 'Web Development',
-            semester: 'Y3S1',
-            link: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            tags: 'demo, video, tutorial, react',
-            courseCode: 'CS401',
-            type: 'video'
-        });
-        setTouched({});
-        setFormErrors({});
-        alert('✓ Quick fill complete! Click upload to submit this video resource.');
-    };
-    
-    // Sample reviews data
-    const sampleReviews = [
-        {
-            id: 1,
-            userId: 'user1',
-            userName: 'John Doe',
-            userAvatar: 'JD',
-            rating: 5,
-            review: 'Excellent resource! Very comprehensive and well-organized. Helped me understand the concepts clearly.',
-            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            helpful: 12
-        },
-        {
-            id: 2,
-            userId: 'user2',
-            userName: 'Jane Smith',
-            userAvatar: 'JS',
-            rating: 4,
-            review: 'Great content overall. Would recommend to others. The examples are very practical.',
-            date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            helpful: 8
-        },
-        {
-            id: 3,
-            userId: 'user3',
-            userName: 'Mike Johnson',
-            userAvatar: 'MJ',
-            rating: 5,
-            review: 'Perfect study material! Covered everything I needed for my exam. Thank you!',
-            date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            helpful: 5
-        },
-        {
-            id: 4,
-            userId: 'currentUser',
-            userName: 'You',
-            userAvatar: 'YO',
-            rating: 5,
-            review: 'This is my review after studying this resource. Very helpful!',
-            date: new Date().toISOString(),
-            helpful: 0
-        }
-    ];
-    
-    const loadDummyUploads = () => {
-        const dummyUploads = [
-            {
-                id: 9991,
-                title: 'Complete Data Structures Notes',
-                description: 'Comprehensive notes covering arrays, linked lists, trees, graphs, and algorithms with practice problems and solutions.',
-                subject: 'Data Structures',
-                semester: 'Y2S1',
-                type: 'pdf',
-                status: 'active',
-                viewCount: 245,
-                downloadCount: 89,
-                averageRating: 4.5,
-                ratingCount: 32,
-                uploadedAt: new Date().toISOString(),
-                tags: 'data structures, algorithms, notes, programming',
-                courseCode: 'CS201',
-                license: 'cc-by',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                reviews: sampleReviews
-            },
-            {
-                id: 9992,
-                title: 'Database Systems - SQL Complete Tutorial',
-                description: 'Complete SQL tutorial with examples covering SELECT, JOIN, subqueries, indexes, and optimization techniques for better performance.',
-                subject: 'Database Systems',
-                semester: 'Y2S2',
-                type: 'document',
-                status: 'active',
-                viewCount: 189,
-                downloadCount: 67,
-                averageRating: 4.2,
-                ratingCount: 28,
-                uploadedAt: new Date().toISOString(),
-                tags: 'sql, database, queries, tutorial',
-                courseCode: 'CS301',
-                license: 'cc-by-sa',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                reviews: sampleReviews.slice(0, 2)
-            },
-            {
-                id: 9993,
-                title: 'React Native - Mobile App Development Guide',
-                description: 'Step-by-step guide to building mobile apps with React Native, including navigation, state management, API integration, and deployment.',
-                subject: 'Mobile Development',
-                semester: 'Y3S1',
-                type: 'link',
-                status: 'pending',
-                viewCount: 0,
-                downloadCount: 0,
-                averageRating: 0,
-                ratingCount: 0,
-                uploadedAt: new Date().toISOString(),
-                tags: 'react native, mobile, tutorial, app development',
-                courseCode: 'CS401',
-                license: 'copyright',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                link: 'https://reactnative.dev/docs/getting-started',
-                reviews: []
-            },
-            {
-                id: 9994,
-                title: 'Machine Learning Algorithms Visualized',
-                description: 'Visual explanation of ML algorithms including linear regression, decision trees, random forests, and neural networks with Python code examples.',
-                subject: 'Artificial Intelligence',
-                semester: 'Y3S2',
-                type: 'presentation',
-                status: 'active',
-                viewCount: 312,
-                downloadCount: 145,
-                averageRating: 4.8,
-                ratingCount: 56,
-                uploadedAt: new Date().toISOString(),
-                tags: 'machine learning, ai, algorithms, python',
-                courseCode: 'AI501',
-                license: 'cc-by-nc',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                reviews: sampleReviews.slice(0, 3)
-            },
-            {
-                id: 9995,
-                title: 'Computer Networks - Comprehensive Study Material',
-                description: 'Complete study material for computer networks covering OSI model, TCP/IP, routing protocols, and network security concepts.',
-                subject: 'Computer Networks',
-                semester: 'Y2S2',
-                type: 'pdf',
-                status: 'active',
-                viewCount: 178,
-                downloadCount: 92,
-                averageRating: 4.3,
-                ratingCount: 41,
-                uploadedAt: new Date().toISOString(),
-                tags: 'networks, osi, tcp/ip, routing',
-                courseCode: 'CS303',
-                license: 'cc-by',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                reviews: sampleReviews.slice(0, 1)
-            },
-            {
-                id: 9996,
-                title: 'Introduction to Cyber Security',
-                description: 'Comprehensive introduction to cyber security concepts, threats, and best practices for securing applications and networks.',
-                subject: 'Cyber Security',
-                semester: 'Y3S1',
-                type: 'video',
-                status: 'pending',
-                viewCount: 45,
-                downloadCount: 23,
-                averageRating: 4.0,
-                ratingCount: 12,
-                uploadedAt: new Date().toISOString(),
-                tags: 'security, cyber, encryption, network security',
-                courseCode: 'CS404',
-                license: 'copyright',
-                visibility: 'public',
-                allowRatings: true,
-                allowComments: true,
-                link: 'https://www.youtube.com/watch?v=example',
-                reviews: []
-            }
-        ];
-        
-        setUploads(dummyUploads);
-        setStats({
-            total: dummyUploads.length,
-            pending: dummyUploads.filter(u => u.status === 'pending').length,
-            active: dummyUploads.filter(u => u.status === 'active').length,
-            views: dummyUploads.reduce((sum, u) => sum + u.viewCount, 0),
-            downloads: dummyUploads.reduce((sum, u) => sum + u.downloadCount, 0)
-        });
-        
-        const demoBookmarked = new Set([9991, 9994]);
-        setBookmarkedIds(demoBookmarked);
-        
-        alert('✓ Dummy uploads loaded for demonstration! You can now test all features.');
-    };
-
     // ============= SUBJECTS BY FACULTY =============
     const subjectsByFaculty = {
         'Faculty of Computing': [
@@ -899,7 +592,7 @@ const UploadResource = () => {
                     const response = await uploadFileWithProgress(formData.file, formDataFields, dbUserId);
                     
                     if (response) {
-                        alert('✓ Resource uploaded successfully! It will be active after moderation review.');
+                        alert('Resource uploaded successfully! It will be active after moderation review.');
                         resetForm();
                         fetchAllUploads(dbUserId);
                         setActiveTab('my-uploads');
@@ -936,7 +629,7 @@ const UploadResource = () => {
                 try {
                     const response = await api.post('/resources/upload/link', linkData);
                     if (response.data) {
-                        alert('✓ Resource added successfully! It will be active after moderation review.');
+                        alert('Resource added successfully! It will be active after moderation review.');
                         resetForm();
                         fetchAllUploads(dbUserId);
                         setActiveTab('my-uploads');
@@ -970,11 +663,11 @@ const UploadResource = () => {
 
     // ============= CRUD OPERATIONS =============
     const handleDelete = async (resourceId) => {
-        if (!window.confirm('⚠️ Are you sure you want to delete this resource? This action cannot be undone.')) return;
+        if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
         try {
             await api.delete(`/resources/${resourceId}`);
             fetchAllUploads(getDatabaseUserId(user));
-            alert('✓ Resource deleted successfully');
+            alert('Resource deleted successfully');
         } catch (error) {
             alert('Failed to delete resource');
         }
@@ -1001,7 +694,7 @@ const UploadResource = () => {
                 allowComments: editingResource.allowComments
             };
             await api.put(`/resources/${editingResource.id}`, updatedData);
-            alert('✓ Resource updated successfully');
+            alert('Resource updated successfully');
             setShowEditModal(false);
             fetchAllUploads(getDatabaseUserId(user));
         } catch (error) {
@@ -1016,11 +709,11 @@ const UploadResource = () => {
             if (bookmarkedIds.has(resourceId)) {
                 await api.delete(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
                 setBookmarkedIds(prev => { const s = new Set(prev); s.delete(resourceId); return s; });
-                alert('✓ Bookmark removed');
+                alert('Bookmark removed');
             } else {
                 await api.post(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
                 setBookmarkedIds(prev => new Set([...prev, resourceId]));
-                alert('✓ Resource bookmarked!');
+                alert('Resource bookmarked');
             }
         } catch (error) {
             alert('Failed to update bookmark');
@@ -1067,7 +760,7 @@ const UploadResource = () => {
                 })
             );
             
-            alert(`✓ Review submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review}`);
+            alert(`Review submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review}`);
             setRatingModal({ show: false, resourceId: null });
             setUserRating(5);
             setReview('');
@@ -1258,14 +951,9 @@ const UploadResource = () => {
                     </div>
                     <div className="header-actions">
                         {activeTab === 'my-uploads' && (
-                            <>
-                                <button onClick={loadDummyUploads} className="secondary-btn">
-                                    📊 Load Demo Data
-                                </button>
-                                <button onClick={() => setActiveTab('upload')} className="primary-btn">
-                                    + Upload New
-                                </button>
-                            </>
+                            <button onClick={() => setActiveTab('upload')} className="primary-btn">
+                                + Upload New
+                            </button>
                         )}
                         <button onClick={() => navigate('/dashboard/student')} className="back-btn">
                             ← Dashboard
@@ -1467,32 +1155,6 @@ const UploadResource = () => {
                                 </div>
                             )}
 
-                            {/* Quick Demo Tools Section */}
-                            <div className="form-card">
-                                <h2 className="card-title">Quick Demo Tools</h2>
-                                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                                    <button type="button" onClick={quickFillPDF} className="secondary-btn" style={{ flex: 1 }}>
-                                        📄 Quick Fill PDF
-                                    </button>
-                                    <button type="button" onClick={quickFillLink} className="secondary-btn" style={{ flex: 1 }}>
-                                        🔗 Quick Fill Link
-                                    </button>
-                                    <button type="button" onClick={quickFillVideo} className="secondary-btn" style={{ flex: 1 }}>
-                                        🎥 Quick Fill Video
-                                    </button>
-                                </div>
-                                <div style={{ padding: '16px', background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', borderRadius: '12px', textAlign: 'center' }}>
-                                    <button 
-                                        type="button" 
-                                        onClick={loadDummyFormData} 
-                                        style={{ padding: '10px 20px', backgroundColor: '#f59e0b', border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                                    >
-                                        🧪 Load Random Dummy Data
-                                    </button>
-                                    <p style={{ fontSize: '12px', color: '#92400e', marginTop: '8px', marginBottom: 0 }}>Click to populate form with realistic sample data for presentation</p>
-                                </div>
-                            </div>
-
                             {/* Settings */}
                             <div className="form-card">
                                 <h2 className="card-title">Settings</h2>
@@ -1532,8 +1194,8 @@ const UploadResource = () => {
                                 <div className={`validation-message ${validationStatus}`}>
                                     <div className="validation-content">
                                         {validationStatus === 'validating' && (<><div className="spinner"></div><span>Validating your resource...</span></>)}
-                                        {validationStatus === 'valid' && (<><span className="status-icon">✅</span><span>Resource validated! Ready for upload.</span></>)}
-                                        {validationStatus === 'failed' && (<><span className="status-icon">❌</span><span>Validation failed. Please check your resource and try again.</span></>)}
+                                        {validationStatus === 'valid' && (<><span className="status-icon">✓</span><span>Resource validated! Ready for upload.</span></>)}
+                                        {validationStatus === 'failed' && (<><span className="status-icon">✗</span><span>Validation failed. Please check your resource and try again.</span></>)}
                                     </div>
                                 </div>
                             )}
@@ -1554,7 +1216,7 @@ const UploadResource = () => {
                             {/* Form Actions */}
                             <div className="form-card">
                                 <div className="guidelines-section">
-                                    <h3 className="guidelines-title">📋 Upload Guidelines</h3>
+                                    <h3 className="guidelines-title">Upload Guidelines</h3>
                                     <ul className="guidelines-list">
                                         <li>Ensure you have the rights to share the resource</li>
                                         <li>Provide accurate and descriptive titles</li>
@@ -1591,11 +1253,11 @@ const UploadResource = () => {
                                 <div><div className="stat-value">{stats.total}</div><div className="stat-label">Total Uploads</div></div>
                             </div>
                             <div className="stat-card">
-                                <div className="stat-icon green"><span className="icon">✅</span></div>
+                                <div className="stat-icon green"><span className="icon">✓</span></div>
                                 <div><div className="stat-value">{stats.active}</div><div className="stat-label">Active</div></div>
                             </div>
                             <div className="stat-card">
-                                <div className="stat-icon orange"><span className="icon">⏳</span></div>
+                                <div className="stat-icon orange"><span className="icon">⏱️</span></div>
                                 <div><div className="stat-value">{stats.pending}</div><div className="stat-label">Pending Review</div></div>
                             </div>
                             <div className="stat-card">
@@ -1633,18 +1295,13 @@ const UploadResource = () => {
                                     {searchTerm
                                         ? `No results for "${searchTerm}"`
                                         : uploads.length === 0
-                                            ? "You haven't uploaded any resources yet. Click 'Load Demo Data' to see examples!"
+                                            ? "You haven't uploaded any resources yet."
                                             : "No resources match the selected filter."}
                                 </p>
                                 {!searchTerm && uploads.length === 0 && (
-                                    <>
-                                        <button onClick={loadDummyUploads} className="secondary-btn" style={{ marginRight: '10px' }}>
-                                            📊 Load Demo Data
-                                        </button>
-                                        <button onClick={() => setActiveTab('upload')} className="primary-btn">
-                                            Upload Your First Resource
-                                        </button>
-                                    </>
+                                    <button onClick={() => setActiveTab('upload')} className="primary-btn">
+                                        Upload Your First Resource
+                                    </button>
                                 )}
                             </div>
                         ) : (
@@ -1694,10 +1351,30 @@ const UploadResource = () => {
                                                     className={`action-btn bookmark ${bookmarkedIds.has(upload.id) ? 'bookmarked' : ''}`}
                                                     onClick={() => handleBookmark(upload.id)}
                                                     title={bookmarkedIds.has(upload.id) ? "Remove Bookmark" : "Add Bookmark"}
-                                                >🔖</button>
-                                                <button className="action-btn rate" onClick={() => setRatingModal({ show: true, resourceId: upload.id })} title="Rate">⭐</button>
-                                                <button className="action-btn edit" onClick={() => handleEdit(upload)} title="Edit">✏️</button>
-                                                <button className="action-btn delete" onClick={() => handleDelete(upload.id)} title="Delete">🗑️</button>
+                                                >
+                                                    <span className="bookmark-icon">★</span>
+                                                </button>
+                                                <button 
+                                                    className="action-btn rate" 
+                                                    onClick={() => setRatingModal({ show: true, resourceId: upload.id })} 
+                                                    title="Rate Resource"
+                                                >
+                                                    Rate
+                                                </button>
+                                                <button 
+                                                    className="action-btn edit" 
+                                                    onClick={() => handleEdit(upload)} 
+                                                    title="Edit Resource"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    className="action-btn delete" 
+                                                    onClick={() => handleDelete(upload.id)} 
+                                                    title="Delete Resource"
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1759,11 +1436,11 @@ const UploadResource = () => {
                 </div>
             )}
 
-            {/* Rating Modal - Clean Version */}
+            {/* Rating Modal */}
             {ratingModal.show && (
                 <div className="modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null })}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>⭐ Rate this Resource</h2>
+                        <h2>Rate this Resource</h2>
                         
                         <div className="rating-input">
                             <label>Your Rating:</label>
@@ -1800,7 +1477,7 @@ const UploadResource = () => {
                                 required
                             />
                             <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '8px', display: 'block' }}>
-                                📝 Your review will be visible to other users and helps the community.
+                                Your review will be visible to other users and helps the community.
                             </small>
                         </div>
                         
@@ -1924,7 +1601,7 @@ const UploadResource = () => {
                                 <h3>Settings</h3>
                                 <div className="settings-indicators">
                                     <span className={`setting-badge ${detailsModal.resource.allowRatings ? 'enabled' : 'disabled'}`}>
-                                        {detailsModal.resource.allowRatings ? '✅ Ratings Allowed' : '❌ Ratings Disabled'}
+                                        {detailsModal.resource.allowRatings ? '✓ Ratings Allowed' : '✗ Ratings Disabled'}
                                     </span>
                                     <span className={`setting-badge ${detailsModal.resource.allowComments ? 'enabled' : 'disabled'}`}>
                                         {detailsModal.resource.allowComments ? '💬 Comments Allowed' : '🔇 Comments Disabled'}
@@ -1949,7 +1626,7 @@ const UploadResource = () => {
                             {/* Reviews Section */}
                             <div className="details-section reviews-section">
                                 <h3>
-                                    📝 Reviews & Feedback 
+                                    Reviews & Feedback 
                                     <span style={{ fontSize: '14px', fontWeight: 'normal', marginLeft: '10px', color: '#6b7280' }}>
                                         ({detailsModal.resource.reviews?.length || 0} {detailsModal.resource.reviews?.length === 1 ? 'review' : 'reviews'})
                                     </span>
@@ -1996,7 +1673,7 @@ const UploadResource = () => {
                                             }}
                                             style={{ marginTop: '10px' }}
                                         >
-                                            ⭐ Write a Review
+                                            Rate the resource
                                         </button>
                                     </div>
                                 )}
@@ -2011,7 +1688,7 @@ const UploadResource = () => {
                                                 setRatingModal({ show: true, resourceId: detailsModal.resource.id });
                                             }}
                                         >
-                                            ✍️ Write a Review
+                                            Write a Review
                                         </button>
                                     </div>
                                 )}
@@ -2020,7 +1697,7 @@ const UploadResource = () => {
 
                         <div className="details-modal-footer">
                             <button className="download-btn" onClick={() => handleDownload(detailsModal.resource)}>
-                                📥 Download Resource
+                                Download Resource
                             </button>
                             <button className="close-btn" onClick={() => setDetailsModal({ show: false, resource: null })}>
                                 Close
