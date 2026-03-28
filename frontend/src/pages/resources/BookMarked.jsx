@@ -11,6 +11,8 @@ const BookMarked = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [detailsModal, setDetailsModal] = useState({ show: false, resource: null });
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [error, setError] = useState(null);
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,
@@ -20,14 +22,47 @@ const BookMarked = () => {
     });
 
     // ============= USER ID MAPPING =============
+    const AUTH_TO_DB_ID_MAP = {
+        'alex@example.com': '1',
+        'john@example.com': '2',
+        'sarah@example.com': '3',
+        'mike@example.com': '4',
+    };
+
     const getDatabaseUserId = (authUser) => {
         if (!authUser) return null;
-        return '1'; // Use your actual user ID mapping logic
+
+        if (authUser.email && AUTH_TO_DB_ID_MAP[authUser.email]) {
+            return AUTH_TO_DB_ID_MAP[authUser.email];
+        }
+
+        const possibleIds = [
+            authUser.id,
+            authUser.userId,
+            authUser._id,
+            authUser.uid,
+            authUser.sub
+        ].filter(id => id);
+
+        for (const id of possibleIds) {
+            if (AUTH_TO_DB_ID_MAP[id]) {
+                return AUTH_TO_DB_ID_MAP[id];
+            }
+        }
+
+        for (const id of possibleIds) {
+            if (/^\d+$/.test(String(id))) {
+                return String(id);
+            }
+        }
+
+        return '1';
     };
 
     // ============= INITIALIZATION =============
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
+        
         if (!currentUser) {
             navigate('/login');
             return;
@@ -40,12 +75,38 @@ const BookMarked = () => {
     const fetchBookmarks = async () => {
         try {
             setLoading(true);
+            setError(null);
+            
             const userId = getDatabaseUserId(user);
-            const response = await api.get(`/resources/user/${userId}/bookmarked`);
-            const bookmarksData = response.data || [];
+            
+            if (!userId) {
+                setError('Unable to identify user');
+                setLoading(false);
+                return;
+            }
+            
+            let response;
+            try {
+                response = await api.get(`/resources/user/${userId}/bookmarked`);
+            } catch (error) {
+                response = await api.get(`/bookmarks/user/${userId}`);
+            }
+            
+            let bookmarksData = [];
+            if (response && response.data) {
+                if (Array.isArray(response.data)) {
+                    bookmarksData = response.data;
+                } else if (response.data.content && Array.isArray(response.data.content)) {
+                    bookmarksData = response.data.content;
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    bookmarksData = response.data.data;
+                } else if (response.data.bookmarks && Array.isArray(response.data.bookmarks)) {
+                    bookmarksData = response.data.bookmarks;
+                }
+            }
+            
             setBookmarks(bookmarksData);
             
-            // Calculate stats
             const pending = bookmarksData.filter(b => b?.status === 'pending').length;
             const active = bookmarksData.filter(b => b?.status === 'active').length;
             const totalViews = bookmarksData.reduce((sum, b) => sum + (b?.viewCount || 0), 0);
@@ -58,8 +119,19 @@ const BookMarked = () => {
                 views: totalViews,
                 downloads: totalDownloads
             });
+            
         } catch (error) {
             console.error('Error fetching bookmarks:', error);
+            
+            if (error.response?.status === 404) {
+                setError('No bookmarks found. Start bookmarking resources to see them here!');
+            } else if (error.response?.status === 401) {
+                setError('Session expired. Please log in again.');
+                setTimeout(() => navigate('/login'), 2000);
+            } else {
+                setError('Failed to load bookmarks. Please try again.');
+            }
+            setBookmarks([]);
         } finally {
             setLoading(false);
         }
@@ -72,10 +144,13 @@ const BookMarked = () => {
         try {
             const userId = getDatabaseUserId(user);
             await api.delete(`/resources/${resourceId}/bookmark?userId=${userId}`);
-            fetchBookmarks(); // Refresh list
+            await fetchBookmarks();
+            setSuccessMessage('Bookmark removed successfully');
+            setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error('Error removing bookmark:', error);
-            alert('Failed to remove bookmark');
+            setError('Failed to remove bookmark');
+            setTimeout(() => setError(null), 3000);
         }
     };
 
@@ -85,11 +160,22 @@ const BookMarked = () => {
     };
 
     // ============= DOWNLOAD/OPEN RESOURCE =============
-    const handleOpenResource = (resource) => {
-        if (resource.link) {
-            window.open(resource.link, '_blank');
-        } else if (resource.filePath) {
-            window.open(`http://localhost:8080${resource.filePath}`, '_blank');
+    const handleOpenResource = async (resource) => {
+        try {
+            if (resource.link) {
+                window.open(resource.link, '_blank');
+                if (resource.id) {
+                    await api.post(`/resources/${resource.id}/download`);
+                }
+            } else if (resource.filePath) {
+                window.open(`http://localhost:8080${resource.filePath}`, '_blank');
+                if (resource.id) {
+                    await api.post(`/resources/${resource.id}/download`);
+                }
+            }
+        } catch (error) {
+            console.error('Error opening resource:', error);
+            setError('Failed to open resource');
         }
     };
 
@@ -121,6 +207,15 @@ const BookMarked = () => {
         if (!dateString) return 'N/A';
         try {
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Invalid date';
+            
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
             return date.toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'short', 
@@ -131,11 +226,32 @@ const BookMarked = () => {
         }
     };
 
-    const filteredBookmarks = bookmarks.filter(b => 
-        b.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const renderStars = (rating) => {
+        const validRating = Number(rating) || 0;
+        const fullStars = Math.floor(validRating);
+        const hasHalfStar = validRating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        return (
+            <span className="stars-container">
+                {[...Array(Math.max(0, fullStars))].map((_, i) => (
+                    <span key={`full-${i}`} className="star full">★</span>
+                ))}
+                {hasHalfStar && <span className="star half">½</span>}
+                {[...Array(Math.max(0, emptyStars))].map((_, i) => (
+                    <span key={`empty-${i}`} className="star empty">☆</span>
+                ))}
+            </span>
+        );
+    };
+
+    const filteredBookmarks = bookmarks.filter(b => {
+        if (!b) return false;
+        const term = searchTerm.toLowerCase();
+        return (b.title?.toLowerCase() || '').includes(term) ||
+               (b.subject?.toLowerCase() || '').includes(term) ||
+               (b.description?.toLowerCase() || '').includes(term);
+    });
 
     return (
         <div className="bookmarked-container">
@@ -200,7 +316,26 @@ const BookMarked = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards - Matching existing theme */}
+                {/* Success Message */}
+                {successMessage && (
+                    <div className="success-message">
+                        <span className="success-icon">✓</span>
+                        {successMessage}
+                    </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                    <div className="error-message">
+                        <span className="error-icon">⚠</span>
+                        <strong>Error:</strong> {error}
+                        <button onClick={fetchBookmarks} className="retry-btn">
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {/* Stats Cards */}
                 <div className="stats-grid">
                     <div className="stat-card">
                         <div className="stat-icon blue">
@@ -253,6 +388,11 @@ const BookMarked = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="search-input"
                         />
+                        {searchTerm && (
+                            <button className="clear-search" onClick={() => setSearchTerm('')}>
+                                ✕
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -266,11 +406,18 @@ const BookMarked = () => {
                         <p>
                             {searchTerm 
                                 ? `No results for "${searchTerm}"` 
-                                : "Bookmark resources while browsing to see them here"}
+                                : error 
+                                    ? error
+                                    : "Bookmark resources while browsing to see them here"}
                         </p>
-                        {!searchTerm && (
+                        {!searchTerm && !error && (
                             <button onClick={() => navigate('/dashboard/student')} className="primary-btn">
                                 Browse Resources
+                            </button>
+                        )}
+                        {error && (
+                            <button onClick={fetchBookmarks} className="secondary-btn">
+                                Try Again
                             </button>
                         )}
                     </div>
@@ -305,9 +452,12 @@ const BookMarked = () => {
                                     
                                     {resource.tags && (
                                         <div className="resource-tags">
-                                            {resource.tags.split(',').map((tag, i) => (
-                                                <span key={i} className="tag">{tag.trim()}</span>
+                                            {resource.tags.split(',').slice(0, 3).map((tag, i) => (
+                                                <span key={i} className="tag">#{tag.trim()}</span>
                                             ))}
+                                            {resource.tags.split(',').length > 3 && (
+                                                <span className="tag-more">+{resource.tags.split(',').length - 3}</span>
+                                            )}
                                         </div>
                                     )}
                                     
@@ -320,6 +470,7 @@ const BookMarked = () => {
                                         </div>
                                         <div className="stat-item" title="Rating">
                                             <span>⭐</span> {resource.averageRating?.toFixed(1) || 0}
+                                            <span className="review-count">({resource.ratingCount || 0})</span>
                                         </div>
                                         <div className="stat-item" title="Uploaded">
                                             <span>📅</span> {formatDate(resource.uploadedAt)}
@@ -334,14 +485,14 @@ const BookMarked = () => {
                                             onClick={() => handleOpenResource(resource)}
                                             title={resource.link ? "Open Link" : "Download"}
                                         >
-                                            {resource.link ? '🔗' : '📥'}
+                                            {resource.link ? '🔗 Open' : '📥 Download'}
                                         </button>
                                         <button 
                                             className="action-btn delete"
                                             onClick={() => handleRemoveBookmark(resource.id)}
                                             title="Remove Bookmark"
                                         >
-                                            ★
+                                            ★ Remove
                                         </button>
                                     </div>
                                 </div>
@@ -390,7 +541,7 @@ const BookMarked = () => {
                                     <h3>Tags</h3>
                                     <div className="details-tags">
                                         {detailsModal.resource.tags.split(',').map((tag, i) => (
-                                            <span key={i} className="tag">{tag.trim()}</span>
+                                            <span key={i} className="tag">#{tag.trim()}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -402,37 +553,6 @@ const BookMarked = () => {
                                     <p className="course-code">{detailsModal.resource.courseCode}</p>
                                 </div>
                             )}
-
-                            <div className="details-section">
-                                <h3>Resource Content</h3>
-                                <div className="details-content">
-                                    {detailsModal.resource.link ? (
-                                        <div className="link-preview">
-                                            <div className="link-icon">🔗</div>
-                                            <a 
-                                                href={detailsModal.resource.link} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="resource-link"
-                                            >
-                                                {detailsModal.resource.link}
-                                            </a>
-                                        </div>
-                                    ) : (
-                                        <div className="file-info">
-                                            <div className="file-icon">📄</div>
-                                            <div className="file-details">
-                                                <p className="file-name">{detailsModal.resource.fileName || 'Document'}</p>
-                                                <p className="file-size">
-                                                    {detailsModal.resource.fileSize ? 
-                                                        `${detailsModal.resource.fileSize} MB` : 
-                                                        'Size not available'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
 
                             <div className="details-section">
                                 <h3>Resource Details</h3>
@@ -452,8 +572,11 @@ const BookMarked = () => {
                                     <div className="detail-item">
                                         <span className="detail-label">Ratings:</span>
                                         <span className="detail-value">
-                                            ⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0} 
-                                            ({detailsModal.resource.ratingCount || 0} reviews)
+                                            {renderStars(detailsModal.resource.averageRating || 0)}
+                                            <span style={{ marginLeft: '8px' }}>
+                                                ⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0} 
+                                                ({detailsModal.resource.ratingCount || 0} reviews)
+                                            </span>
                                         </span>
                                     </div>
                                 </div>
@@ -463,7 +586,7 @@ const BookMarked = () => {
                                 <h3>Settings</h3>
                                 <div className="settings-indicators">
                                     <span className={`setting-badge ${detailsModal.resource.allowRatings ? 'enabled' : 'disabled'}`}>
-                                        {detailsModal.resource.allowRatings ? '✅ Ratings Allowed' : '❌ Ratings Disabled'}
+                                        {detailsModal.resource.allowRatings ? '✓ Ratings Allowed' : '✗ Ratings Disabled'}
                                     </span>
                                     <span className={`setting-badge ${detailsModal.resource.allowComments ? 'enabled' : 'disabled'}`}>
                                         {detailsModal.resource.allowComments ? '💬 Comments Allowed' : '🔇 Comments Disabled'}

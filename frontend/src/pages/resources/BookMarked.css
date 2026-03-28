@@ -846,3 +846,173 @@
         width: 100%;
     }
 }
+/* Add to your BookMarked.css file */
+
+/* Success and Error Messages */
+.success-message {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+.error-message {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.success-icon, .error-icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.clear-search {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 4px;
+}
+
+.clear-search:hover {
+    color: #4b5563;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn.view {
+    background: white;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
+}
+
+.action-btn.view:hover {
+    background: #dbeafe;
+    transform: translateY(-2px);
+}
+
+.action-btn.delete {
+    background: white;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+}
+
+.action-btn.delete:hover {
+    background: #fee2e2;
+    transform: translateY(-2px);
+}
+
+/* Tag More */
+.tag-more {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: #f3f4f6;
+    border-radius: 20px;
+    color: #6b7280;
+}
+
+/* Review Count */
+.review-count {
+    font-size: 10px;
+    margin-left: 2px;
+    color: #9ca3af;
+}
+
+/* Delete Button in Modal */
+.delete-btn {
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid #fecaca;
+    border-radius: 10px;
+    color: #ef4444;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+    background: #fee2e2;
+    border-color: #fecaca;
+    transform: translateY(-1px);
+}
+/* Add to BookMarked.css */
+
+.retry-btn {
+    margin-left: 12px;
+    padding: 4px 12px;
+    background: white;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.retry-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+/* Difficulty badges */
+.difficulty-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.difficulty-beginner {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.difficulty-intermediate {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.difficulty-advanced {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.difficulty-expert {
+    background: #fee2e2;
+    color: #991b1b;
+}

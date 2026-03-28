@@ -1,8 +1,8 @@
 package com.brainhive.modules.resources.controller;
 
-import com.brainhive.modules.resources.dto.ResourceDTO;
-import com.brainhive.modules.resources.dto.ReportRequestDTO;
 import com.brainhive.modules.resources.dto.RatingRequestDTO;
+import com.brainhive.modules.resources.dto.ReportRequestDTO;
+import com.brainhive.modules.resources.dto.ResourceDTO;
 import com.brainhive.modules.resources.model.Resource;
 import com.brainhive.modules.resources.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,29 +22,35 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resources")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
+)
 public class ResourceController {
 
     @Autowired
     private ResourceService resourceService;
 
-    @PostMapping("/upload/file")
+    @PostMapping(value = "/upload/file", consumes = "multipart/form-data")
     public ResponseEntity<?> uploadFileResource(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam("subject") String subject,
-            @RequestParam("semester") String semester,
-            @RequestParam("type") String type,
+            @RequestParam(value = "subject", required = false) String subject,
+            @RequestParam(value = "semester", required = false) String semester,
+            @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "tags", required = false) String tags,
             @RequestParam(value = "visibility", required = false) String visibility,
             @RequestParam(value = "courseCode", required = false) String courseCode,
             @RequestParam(value = "license", required = false) String license,
-            @RequestParam(value = "allowRatings", required = false) Boolean allowRatings,
-            @RequestParam(value = "allowComments", required = false) Boolean allowComments,
-            @RequestParam("userId") String userId) {  // ✅ Changed from Long to String
+            @RequestParam(value = "allowRatings", required = false, defaultValue = "true") Boolean allowRatings,
+            @RequestParam(value = "allowComments", required = false, defaultValue = "true") Boolean allowComments,
+            @RequestParam("userId") String userId) {
 
         try {
+            System.out.println(">>> HIT ResourceController upload method");
             ResourceDTO resourceDTO = new ResourceDTO();
             resourceDTO.setTitle(title);
             resourceDTO.setDescription(description);
@@ -57,7 +63,7 @@ public class ResourceController {
             resourceDTO.setLicense(license);
             resourceDTO.setAllowRatings(allowRatings);
             resourceDTO.setAllowComments(allowComments);
-            resourceDTO.setUserId(userId);  // ✅ Now setting String
+            resourceDTO.setUserId(userId);
 
             Resource resource = resourceService.uploadFileResource(file, resourceDTO);
 
@@ -113,19 +119,19 @@ public class ResourceController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Resource>> getUserResources(@PathVariable String userId) {  // ✅ Changed from Long to String
+    public ResponseEntity<List<Resource>> getUserResources(@PathVariable String userId) {
         List<Resource> resources = resourceService.getUserResources(userId);
         return ResponseEntity.ok(resources);
     }
 
     @GetMapping("/user/{userId}/recent")
-    public ResponseEntity<List<Resource>> getRecentUserUploads(@PathVariable String userId) {  // ✅ Changed from Long to String
+    public ResponseEntity<List<Resource>> getRecentUserUploads(@PathVariable String userId) {
         List<Resource> resources = resourceService.getRecentUserUploads(userId);
         return ResponseEntity.ok(resources);
     }
 
     @GetMapping("/user/{userId}/bookmarked")
-    public ResponseEntity<List<Resource>> getUserBookmarkedResources(@PathVariable String userId) {  // ✅ Changed from Long to String
+    public ResponseEntity<List<Resource>> getUserBookmarkedResources(@PathVariable String userId) {
         List<Resource> resources = resourceService.getUserBookmarkedResources(userId);
         return ResponseEntity.ok(resources);
     }
@@ -133,7 +139,7 @@ public class ResourceController {
     @GetMapping("/{resourceId}/bookmarked/status")
     public ResponseEntity<Map<String, Boolean>> checkBookmarkStatus(
             @PathVariable Long resourceId,
-            @RequestParam String userId) {  // ✅ Changed from Long to String
+            @RequestParam String userId) {
         boolean isBookmarked = resourceService.isResourceBookmarked(resourceId, userId);
         Map<String, Boolean> response = new HashMap<>();
         response.put("isBookmarked", isBookmarked);
@@ -165,7 +171,7 @@ public class ResourceController {
     @PostMapping("/{resourceId}/bookmark")
     public ResponseEntity<?> bookmarkResource(
             @PathVariable Long resourceId,
-            @RequestParam String userId) {  // ✅ Changed from Long to String
+            @RequestParam String userId) {
         try {
             resourceService.bookmarkResource(resourceId, userId);
             Map<String, String> response = new HashMap<>();
@@ -179,7 +185,7 @@ public class ResourceController {
     @DeleteMapping("/{resourceId}/bookmark")
     public ResponseEntity<?> removeBookmark(
             @PathVariable Long resourceId,
-            @RequestParam String userId) {  // ✅ Changed from Long to String
+            @RequestParam String userId) {
         try {
             resourceService.removeBookmark(resourceId, userId);
             Map<String, String> response = new HashMap<>();
@@ -193,7 +199,7 @@ public class ResourceController {
     @PostMapping("/{resourceId}/rate")
     public ResponseEntity<?> rateResource(
             @PathVariable Long resourceId,
-            @RequestParam String userId,  // ✅ Changed from Long to String
+            @RequestParam String userId,
             @RequestBody RatingRequestDTO ratingRequest) {
         try {
             Resource resource = resourceService.rateResource(
@@ -235,7 +241,7 @@ public class ResourceController {
     @PostMapping("/{resourceId}/report")
     public ResponseEntity<?> reportResource(
             @PathVariable Long resourceId,
-            @RequestParam String userId,  // ✅ Changed from Long to String
+            @RequestParam String userId,
             @RequestBody ReportRequestDTO reportRequest) {
         try {
             resourceService.reportResource(resourceId, userId, reportRequest);
@@ -292,7 +298,7 @@ public class ResourceController {
     }
 
     @GetMapping("/recommended/{userId}")
-    public ResponseEntity<List<Resource>> getRecommendedResources(@PathVariable String userId) {  // ✅ Changed from Long to String
+    public ResponseEntity<List<Resource>> getRecommendedResources(@PathVariable String userId) {
         try {
             List<Resource> resources = resourceService.getRecommendedResources(userId);
             return ResponseEntity.ok(resources);
