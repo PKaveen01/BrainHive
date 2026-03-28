@@ -9,6 +9,7 @@ import TutorSignup from './pages/user/TutorSignup';
 import CompleteProfile from './pages/user/CompleteProfile';
 import StudentDashboard from './pages/user/StudentDashboard';
 import TutorDashboard from './pages/user/TutorDashboard';
+import LectureDetails from './pages/user/LectureDetails';
 import StudentProfileView from './pages/user/StudentProfileView';
 import StudentProfileEdit from './pages/user/StudentProfileEdit';
 import TutorProfileView from './pages/user/TutorProfileView';
@@ -29,6 +30,7 @@ function App() {
           <Route path="/register/tutor" element={<TutorSignup />} />
           <Route path="/complete-profile/student" element={<CompleteProfile />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
+          <Route path="/dashboard/student/lectures/:lectureId" element={<LectureDetails />} />
           <Route path="/dashboard/tutor" element={<TutorDashboard />} />
           <Route path="/profile" element={<StudentProfileView />} />
           <Route path="/profile/edit" element={<StudentProfileEdit />} />
