@@ -1,7 +1,4 @@
-/* Import the same styles from Auth.css */
-/* You can either import Auth.css or copy the styles below */
-
-/* Auth Container - Same as Forgot Password */
+/* Auth Container */
 .auth-container {
     min-height: 100vh;
     display: flex;
@@ -63,56 +60,64 @@
     font-size: 0.875rem;
 }
 
-/* Role Selector Container */
-.role-selector-container {
-    margin-bottom: 2rem;
-}
-
-.role-selector {
-    display: flex;
-    gap: 1rem;
-    background: #f1f5f9;
-    padding: 0.5rem;
-    border-radius: 1rem;
-}
-
-.role-btn {
-    flex: 1;
-    padding: 0.75rem;
-    border: none;
-    background: transparent;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.3s;
+/* Progress Steps */
+.progress-steps {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
     color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.3s;
 }
 
-.role-icon {
-    font-size: 1rem;
+.step.active .step-number {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
 }
 
-.role-btn.active {
-    background: white;
+.step-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.step.active .step-label {
     color: #667eea;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.role-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.5);
+.step-line {
+    width: 60px;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 0.5rem;
+    transition: all 0.3s;
 }
 
-.role-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.step-line.active {
+    background: linear-gradient(90deg, #667eea, #764ba2);
 }
 
-/* Form Styles */
+/* Auth Form */
 .auth-form {
     margin-top: 1.5rem;
 }
@@ -157,45 +162,11 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.input-icon input:disabled {
-    background: #f8fafc;
-    cursor: not-allowed;
-}
-
-/* Form Options */
-.form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.remember-me {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: #64748b;
-    position: relative;
-}
-
-.remember-me input {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
-
-.forgot-password-link {
-    color: #667eea;
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.2s;
-}
-
-.forgot-password-link:hover {
-    color: #5a67d8;
-    text-decoration: underline;
+.form-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.375rem;
 }
 
 /* Alerts */
@@ -227,6 +198,12 @@
     border-left: 3px solid #ef4444;
 }
 
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 3px solid #10b981;
+}
+
 .alert-icon {
     font-size: 1rem;
 }
@@ -255,79 +232,7 @@
     cursor: not-allowed;
 }
 
-/* Register Section */
-.register-section {
-    margin-top: 1.5rem;
-    text-align: center;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
-}
-
-.register-section p {
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-bottom: 1rem;
-}
-
-.register-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.register-btn {
-    flex: 1;
-    padding: 0.625rem;
-    border: 1px solid #e2e8f0;
-    background: white;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.register-btn.student-btn {
-    color: #667eea;
-    border-color: #667eea;
-}
-
-.register-btn.student-btn:hover:not(:disabled) {
-    background: #667eea;
-    color: white;
-    transform: translateY(-1px);
-}
-
-.register-btn.tutor-btn {
-    color: #764ba2;
-    border-color: #764ba2;
-}
-
-.register-btn.tutor-btn:hover:not(:disabled) {
-    background: #764ba2;
-    color: white;
-    transform: translateY(-1px);
-}
-
-.register-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Help Section */
-.help-section {
-    margin-top: 1.5rem;
-    text-align: center;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
-}
-
-.help-section p {
-    font-size: 0.75rem;
-    color: #64748b;
-    margin-bottom: 0.5rem;
-}
-
+/* Link Button */
 .link-button {
     background: none;
     border: none;
@@ -346,6 +251,76 @@
 .link-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Auth Footer */
+.auth-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Resend Section */
+.resend-section {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.resend-section p {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+/* Password Requirements */
+.password-requirements {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.password-requirements p {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.5rem;
+}
+
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.password-requirements li {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-requirements li.valid {
+    color: #10b981;
+}
+
+/* Help Section */
+.help-section {
+    margin-top: 1.5rem;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.help-section p {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
 }
 
 /* Decorative Elements */
@@ -396,27 +371,32 @@
         padding: 1.5rem;
     }
     
+    .step-line {
+        width: 30px;
+    }
+    
+    .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 0.875rem;
+    }
+    
+    .step-label {
+        font-size: 0.6rem;
+    }
+    
     .auth-header h2 {
         font-size: 1.5rem;
-    }
-    
-    .role-selector {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .register-buttons {
-        flex-direction: column;
-    }
-    
-    .form-options {
-        flex-direction: column;
-        gap: 0.75rem;
-        align-items: flex-start;
     }
 }
 
 /* Loading Animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .btn-primary.loading {
     position: relative;
     color: transparent;
@@ -435,10 +415,4 @@
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
