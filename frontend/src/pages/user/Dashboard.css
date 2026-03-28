@@ -1077,3 +1077,603 @@
     font-size: 1.125rem;
     color: #475569;
 }
+
+/* Add these new styles to your existing Dashboard.css */
+
+/* Study Streak Badge */
+.study-streak-badge {
+    margin-top: 0.5rem;
+    display: inline-block;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Stat Trends */
+.stat-trend {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    color: #64748b;
+}
+
+.stat-trend.positive {
+    color: #10b981;
+}
+
+.stat-trend.negative {
+    color: #ef4444;
+}
+
+/* Chart Cards */
+.chart-card {
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.hours {
+    background-color: #2563eb;
+}
+
+.legend-dot.resources {
+    background-color: #ea580c;
+}
+
+/* Pie Chart Container */
+.pie-chart-container {
+    padding: 1rem;
+}
+
+.pie-stats {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-around;
+}
+
+.pie-stat-item {
+    text-align: center;
+}
+
+.stat-value-small {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Chart Insight */
+.chart-insight {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #92400e;
+    text-align: center;
+}
+
+/* Quick Stats */
+.quick-stats {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.quick-stat-item {
+    background: #f8fafc;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.quick-stat-item:hover {
+    background: #f1f5f9;
+    transform: translateY(-2px);
+}
+
+.quick-stat-item .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.quick-stat-item .stat-value-small {
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    color: #2563eb;
+}
+
+/* Additional Badge Colors */
+.badge.blue {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.badge.green {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .chart-card {
+        padding: 1rem;
+    }
+    
+    .pie-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .quick-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-legend {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* Tooltip Customization */
+.recharts-tooltip-wrapper {
+    outline: none;
+}
+
+/* Animation for charts */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.content-card {
+    animation: fadeInUp 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.content-card:nth-child(1) { animation-delay: 0.1s; }
+.content-card:nth-child(2) { animation-delay: 0.2s; }
+.content-card:nth-child(3) { animation-delay: 0.3s; }
+
+
+
+/* Additional CSS for the enhanced dashboard */
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Badge Colors */
+.badge.pink {
+    background-color: #fce7f3;
+    color: #be185d;
+}
+
+/* Schedule Dot Colors */
+.schedule-dot.brand {
+    background-color: #2563eb;
+}
+
+.schedule-dot.teal {
+    background-color: #14b8a6;
+}
+
+.schedule-dot.orange {
+    background-color: #f97316;
+}
+
+/* Navigation Icons */
+.nav-section li span {
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+/* Hover Effects */
+.stat-card:hover,
+.content-card:hover,
+.chart-card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive Improvements */
+@media (max-width: 640px) {
+    .study-streak-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+    }
+    
+    .badges-container {
+        gap: 0.4rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+    }
+}
+
+/* Smooth Scroll */
+.dashboard {
+    scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+
+/* Tutor Dashboard Specific Styles */
+
+/* Tutor Avatar */
+.tutor-avatar {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+}
+
+/* Tutor Banner */
+.tutor-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tutor-banner .welcome-title,
+.tutor-banner .welcome-subtitle {
+    color: white;
+}
+
+.tutor-status-badge {
+    margin-top: 0.75rem;
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Tutor Stats Mini */
+.tutor-stats-mini {
+    display: flex;
+    gap: 1.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+}
+
+.mini-stat {
+    text-align: center;
+}
+
+.mini-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.mini-stat-label {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Tutor Stats Grid */
+.tutor-stats .stat-card {
+    background: white;
+    transition: transform 0.2s;
+}
+
+.tutor-stats .stat-card:hover {
+    transform: translateY(-4px);
+}
+
+/* Feedback Categories */
+.feedback-categories {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.feedback-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.feedback-label {
+    width: 100px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+}
+
+.feedback-bar-container {
+    flex: 1;
+    height: 0.5rem;
+    background-color: #f1f5f9;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.feedback-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+    border-radius: 9999px;
+    transition: width 1s ease-out;
+}
+
+.feedback-score {
+    width: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #f59e0b;
+}
+
+/* Rating Summary */
+.rating-summary {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
+
+.rating-stat {
+    text-align: center;
+}
+
+/* Session List */
+.session-list {
+    padding: 0.5rem 0;
+}
+
+.session-item {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.2s;
+}
+
+.session-item:hover {
+    background: #f8fafc;
+}
+
+.session-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.session-info {
+    flex: 1;
+}
+
+.session-info h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.session-info p {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.session-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.session-action-btn {
+    padding: 0.375rem 0.75rem;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.session-action-btn:hover {
+    background: #1d4ed8;
+}
+
+/* Request List Enhancements */
+.request-list {
+    padding: 0.5rem 0;
+}
+
+.request-topic {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background: #f3f4f6;
+    display: inline-block;
+    border-radius: 4px;
+}
+
+/* Chart Insights Success */
+.chart-insight.success {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .tutor-stats-mini {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .mini-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mini-stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .feedback-item {
+        flex-wrap: wrap;
+    }
+    
+    .feedback-label {
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+    
+    .session-item {
+        flex-wrap: wrap;
+    }
+    
+    .session-action-btn {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.request-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+.session-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Custom Colors for Tutor Dashboard */
+.stat-icon.tutor-blue {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.stat-icon.tutor-purple {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.stat-icon.tutor-green {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-icon.tutor-orange {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+/* Legend Dots for Charts */
+.legend-dot.sessions {
+    background-color: #2563eb;
+}
+
+.legend-dot.students {
+    background-color: #ea580c;
+}
+
+/* Badge for Tutor */
+.tutor-badge {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+/* Hover Effects for Cards */
+.content-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
