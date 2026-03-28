@@ -155,7 +155,7 @@ const StudentSignup = () => {
                             <input
                                 type="text"
                                 name="fullName"
-                                placeholder="Alex Johnson"
+                                placeholder="Pasindu Kaveen"
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 className={errors.fullName ? 'error' : ''}
