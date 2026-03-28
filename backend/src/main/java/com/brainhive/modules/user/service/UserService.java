@@ -8,6 +8,11 @@ import com.brainhive.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.brainhive.modules.user.dto.RegistrationResponseDTO;
+import com.brainhive.modules.user.dto.StudentRegistrationRequest;
+import com.brainhive.modules.user.dto.TutorRegistrationRequest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class UserService {
@@ -15,10 +20,11 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     public LoginResponseDTO authenticate(LoginRequestDTO loginRequest, HttpSession session) {
         try {
-            // Find user by email and role
-            UserRole role = UserRole.valueOf(loginRequest.getRole().toUpperCase());
+            // Find user by email
             User user = userRepository.findByEmail(loginRequest.getEmail())
                     .orElse(null);
 
@@ -28,12 +34,13 @@ public class UserService {
             }
 
             // Check if role matches
+            UserRole role = UserRole.valueOf(loginRequest.getRole().toUpperCase());
             if (!user.getRole().equals(role)) {
                 return new LoginResponseDTO(false, "Invalid role selected", null, null, null, null);
             }
 
-            // Check password (plain text for simplicity - in real project, use encryption)
-            if (!user.getPassword().equals(loginRequest.getPassword())) {
+            // FIXED: Use password encoder to check password
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 return new LoginResponseDTO(false, "Invalid password", null, null, null, null);
             }
 
@@ -76,4 +83,7 @@ public class UserService {
         }
         return null;
     }
+
+    // REMOVE these methods from UserService - they should only be in ProfileService
+    // to avoid duplication and confusion
 }

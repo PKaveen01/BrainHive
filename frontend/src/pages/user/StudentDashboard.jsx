@@ -4,19 +4,47 @@ import api from '../../services/api';
 import authService from '../../services/auth.service';
 import './Dashboard.css';
 
+// Import recharts components
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadialBarChart,
+  RadialBar
+} from 'recharts';
+
 const StudentDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [lectures, setLectures] = useState([]);
+    const [lectureLoading, setLectureLoading] = useState(false);
+    const [lectureError, setLectureError] = useState('');
+    const [myRequests, setMyRequests] = useState([]);
+    const [requestsLoading, setRequestsLoading] = useState(false);
+    const [requestsError, setRequestsError] = useState('');
 
     useEffect(() => {
         fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchDashboardData = async () => {
         try {
-            // First check if user is authenticated
             const currentUser = authService.getCurrentUser();
             if (!currentUser) {
                 navigate('/login');
@@ -24,7 +52,6 @@ const StudentDashboard = () => {
             }
             setUser(currentUser);
 
-            // Fetch dashboard data
             const response = await api.get('/dashboard/student/info');
             setDashboardData(response.data);
         } catch (error) {
@@ -42,60 +69,209 @@ const StudentDashboard = () => {
         navigate('/');
     };
 
+    const studyTrendData = [
+        { day: 'Mon', hours: 3.5, resources: 4 },
+        { day: 'Tue', hours: 2.8, resources: 3 },
+        { day: 'Wed', hours: 4.2, resources: 5 },
+        { day: 'Thu', hours: 3.0, resources: 3 },
+        { day: 'Fri', hours: 2.5, resources: 2 },
+        { day: 'Sat', hours: 5.0, resources: 6 },
+        { day: 'Sun', hours: 4.5, resources: 5 },
+    ];
+
+    const subjectPerformanceData = [
+        { subject: 'Data Structures', score: 75, target: 85 },
+        { subject: 'Algorithms', score: 68, target: 85 },
+        { subject: 'Databases', score: 82, target: 85 },
+        { subject: 'Web Dev', score: 90, target: 85 },
+        { subject: 'OS', score: 70, target: 85 },
+    ];
+
+    const activityDistribution = [
+        { name: 'Study Sessions', value: 45, color: '#2563eb' },
+        { name: 'Group Work', value: 25, color: '#7c3aed' },
+        { name: 'Peer Help', value: 20, color: '#0d9488' },
+        { name: 'Resources', value: 10, color: '#ea580c' },
+    ];
+
+    const weeklyComparison = [
+        { week: 'Week 1', current: 18, previous: 15 },
+        { week: 'Week 2', current: 22, previous: 18 },
+        { week: 'Week 3', current: 25, previous: 20 },
+        { week: 'Week 4', current: 28, previous: 22 },
+    ];
+
+    const studyTimeDistribution = [
+        { time: 'Morning', hours: 8 },
+        { time: 'Afternoon', hours: 12 },
+        { time: 'Evening', hours: 15 },
+        { time: 'Night', hours: 10 },
+    ];
+
+    const proficiencyRadialData = [
+        { name: 'Overall', value: 78, fill: '#2563eb' },
+        { name: 'Technical', value: 72, fill: '#7c3aed' },
+        { name: 'Theoretical', value: 85, fill: '#0d9488' },
+        { name: 'Practical', value: 68, fill: '#ea580c' },
+    ];
+
     const profileCompletion = dashboardData?.profileCompletion || 85;
 
+    const formatDateTime = (value) => {
+        if (!value) return 'Not scheduled';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString();
+    };
+
+    const fetchLectures = async () => {
+        try {
+            setLectureLoading(true);
+            setLectureError('');
+            const response = await api.get('/peerhelp/lectures');
+            setLectures(response.data?.data || []);
+        } catch (error) {
+            console.error('Error fetching lectures:', error);
+            setLectureError(error.response?.data?.message || 'Unable to load lectures.');
+            if (error.response?.status === 401) navigate('/login');
+        } finally {
+            setLectureLoading(false);
+        }
+    };
+
+    const handleOpenLectures = async () => {
+        setActiveTab('lectures');
+        if (lectures.length === 0) await fetchLectures();
+    };
+
+    const fetchMyRequests = async () => {
+        try {
+            setRequestsLoading(true);
+            setRequestsError('');
+
+            const [requestsRes, sessionsRes] = await Promise.all([
+                api.get('/peerhelp/requests/my-requests'),
+                api.get('/peerhelp/sessions/my-sessions')
+            ]);
+
+            const requests = requestsRes.data?.data || [];
+            const sessions = sessionsRes.data?.data || [];
+            const sessionByRequest = sessions.reduce((acc, session) => {
+                acc[session.helpRequestId] = session;
+                return acc;
+            }, {});
+
+            const merged = requests.map((request) => ({
+                ...request,
+                session: sessionByRequest[request.id] || null
+            }));
+
+            setMyRequests(merged);
+        } catch (error) {
+            console.error('Error fetching my requests:', error);
+            setRequestsError(error.response?.data?.message || 'Unable to load your request details.');
+            if (error.response?.status === 401) navigate('/login');
+        } finally {
+            setRequestsLoading(false);
+        }
+    };
+
+    const handleOpenMyRequests = async () => {
+        setActiveTab('my-requests');
+        if (myRequests.length === 0) await fetchMyRequests();
+    };
+
     if (loading) {
-        return <div className="loading">Loading...</div>;
+        return (
+            <div className="loading">
+                <div className="loading-spinner"></div>
+                <p>Loading your dashboard...</p>
+            </div>
+        );
     }
 
     return (
         <div className="dashboard">
             {/* Sidebar */}
             <div className="sidebar">
-                <div className="sidebar-logo">BrainHive</div>
-                
+                <div className="sidebar-logo">🧠 BrainHive</div>
+
                 <div className="sidebar-user">
                     <div className="user-avatar">
-                        {user?.name?.charAt(0) || 'A'}
+                        {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
                     </div>
                     <div className="user-info">
-                        <h4>{user?.name || 'Alex Johnson'}</h4>
-                        <p>Student</p>
+                        <h4>{user?.name || user?.email?.split('@')[0] || 'Student'}</h4>
+                        <p>Student • Year 3</p>
                     </div>
                 </div>
 
                 <nav className="sidebar-nav">
                     <div className="nav-section">
-                        <h3>Resources</h3>
+                        <h3>📚 Resources</h3>
                         <ul>
-                            <li className="active" onClick={() => navigate('/dashboard')}>Discovery</li>
-                            <li onClick={() => navigate('/upload')}>Upload</li>
+                            <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+                                <span>🔍</span> Discovery
+                            </li>
+                            <li onClick={() => navigate('/upload')}>
+                                <span>📤</span> Upload
+                            </li>
                         </ul>
                     </div>
 
                     <div className="nav-section">
-                        <h3>Peer Help</h3>
+                        <h3>🤝 Peer Help</h3>
                         <ul>
-                            <li onClick={() => navigate('/request-help')}>Request Help</li>
-                            <li onClick={() => navigate('/find-tutors')}>Find Tutors</li>
+                            <li onClick={() => navigate('/request-help')}>
+                                <span>🙋</span> Request Help
+                            </li>
+                            <li className={activeTab === 'my-requests' ? 'active' : ''} onClick={handleOpenMyRequests}>
+                                <span>📋</span> My Requests
+                            </li>
+                            <li onClick={() => navigate('/find-tutors')}>
+                                <span>👨‍🏫</span> Find Tutors
+                            </li>
+                            <li className={activeTab === 'lectures' ? 'active' : ''} onClick={handleOpenLectures}>
+                                <span>🎓</span> Lectures
+                            </li>
                         </ul>
                     </div>
 
                     <div className="nav-section">
-                        <h3>Study Groups</h3>
+                        <h3>👥 Study Groups</h3>
                         <ul>
-                            <li onClick={() => navigate('/my-groups')}>My Groups</li>
-                            <li onClick={() => navigate('/create-group')}>Create Group</li>
+                            <li onClick={() => navigate('/my-groups')}>
+                                <span>📁</span> My Groups
+                            </li>
+                            <li onClick={() => navigate('/create-group')}>
+                                <span>✨</span> Create Group
+                            </li>
                         </ul>
                     </div>
 
                     <div className="nav-section">
-                        <h3>Settings</h3>
+                        <h3>📊 Analytics</h3>
                         <ul>
-                            <li onClick={() => navigate('/profile')}>Profile</li>
-                            <li onClick={() => navigate('/schedule')}>Schedule</li>
+                            <li onClick={() => navigate('/progress')}>
+                                <span>📈</span> Progress Reports
+                            </li>
+                            <li onClick={() => navigate('/insights')}>
+                                <span>💡</span> Learning Insights
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="nav-section">
+                        <h3>⚙️ Settings</h3>
+                        <ul>
+                            <li onClick={() => navigate('/profile')}>
+                                <span>👤</span> Profile
+                            </li>
+                            <li onClick={() => navigate('/schedule')}>
+                                <span>📅</span> Schedule
+                            </li>
                             <li onClick={handleLogout} className="logout-item">
-                                Logout
+                                <span>🚪</span> Logout
                             </li>
                         </ul>
                     </div>
@@ -104,222 +280,367 @@ const StudentDashboard = () => {
 
             {/* Main Content */}
             <div className="main-content">
-                {/* Welcome Banner */}
-                <div className="welcome-banner">
-                    <div>
-                        <h1 className="welcome-title">
-                            Welcome back, {user?.name || 'Alex'}! 👋
-                        </h1>
-                        <p className="welcome-subtitle">
-                            {dashboardData?.user?.program || 'Computer Science, Year 3'} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                        </p>
-                    </div>
-                    <div className="profile-status">
-                        <div className="progress-circle">
-                            <svg className="progress-svg" viewBox="0 0 48 48">
-                                <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="transparent"
-                                    className="progress-bg"
-                                />
-                                <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="transparent"
-                                    strokeDasharray={125.6}
-                                    strokeDashoffset={125.6 - (125.6 * profileCompletion) / 100}
-                                    className="progress-fill"
-                                />
-                            </svg>
-                            <div className="progress-text">
-                                {profileCompletion}%
+                {activeTab === 'dashboard' && (
+                <>
+                    {/* Welcome Banner */}
+                    <div className="welcome-banner">
+                        <div>
+                            <h1 className="welcome-title">
+                                Welcome back, {user?.name?.split(' ')[0] || 'Student'}! 👋
+                            </h1>
+                            <p className="welcome-subtitle">
+                                {dashboardData?.user?.program || 'Computer Science, Year 3'} •{' '}
+                                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </p>
+                            <div className="study-streak-badge">
+                                🔥 {dashboardData?.stats?.studyStreak || '12'} Day Study Streak!
                             </div>
                         </div>
-                        <div>
-                            <div className="profile-status-label">Profile Status</div>
-                            <button
-                                onClick={() => navigate('/profile/edit')}
-                                className="profile-status-link"
-                            >
-                                Complete profile
-                            </button>
+                        <div className="profile-status">
+                            <div className="progress-circle">
+                                <svg className="progress-svg" viewBox="0 0 48 48">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="progress-bg" />
+                                    <circle
+                                        cx="24" cy="24" r="20"
+                                        stroke="currentColor" strokeWidth="4" fill="transparent"
+                                        strokeDasharray={125.6}
+                                        strokeDashoffset={125.6 - (125.6 * profileCompletion) / 100}
+                                        className="progress-fill"
+                                    />
+                                </svg>
+                                <div className="progress-text">{profileCompletion}%</div>
+                            </div>
+                            <div>
+                                <div className="profile-status-label">Profile Status</div>
+                                <button onClick={() => navigate('/profile/edit')} className="profile-status-link">
+                                    Complete profile →
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Warning Banner */}
-                {profileCompletion < 100 && (
-                    <div className="warning-banner">
-                        <span className="warning-icon">⚠️</span>
-                        <div className="warning-content">
-                            <h3>Complete your profile to unlock all features</h3>
-                            <p>Adding your study preferences helps us recommend better resources and study groups.</p>
+                    {/* Warning Banner */}
+                    {profileCompletion < 100 && (
+                        <div className="warning-banner">
+                            <span className="warning-icon">⚠️</span>
+                            <div className="warning-content">
+                                <h3>Complete your profile to unlock all features</h3>
+                                <p>Adding your study preferences helps us recommend better resources and study groups.</p>
+                            </div>
+                            <button onClick={() => navigate('/profile/edit')} className="warning-button">
+                                Update Now
+                            </button>
                         </div>
-                        <button
-                            onClick={() => navigate('/profile/edit')}
-                            className="warning-button"
-                        >
-                            Update Now
-                        </button>
+                    )}
+
+                    {/* Stats Grid */}
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-icon blue"><span className="icon">📚</span></div>
+                            <div>
+                                <div className="stat-value">{dashboardData?.stats?.resourcesSaved || '42'}</div>
+                                <div className="stat-label">Resources Saved</div>
+                                <div className="stat-trend positive">↑ +12 this week</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon purple"><span className="icon">👥</span></div>
+                            <div>
+                                <div className="stat-value">{dashboardData?.stats?.helpSessions || '8'}</div>
+                                <div className="stat-label">Help Sessions</div>
+                                <div className="stat-trend positive">↑ +3 this month</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon teal"><span className="icon">📅</span></div>
+                            <div>
+                                <div className="stat-value">{dashboardData?.stats?.groupProjects || '3'}</div>
+                                <div className="stat-label">Active Groups</div>
+                                <div className="stat-trend">↗ 85% attendance</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon orange"><span className="icon">⭐</span></div>
+                            <div>
+                                <div className="stat-value">4.8</div>
+                                <div className="stat-label">Rating</div>
+                                <div className="stat-trend positive">↑ from 4.6</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Study Trend Chart */}
+                    <div className="chart-card">
+                        <div className="card-header">
+                            <h2>📈 Weekly Study Activity</h2>
+                            <div className="chart-legend">
+                                <span className="legend-item"><span className="legend-dot hours"></span> Study Hours</span>
+                                <span className="legend-item"><span className="legend-dot resources"></span> Resources Used</span>
+                            </div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={studyTrendData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="day" stroke="#64748b" />
+                                <YAxis yAxisId="left" stroke="#64748b" />
+                                <YAxis yAxisId="right" orientation="right" stroke="#64748b" />
+                                <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+                                <Legend />
+                                <Line yAxisId="left" type="monotone" dataKey="hours" stroke="#2563eb" strokeWidth={2} dot={{ fill: '#2563eb', r: 4 }} name="Study Hours" />
+                                <Line yAxisId="right" type="monotone" dataKey="resources" stroke="#ea580c" strokeWidth={2} dot={{ fill: '#ea580c', r: 4 }} name="Resources Used" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <div className="dashboard-grid-layout">
+                        {/* Left Column */}
+                        <div className="left-column">
+                            <div className="content-card">
+                                <div className="card-header">
+                                    <h2>📊 Subject Performance vs Target</h2>
+                                    <button onClick={() => navigate('/focus-areas')} className="card-link">View Details →</button>
+                                </div>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={subjectPerformanceData} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis type="number" domain={[0, 100]} stroke="#64748b" />
+                                        <YAxis type="category" dataKey="subject" stroke="#64748b" width={100} />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar dataKey="score" fill="#2563eb" name="Current Score" radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="target" fill="#94a3b8" name="Target Score" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header"><h2>🎯 Learning Activity Distribution</h2></div>
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <PieChart>
+                                        <Pie data={activityDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                            {activityDistribution.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="pie-stats">
+                                    <div className="pie-stat-item">
+                                        <span className="stat-label">Most Active</span>
+                                        <span className="stat-value-small">Study Sessions (45%)</span>
+                                    </div>
+                                    <div className="pie-stat-item">
+                                        <span className="stat-label">Improvement Area</span>
+                                        <span className="stat-value-small">Resource Usage (+10%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header"><h2>📅 Weekly Progress Comparison</h2></div>
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <AreaChart data={weeklyComparison}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="week" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Area type="monotone" dataKey="current" stackId="1" stroke="#2563eb" fill="#2563eb" fillOpacity={0.3} name="Current Month" />
+                                        <Area type="monotone" dataKey="previous" stackId="2" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.3} name="Previous Month" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                                <div className="chart-insight">💡 You're up 28% compared to last month!</div>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header">
+                                    <h2>🎓 Academic Focus Areas</h2>
+                                    <button onClick={() => navigate('/focus-areas')} className="card-link">Edit Subjects</button>
+                                </div>
+                                <div className="focus-areas-list">
+                                    {(dashboardData?.focusAreas || [
+                                        { name: 'Data Structures', strength: 30, status: 'Needs attention' },
+                                        { name: 'Database Systems', strength: 65, status: 'Average' },
+                                        { name: 'Programming (Java)', strength: 90, status: 'Strong' },
+                                    ]).map((subject, i) => (
+                                        <div key={i} className="focus-item">
+                                            <div className="focus-name">{subject.name}</div>
+                                            <div className="progress-container">
+                                                <div className="progress-bar-container">
+                                                    <div
+                                                        className={`progress-bar ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}
+                                                        style={{ width: `${subject.strength}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className={`status-badge ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}>
+                                                    {subject.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="right-column">
+                            <div className="content-card">
+                                <h2 className="badges-title">🎯 Proficiency Overview</h2>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" data={proficiencyRadialData} startAngle={180} endAngle={0}>
+                                        <RadialBar minAngle={15} label={{ position: 'insideStart', fill: '#fff' }} background clockWise dataKey="value" />
+                                        <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" />
+                                        <Tooltip />
+                                    </RadialBarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header"><h2>⏰ Study Time Distribution</h2></div>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={studyTimeDistribution} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis type="number" stroke="#64748b" />
+                                        <YAxis type="category" dataKey="time" stroke="#64748b" />
+                                        <Tooltip />
+                                        <Bar dataKey="hours" fill="#0d9488" name="Hours Studied" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                                <div className="chart-insight">🌙 You're most productive in the evening!</div>
+                            </div>
+
+                            <div className="content-card">
+                                <h2 className="badges-title">🏆 Achievements & Badges</h2>
+                                <div className="badges-container">
+                                    <span className="badge purple">🎓 Top Performer</span>
+                                    <span className="badge teal">👥 Group Leader</span>
+                                    <span className="badge orange">🦉 Night Owl</span>
+                                    <span className="badge blue">📚 Resource Master</span>
+                                    <span className="badge green">🤝 Peer Helper</span>
+                                    <span className="badge pink">⚡ Quick Learner</span>
+                                </div>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header"><h2>📅 Upcoming Schedule</h2></div>
+                                <div className="schedule-list">
+                                    {(dashboardData?.upcomingSchedule || [
+                                        { title: 'Data Structures Tutoring', time: 'Today, 4:00 PM', type: '1-on-1' },
+                                        { title: 'CS301 Project Meeting', time: 'Tomorrow, 2:00 PM', type: 'Group' },
+                                        { title: 'Database Systems Quiz', time: 'Wed, 10:00 AM', type: 'Exam' },
+                                    ]).map((session, i) => (
+                                        <div key={i} className="schedule-item">
+                                            <div className={`schedule-dot ${i === 0 ? 'brand' : i === 1 ? 'teal' : 'orange'}`}></div>
+                                            <div className="schedule-content">
+                                                <h4>{session.title}</h4>
+                                                <div className="schedule-time"><span>📅</span> {session.time}</div>
+                                            </div>
+                                            <span className="schedule-type">{session.type}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="schedule-footer">
+                                    <button onClick={() => navigate('/calendar')} className="schedule-footer-button">
+                                        View Full Calendar →
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="content-card">
+                                <div className="card-header"><h2>⚡ Quick Stats</h2></div>
+                                <div className="quick-stats">
+                                    <div className="quick-stat-item"><span className="stat-label">Total Study Hours</span><span className="stat-value-small">127 hrs</span></div>
+                                    <div className="quick-stat-item"><span className="stat-label">Resources Shared</span><span className="stat-value-small">15</span></div>
+                                    <div className="quick-stat-item"><span className="stat-label">Help Given</span><span className="stat-value-small">23</span></div>
+                                    <div className="quick-stat-item"><span className="stat-label">Group Sessions</span><span className="stat-value-small">18</span></div>
+                                    <div className="quick-stat-item"><span className="stat-label">Completion Rate</span><span className="stat-value-small">92%</span></div>
+                                    <div className="quick-stat-item"><span className="stat-label">Peer Rating</span><span className="stat-value-small">4.9/5</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+                )}
+
+                {activeTab === 'lectures' && (
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h2>Available Lectures</h2>
+                            <button type="button" className="view-all" onClick={fetchLectures}>Refresh</button>
+                        </div>
+                        <div className="card-content">
+                            {lectureLoading && <p className="header-subtitle">Loading lectures...</p>}
+                            {!lectureLoading && lectureError && <p className="header-subtitle">{lectureError}</p>}
+                            {!lectureLoading && !lectureError && lectures.length === 0 && (
+                                <p className="header-subtitle">No lectures available right now.</p>
+                            )}
+                            {!lectureLoading && !lectureError && lectures.map((lecture) => (
+                                <div key={lecture.id} className="session-item lecture-item">
+                                    <h3>{lecture.title}</h3>
+                                    <p><strong>Subject:</strong> {lecture.subjectName}</p>
+                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
+                                    <p>{lecture.description}</p>
+                                    <span className="session-time">📅 {formatDateTime(lecture.scheduledAt)} • {lecture.durationMinutes} mins</span>
+                                    {lecture.meetingLink && (
+                                        <p><a href={lecture.meetingLink} target="_blank" rel="noreferrer">Join lecture</a></p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="btn-accept lecture-details-btn"
+                                        onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
+                                    >
+                                        More Details
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* Quick Stats */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon blue">
-                            <span className="icon">📚</span>
+                {activeTab === 'my-requests' && (
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h2>My Help Requests</h2>
+                            <button type="button" className="view-all" onClick={fetchMyRequests}>Refresh</button>
                         </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.resourcesSaved || '42'}</div>
-                            <div className="stat-label">Resources Saved</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon purple">
-                            <span className="icon">👥</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.helpSessions || '8'}</div>
-                            <div className="stat-label">Help Sessions</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon teal">
-                            <span className="icon">📅</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.groupProjects || '3'}</div>
-                            <div className="stat-label">Group Projects</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon orange">
-                            <span className="icon">🔥</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.studyStreak || '12 days'}</div>
-                            <div className="stat-label">Study Streak</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="dashboard-grid-layout">
-                    {/* Left Column */}
-                    <div className="left-column">
-                        {/* Academic Focus Areas */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Academic Focus Areas</h2>
-                                <button onClick={() => navigate('/focus-areas')} className="card-link">
-                                    Edit Subjects
-                                </button>
-                            </div>
-                            <div className="focus-areas-list">
-                                {(dashboardData?.focusAreas || [
-                                    { name: 'Data Structures', strength: 30, status: 'Needs attention' },
-                                    { name: 'Database Systems', strength: 65, status: 'Average' },
-                                    { name: 'Programming (Java)', strength: 90, status: 'Strong' },
-                                ]).map((subject, i) => (
-                                    <div key={i} className="focus-item">
-                                        <div className="focus-name">{subject.name}</div>
-                                        <div className="progress-container">
-                                            <div className="progress-bar-container">
-                                                <div 
-                                                    className={`progress-bar ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}
-                                                    style={{ width: `${subject.strength}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className={`status-badge ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}>
-                                                {subject.status}
-                                            </span>
+                        <div className="card-content">
+                            {requestsLoading && <p className="header-subtitle">Loading request details...</p>}
+                            {!requestsLoading && requestsError && <p className="header-subtitle">{requestsError}</p>}
+                            {!requestsLoading && !requestsError && myRequests.length === 0 && (
+                                <p className="header-subtitle">No help requests found yet.</p>
+                            )}
+                            {!requestsLoading && !requestsError && myRequests.map((request) => (
+                                <div key={request.id} className="session-item request-detail-item">
+                                    <h3>{request.topic}</h3>
+                                    <p><strong>Subject:</strong> {request.subjectName}</p>
+                                    <p><strong>Status:</strong> {request.status}</p>
+                                    <p><strong>Requested Time:</strong> {formatDateTime(request.preferredDateTime)}</p>
+                                    <p>{request.description}</p>
+                                    {!request.session && (
+                                        <p className="request-pending-note">Tutor has not accepted this request yet.</p>
+                                    )}
+                                    {request.session && (
+                                        <div className="request-accept-details">
+                                            <h4>Tutor Acceptance Details</h4>
+                                            <p><strong>Tutor:</strong> {request.session.tutorName}</p>
+                                            <p><strong>Scheduled Start:</strong> {formatDateTime(request.session.scheduledStartTime)}</p>
+                                            <p><strong>Scheduled End:</strong> {formatDateTime(request.session.scheduledEndTime)}</p>
+                                            {request.session.meetingLink && (
+                                                <p><strong>Meeting Link:</strong>{' '}
+                                                    <a href={request.session.meetingLink} target="_blank" rel="noreferrer">Join session</a>
+                                                </p>
+                                            )}
+                                            {request.session.notes && (
+                                                <p><strong>Tutor Notes:</strong> {request.session.notes}</p>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Recommended Resources */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Recommended for You</h2>
-                                <button onClick={() => navigate('/resources')} className="card-link">
-                                    View all →
-                                </button>
-                            </div>
-                            <div className="resources-grid">
-                                {(dashboardData?.recommendedResources || [
-                                    { title: 'Binary Trees Explained', type: 'PDF Notes', subject: 'Data Structures' },
-                                    { title: 'SQL Joins Cheat Sheet', type: 'Study Guide', subject: 'Database Systems' },
-                                    { title: 'Java Collections Framework', type: 'Video Tutorial', subject: 'Programming' },
-                                    { title: 'Normalization in DBMS', type: 'PDF Notes', subject: 'Database Systems' },
-                                ]).slice(0, 4).map((resource, i) => (
-                                    <div 
-                                        key={i} 
-                                        className="resource-card"
-                                        onClick={() => navigate(`/resources/${resource.id || i}`)}
-                                    >
-                                        <div className="resource-subject">{resource.subject}</div>
-                                        <h3 className="resource-title">{resource.title}</h3>
-                                        <p className="resource-type">{resource.type}</p>
-                                    </div>
-                                ))}
-                            </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
-
-                    {/* Right Column */}
-                    <div className="right-column">
-                        {/* Profile Badges */}
-                        <div className="content-card">
-                            <h2 className="badges-title">Your Identity</h2>
-                            <div className="badges-container">
-                                <span className="badge purple">🎓 Student</span>
-                                <span className="badge teal">👥 Group Learner</span>
-                                <span className="badge orange">🦉 Night Owl</span>
-                            </div>
-                        </div>
-
-                        {/* Upcoming Schedule */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Upcoming Schedule</h2>
-                            </div>
-                            <div className="schedule-list">
-                                {(dashboardData?.upcomingSchedule || [
-                                    { title: 'Data Structures Tutoring', time: 'Today, 4:00 PM', type: '1-on-1' },
-                                    { title: 'CS301 Project Meeting', time: 'Tomorrow, 2:00 PM', type: 'Group' },
-                                ]).map((session, i) => (
-                                    <div key={i} className="schedule-item">
-                                        <div className={`schedule-dot ${i === 0 ? 'brand' : 'teal'}`}></div>
-                                        <div className="schedule-content">
-                                            <h4>{session.title}</h4>
-                                            <div className="schedule-time">
-                                                <span>📅</span> {session.time}
-                                            </div>
-                                        </div>
-                                        <span className="schedule-type">{session.type}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="schedule-footer">
-                                <button onClick={() => navigate('/calendar')} className="schedule-footer-button">
-                                    Open Full Calendar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );
