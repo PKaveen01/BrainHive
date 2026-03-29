@@ -63,7 +63,8 @@ public class AuthController {
                     user.getRole() == com.brainhive.modules.user.model.UserRole.STUDENT ? "/dashboard/student" : "/dashboard/tutor",
                     user.getFullName(),
                     user.getEmail(),
-                    user.getRole().toString()
+                    user.getRole().toString(),
+                    user.getId()
             ));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated");

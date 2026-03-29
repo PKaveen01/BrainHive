@@ -210,6 +210,10 @@
     color: #2563eb;
     text-decoration: none;
     font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
 }
 
 .view-all:hover {
@@ -313,6 +317,20 @@
     gap: 10px;
 }
 
+.request-block {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.request-block:last-child {
+    border-bottom: none;
+}
+
+.accept-request-form {
+    display: grid;
+    gap: 10px;
+    padding: 0 15px 15px;
+}
+
 .btn-decline, .btn-accept {
     padding: 8px 15px;
     border: none;
@@ -340,6 +358,11 @@
     background: #bbdefb;
 }
 
+.btn-accept:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 /* Session Items */
 .session-item {
     padding: 15px;
@@ -365,6 +388,87 @@
 .session-time {
     font-size: 0.8rem;
     color: #999;
+}
+
+.lecture-form {
+    display: grid;
+    gap: 10px;
+}
+
+.lecture-label {
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.lecture-form input,
+.lecture-form select,
+.lecture-form textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.lecture-form input:focus,
+.lecture-form select:focus,
+.lecture-form textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-error {
+    margin: -4px 0 4px;
+    color: #dc2626;
+    font-size: 0.85rem;
+}
+
+.lecture-message {
+    font-size: 0.9rem;
+    color: #1d4ed8;
+    margin: 2px 0;
+}
+
+.lecture-item {
+    border-left: 4px solid #2563eb;
+    padding-left: 12px;
+}
+
+.lecture-details-btn {
+    margin-top: 10px;
+}
+
+.lecture-detail-page {
+    margin-left: 0;
+    width: 100%;
+}
+
+.request-detail-item {
+    border-left: 4px solid #16a34a;
+    padding-left: 12px;
+}
+
+.request-pending-note {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.request-accept-details {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #dbeafe;
+    background: #f8fbff;
+    border-radius: 8px;
+}
+
+.request-accept-details h4 {
+    margin: 0 0 8px;
+    color: #1d4ed8;
+    font-size: 0.95rem;
 }
 
 /* Loading */

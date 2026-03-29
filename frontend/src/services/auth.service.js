@@ -19,7 +19,8 @@ const authService = {
                     name: response.data.fullName,  // Keep as fullName for compatibility
                     email: response.data.email,
                     role: response.data.role,
-                    redirectUrl: response.data.redirectUrl
+                    redirectUrl: response.data.redirectUrl,
+                    userId: response.data.userId
                 }));
                 console.log('User stored in localStorage');
             }
@@ -107,7 +108,8 @@ const authService = {
                 localStorage.setItem('user', JSON.stringify({
                     name: response.data.fullName,  // Keep as fullName for consistency
                     email: response.data.email,
-                    role: response.data.role
+                    role: response.data.role,
+                    userId: response.data.userId
                 }));
             }
             return response.data;

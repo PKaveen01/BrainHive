@@ -59,7 +59,8 @@ public class UserService {
                     redirectUrl,
                     user.getFullName(),
                     user.getEmail(),
-                    user.getRole().toString()
+                    user.getRole().toString(),
+                    user.getId()
             );
 
         } catch (Exception e) {

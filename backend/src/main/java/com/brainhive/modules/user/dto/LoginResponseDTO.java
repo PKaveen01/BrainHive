@@ -7,14 +7,27 @@ public class LoginResponseDTO {
     private String fullName;
     private String email;
     private String role;
+    private Long userId;
 
-    public LoginResponseDTO(boolean success, String message, String redirectUrl, String fullName, String email, String role) {
+    public LoginResponseDTO(boolean success, String message, String redirectUrl,
+                            String fullName, String email, String role) {
         this.success = success;
         this.message = message;
         this.redirectUrl = redirectUrl;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
+    }
+
+    public LoginResponseDTO(boolean success, String message, String redirectUrl,
+                            String fullName, String email, String role, Long userId) {
+        this.success = success;
+        this.message = message;
+        this.redirectUrl = redirectUrl;
+        this.fullName = fullName;
+        this.email = email;
+        this.role = role;
+        this.userId = userId;
     }
 
     // Getters and Setters
@@ -35,4 +48,7 @@ public class LoginResponseDTO {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 }

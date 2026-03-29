@@ -19,6 +19,9 @@ public class Subject {
     @Column(name = "category")
     private String category; // e.g., Programming, Mathematics, Science
 
+    @Column(name = "description", length = 500)
+    private String description;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -37,6 +40,13 @@ public class Subject {
         this.createdAt = LocalDateTime.now();
     }
 
+    public Subject(String name, String description, String category) {
+        this.name = name;
+        this.description = description;
+        this.category = category;
+        this.createdAt = LocalDateTime.now();
+    }
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -46,6 +56,9 @@ public class Subject {
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

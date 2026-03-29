@@ -14,9 +14,10 @@ public class TutorProfile {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    // Fields from user module
     @Column(name = "qualification")
     private String qualification;
 
@@ -38,13 +39,36 @@ public class TutorProfile {
     @Column(name = "profile_completed")
     private Boolean profileCompleted = false;
 
+    // Fields from peerhelp module
+    @ManyToOne
+    @JoinColumn(name = "subject_id")
+    private Subject subject;
+
+    @Column(name = "proficiency_level")
+    private Integer proficiencyLevel; // 1-5 scale
+
+    @Column(name = "total_sessions")
+    private Integer totalSessions = 0;
+
+    @Column(name = "average_rating")
+    private Double averageRating = 0.0;
+
+    @Column(name = "credibility_score")
+    private Double credibilityScore = 0.0;
+
+    @Column(name = "hourly_rate")
+    private Double hourlyRate;
+
+    @Column(name = "is_available")
+    private Boolean isAvailable = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relationships
+    // Many-to-many for multiple expert subjects (user module style)
     @ManyToMany
     @JoinTable(
             name = "tutor_subjects",
@@ -64,6 +88,11 @@ public class TutorProfile {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
+
+    // Alias: peerhelp used "tutor" field name, user used "user" field name
+    // We keep "user" as the canonical field, and provide getTutor()/setTutor() as aliases
+    public User getTutor() { return user; }
+    public void setTutor(User tutor) { this.user = tutor; }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -93,6 +122,27 @@ public class TutorProfile {
     public Boolean getProfileCompleted() { return profileCompleted; }
     public void setProfileCompleted(Boolean profileCompleted) { this.profileCompleted = profileCompleted; }
 
+    public Subject getSubject() { return subject; }
+    public void setSubject(Subject subject) { this.subject = subject; }
+
+    public Integer getProficiencyLevel() { return proficiencyLevel; }
+    public void setProficiencyLevel(Integer proficiencyLevel) { this.proficiencyLevel = proficiencyLevel; }
+
+    public Integer getTotalSessions() { return totalSessions; }
+    public void setTotalSessions(Integer totalSessions) { this.totalSessions = totalSessions; }
+
+    public Double getAverageRating() { return averageRating; }
+    public void setAverageRating(Double averageRating) { this.averageRating = averageRating; }
+
+    public Double getCredibilityScore() { return credibilityScore; }
+    public void setCredibilityScore(Double credibilityScore) { this.credibilityScore = credibilityScore; }
+
+    public Double getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
+
+    public Boolean getIsAvailable() { return isAvailable; }
+    public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
+
     public Set<Subject> getExpertSubjects() { return expertSubjects; }
     public void setExpertSubjects(Set<Subject> expertSubjects) { this.expertSubjects = expertSubjects; }
 
@@ -104,6 +154,15 @@ public class TutorProfile {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    /**
+     * Calculates credibility score based on ratings and sessions.
+     */
+    public void calculateCredibilityScore() {
+        double ratingComponent = this.averageRating * 0.6;
+        double sessionComponent = (Math.min(this.totalSessions, 50) / 50.0) * 5 * 0.4;
+        this.credibilityScore = ratingComponent + sessionComponent;
+    }
 
     @PrePersist
     protected void onCreate() {
