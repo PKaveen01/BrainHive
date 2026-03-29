@@ -20,7 +20,7 @@ import jakarta.persistence.Table;
  * Entity representing a tutor's profile including their subject strengths
  * and credibility score for matching purposes.
  */
-@Entity
+@Entity(name = "PeerHelpTutorProfile")
 @Table(name = "tutor_profiles")
 public class TutorProfile {
 

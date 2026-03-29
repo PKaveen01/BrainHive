@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface SubjectRepository extends JpaRepository<Subject, Long> {
+public interface PeerHelpSubjectRepository extends JpaRepository<Subject, Long> {
     Optional<Subject> findByName(String name);
     boolean existsByName(String name);
 }

@@ -1,11 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
+import api from '../services/api';
+import authService from '../services/auth.service';
 
 const Home = () => {
-    console.log('Home component rendering');
     const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(true);
+    const [reviewsError, setReviewsError] = useState('');
+    const [activeReviewIndex, setActiveReviewIndex] = useState(0);
+    const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', reviewText: '' });
+    const [formErrors, setFormErrors] = useState({});
+    const [formSuccess, setFormSuccess] = useState('');
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+    const isLoggedIn = authService.isAuthenticated();
+    const currentUser = authService.getCurrentUser();
+
+    const fetchReviews = useCallback(async () => {
+        try {
+            setReviewsLoading(true);
+            setReviewsError('');
+            const response = await api.get('/peerhelp/reviews/public', { params: { limit: 12 } });
+            const reviewData = response?.data?.data || [];
+            setReviews(reviewData);
+            setActiveReviewIndex((prev) => (prev >= reviewData.length ? 0 : prev));
+        } catch (error) {
+            console.error('Failed to fetch reviews', error);
+            setReviewsError('Unable to load reviews right now. Please try again soon.');
+        } finally {
+            setReviewsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -15,7 +43,18 @@ const Home = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Animation on scroll
+    useEffect(() => {
+        fetchReviews();
+    }, [fetchReviews]);
+
+    useEffect(() => {
+        if (reviews.length <= 1) return undefined;
+        const timer = setInterval(() => {
+            setActiveReviewIndex((prev) => (prev + 1) % reviews.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [reviews]);
+
     useEffect(() => {
         const observerOptions = {
             threshold: 0.1,
@@ -37,9 +76,75 @@ const Home = () => {
         return () => observer.disconnect();
     }, []);
 
+    const validateReviewForm = () => {
+        const errors = {};
+        if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
+            errors.rating = 'Rating must be between 1 and 5';
+        }
+        if (!reviewForm.title || reviewForm.title.trim().length < 3) {
+            errors.title = 'Title must be at least 3 characters';
+        }
+        if (reviewForm.title && reviewForm.title.trim().length > 120) {
+            errors.title = 'Title must be at most 120 characters';
+        }
+        if (!reviewForm.reviewText || reviewForm.reviewText.trim().length < 10) {
+            errors.reviewText = 'Review must be at least 10 characters';
+        }
+        if (reviewForm.reviewText && reviewForm.reviewText.trim().length > 1200) {
+            errors.reviewText = 'Review must be at most 1200 characters';
+        }
+        return errors;
+    };
+
+    const handleReviewSubmit = async (event) => {
+        event.preventDefault();
+        setFormSuccess('');
+
+        const validationErrors = validateReviewForm();
+        setFormErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) {
+            return;
+        }
+
+        if (!isLoggedIn) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            setIsSubmittingReview(true);
+            await api.post('/peerhelp/reviews', {
+                rating: Number(reviewForm.rating),
+                title: reviewForm.title.trim(),
+                reviewText: reviewForm.reviewText.trim()
+            });
+
+            setReviewForm({ rating: 5, title: '', reviewText: '' });
+            setFormErrors({});
+            setFormSuccess('Thanks. Your review was submitted successfully.');
+            await fetchReviews();
+            setActiveReviewIndex(0);
+        } catch (error) {
+            console.error('Failed to submit review', error);
+            const message = error?.response?.data?.message || 'Could not submit review right now. Please try again.';
+            setFormErrors({ submit: message });
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
+    const renderStars = (rating) => {
+        const safe = Math.max(1, Math.min(5, rating || 0));
+        return '★'.repeat(safe) + '☆'.repeat(5 - safe);
+    };
+
+    const handleStarSelect = (value) => {
+        setReviewForm((prev) => ({ ...prev, rating: value }));
+        setFormErrors((prev) => ({ ...prev, rating: undefined }));
+    };
+
     return (
         <div className="home">
-            {/* Navigation */}
             <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}>
                 <div className="nav-container">
                     <div className="nav-logo">
@@ -61,7 +166,6 @@ const Home = () => {
                 </div>
             </nav>
 
-            {/* Hero Section */}
             <section className="hero">
                 <div className="hero-bg-shapes">
                     <div className="shape shape-1"></div>
@@ -69,16 +173,14 @@ const Home = () => {
                     <div className="shape shape-3"></div>
                 </div>
                 <div className="hero-content">
-                    <div className="hero-badge">
-                        🎓 The Ultimate Student Platform
-                    </div>
+                    <div className="hero-badge">🎓 The Ultimate Student Platform</div>
                     <h1 className="hero-title">
-                        One platform for <span className="gradient-text">learning</span>, 
+                        One platform for <span className="gradient-text">learning</span>,
                         sharing, and <span className="gradient-text">collaboration</span>
                     </h1>
                     <p className="hero-description">
-                        BrainHive transforms your academic journey with personalized learning paths, 
-                        structured peer support, and collaborative study groups. Join thousands of 
+                        BrainHive transforms your academic journey with personalized learning paths,
+                        structured peer support, and collaborative study groups. Join thousands of
                         students who are already excelling.
                     </p>
                     <div className="bhero-buttons">
@@ -130,7 +232,6 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Stats Section */}
             <section className="stats animate-on-scroll">
                 <div className="stats-container">
                     <div className="stat-item">
@@ -156,13 +257,12 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Features Section */}
             <section id="features" className="features animate-on-scroll">
                 <div className="section-header">
                     <h2>Everything you need to excel</h2>
                     <p className="section-subtitle">Built specifically for university students to manage their academic life in one unified workspace.</p>
                 </div>
-                
+
                 <div className="features-grid">
                     <div className="feature-card">
                         <div className="feature-icon">🎯</div>
@@ -210,56 +310,122 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Testimonials Section */}
-            <section id="testimonials" className="testimonials animate-on-scroll">
+            <section id="testimonials" className="testimonials reviews-section animate-on-scroll">
                 <div className="section-header">
-                    <h2>Loved by students</h2>
-                    <p className="section-subtitle">See how BrainHive is changing the way students learn and collaborate.</p>
+                    <h2>Student Reviews</h2>
+                    <p className="section-subtitle">Real feedback from students and tutors using BrainHive every day.</p>
                 </div>
-                
-                <div className="testimonials-grid">
-                    <div className="testimonial-card">
-                        <div className="quote-icon">"</div>
-                        <div className="stars">★★★★★</div>
-                        <p>"The tutor matching is incredible. I found someone who explained Data Structures in a way that finally clicked for me."</p>
-                        <div className="testimonial-author">
-                            <div className="author-avatar">SJ</div>
-                            <div className="author-info">
-                                <strong>Sarah Jenkins</strong>
-                                <span>Computer Science, Year 3</span>
+
+                <div className="review-slider-shell">
+                    <div className="review-slider-viewport">
+                        {reviewsLoading && <div className="review-empty-state">Loading reviews...</div>}
+                        {!reviewsLoading && reviewsError && <div className="review-empty-state review-error">{reviewsError}</div>}
+                        {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+                            <div className="review-empty-state">No reviews yet. Be the first to share your experience.</div>
+                        )}
+
+                        {!reviewsLoading && !reviewsError && reviews.length > 0 && (
+                            <div className="review-slide-card">
+                                <div className="quote-icon">"</div>
+                                <div className="stars">{renderStars(reviews[activeReviewIndex]?.rating)}</div>
+                                <h3 className="review-title">{reviews[activeReviewIndex]?.title}</h3>
+                                <p>"{reviews[activeReviewIndex]?.reviewText}"</p>
+                                <div className="testimonial-author">
+                                    <div className="author-avatar">{(reviews[activeReviewIndex]?.reviewerName || 'U').charAt(0).toUpperCase()}</div>
+                                    <div className="author-info">
+                                        <strong>{reviews[activeReviewIndex]?.reviewerName}</strong>
+                                        <span>{reviews[activeReviewIndex]?.reviewerRole}</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
+                    </div>
+                </div>
+
+                {!reviewsLoading && !reviewsError && reviews.length > 1 && (
+                    <div className="review-dots">
+                        {reviews.map((review, index) => (
+                            <button
+                                key={review.id || index}
+                                className={`review-dot ${index === activeReviewIndex ? 'active' : ''}`}
+                                onClick={() => setActiveReviewIndex(index)}
+                                aria-label={`Go to review ${index + 1}`}
+                            ></button>
+                        ))}
+                    </div>
+                )}
+
+                <div className="review-form-wrap">
+                    <div className="review-form-header">
+                        <h3>Share Your Review</h3>
+                        <p>
+                            {isLoggedIn
+                                ? `Logged in as ${currentUser?.name || 'User'}. Your review helps other learners decide faster.`
+                                : 'Login first to submit your review.'}
+                        </p>
                     </div>
 
-                    <div className="testimonial-card">
-                        <div className="quote-icon">"</div>
-                        <div className="stars">★★★★★</div>
-                        <p>"Our study group uses the task board to manage our final project. It's so much better than messy group chats."</p>
-                        <div className="testimonial-author">
-                            <div className="author-avatar">MC</div>
-                            <div className="author-info">
-                                <strong>Marcus Chen</strong>
-                                <span>Engineering, Year 2</span>
+                    <form className="review-form" onSubmit={handleReviewSubmit}>
+                        <div className="review-form-row">
+                            <label htmlFor="review-rating">Rating</label>
+                            <div id="review-rating" className="rating-stars-input" role="radiogroup" aria-label="Select rating">
+                                {[1, 2, 3, 4, 5].map((value) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={reviewForm.rating === value}
+                                        className={`rating-star-btn ${value <= reviewForm.rating ? 'filled' : ''}`}
+                                        onClick={() => handleStarSelect(value)}
+                                        title={`${value} star${value > 1 ? 's' : ''}`}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                                <span className="rating-label">{reviewForm.rating}.0 out of 5</span>
                             </div>
+                            {formErrors.rating && <span className="review-field-error">{formErrors.rating}</span>}
                         </div>
-                    </div>
 
-                    <div className="testimonial-card">
-                        <div className="quote-icon">"</div>
-                        <div className="stars">★★★★★</div>
-                        <p>"The personalized resource recommendations saved me hours of searching for good study materials before finals."</p>
-                        <div className="testimonial-author">
-                            <div className="author-avatar">ER</div>
-                            <div className="author-info">
-                                <strong>Elena Rodriguez</strong>
-                                <span>Pre-Med, Year 4</span>
-                            </div>
+                        <div className="review-form-row">
+                            <label htmlFor="review-title">Title</label>
+                            <input
+                                id="review-title"
+                                type="text"
+                                maxLength={120}
+                                placeholder="Summarize your experience"
+                                value={reviewForm.title}
+                                onChange={(e) => setReviewForm((prev) => ({ ...prev, title: e.target.value }))}
+                            />
+                            {formErrors.title && <span className="review-field-error">{formErrors.title}</span>}
                         </div>
-                    </div>
+
+                        <div className="review-form-row">
+                            <label htmlFor="review-text">Review</label>
+                            <textarea
+                                id="review-text"
+                                rows="4"
+                                maxLength={1200}
+                                placeholder="Tell others what worked for you"
+                                value={reviewForm.reviewText}
+                                onChange={(e) => setReviewForm((prev) => ({ ...prev, reviewText: e.target.value }))}
+                            ></textarea>
+                            <div className="review-char-counter">{reviewForm.reviewText.length}/1200</div>
+                            {formErrors.reviewText && <span className="review-field-error">{formErrors.reviewText}</span>}
+                        </div>
+
+                        {formErrors.submit && <div className="review-submit-error">{formErrors.submit}</div>}
+                        {formSuccess && <div className="review-submit-success">{formSuccess}</div>}
+
+                        <button type="submit" className="btn-primary-large review-submit-btn" disabled={isSubmittingReview}>
+                            {isLoggedIn
+                                ? (isSubmittingReview ? 'Submitting...' : 'Submit Review')
+                                : 'Login to Submit Review'}
+                        </button>
+                    </form>
                 </div>
             </section>
 
-            {/* CTA Section */}
             <section className="cta animate-on-scroll">
                 <div className="cta-content">
                     <h2>Ready to transform your academic journey?</h2>
@@ -272,8 +438,7 @@ const Home = () => {
                 <div className="cta-bg-shapes"></div>
             </section>
 
-            {/* Footer */}
-            <footer className="footer">
+            <footer className="footer" id="about">
                 <div className="footer-content">
                     <div className="footer-main">
                         <div className="footer-brand">

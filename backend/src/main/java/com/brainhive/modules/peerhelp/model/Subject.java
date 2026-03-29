@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 /**
  * Entity representing academic subjects available in the system.
  */
-@Entity
+@Entity(name = "PeerHelpSubject")
 @Table(name = "subjects")
 public class Subject {
 

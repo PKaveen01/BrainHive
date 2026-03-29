@@ -1,22 +1,23 @@
 package com.brainhive.modules.peerhelp.service;
 
-import com.brainhive.modules.peerhelp.dto.SubjectDTO;
-import com.brainhive.modules.peerhelp.model.Subject;
-import com.brainhive.modules.peerhelp.repository.SubjectRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.brainhive.modules.peerhelp.dto.SubjectDTO;
+import com.brainhive.modules.peerhelp.model.Subject;
+import com.brainhive.modules.peerhelp.repository.PeerHelpSubjectRepository;
 
 @Service
 @Transactional
 public class SubjectService {
 
     @Autowired
-    private SubjectRepository subjectRepository;
+    private PeerHelpSubjectRepository subjectRepository;
 
     /**
      * Get all subjects.

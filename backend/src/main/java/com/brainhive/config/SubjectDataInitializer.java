@@ -6,14 +6,14 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.brainhive.modules.peerhelp.model.Subject;
-import com.brainhive.modules.peerhelp.repository.SubjectRepository;
+import com.brainhive.modules.peerhelp.repository.PeerHelpSubjectRepository;
 
 @Component
 public class SubjectDataInitializer implements CommandLineRunner {
 
-    private final SubjectRepository subjectRepository;
+    private final PeerHelpSubjectRepository subjectRepository;
 
-    public SubjectDataInitializer(SubjectRepository subjectRepository) {
+    public SubjectDataInitializer(PeerHelpSubjectRepository subjectRepository) {
         this.subjectRepository = subjectRepository;
     }
 

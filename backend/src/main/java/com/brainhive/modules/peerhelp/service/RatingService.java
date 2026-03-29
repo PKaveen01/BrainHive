@@ -1,5 +1,12 @@
 package com.brainhive.modules.peerhelp.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.brainhive.modules.peerhelp.dto.CreateRatingDTO;
 import com.brainhive.modules.peerhelp.dto.RatingResponseDTO;
 import com.brainhive.modules.peerhelp.model.HelpRequest;
@@ -9,12 +16,6 @@ import com.brainhive.modules.peerhelp.model.TutorSession;
 import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
 import com.brainhive.modules.peerhelp.repository.SessionRatingRepository;
 import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -63,7 +64,7 @@ public class RatingService {
         rating.setCommunicationRating(dto.getCommunicationRating());
         rating.setPunctualityRating(dto.getPunctualityRating());
         rating.setFeedback(dto.getFeedback());
-        rating.setWouldRecommend(dto.getWouldRecommend() != null ? dto.getWouldRecommend() : true);
+        rating.setWouldRecommend(dto.getWouldRecommend() != null ? dto.getWouldRecommend() : Boolean.TRUE);
 
         SessionRating saved = ratingRepository.save(rating);
 
@@ -85,6 +86,53 @@ public class RatingService {
         SessionRating rating = ratingRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Rating not found for session ID: " + sessionId));
         return RatingResponseDTO.fromEntity(rating);
+    }
+
+    /**
+     * Update an existing rating by its author (student).
+     */
+    public RatingResponseDTO updateRating(Long studentId, Long ratingId, CreateRatingDTO dto) {
+        SessionRating rating = ratingRepository.findById(ratingId)
+                .orElseThrow(() -> new IllegalArgumentException("Rating not found with ID: " + ratingId));
+
+        if (!rating.getStudent().getId().equals(studentId)) {
+            throw new IllegalArgumentException("You can only update your own rating");
+        }
+
+        if (dto.getSessionId() != null && !dto.getSessionId().equals(rating.getSession().getId())) {
+            throw new IllegalArgumentException("Session ID cannot be changed for an existing rating");
+        }
+
+        rating.setRating(dto.getRating());
+        rating.setKnowledgeRating(dto.getKnowledgeRating());
+        rating.setCommunicationRating(dto.getCommunicationRating());
+        rating.setPunctualityRating(dto.getPunctualityRating());
+        rating.setFeedback(dto.getFeedback());
+        rating.setWouldRecommend(dto.getWouldRecommend() != null ? dto.getWouldRecommend() : Boolean.TRUE);
+
+        SessionRating updated = ratingRepository.save(rating);
+        tutorProfileService.updateCredibilityScore(rating.getTutor().getId());
+        return RatingResponseDTO.fromEntity(updated);
+    }
+
+    /**
+     * Delete an existing rating by its author (student).
+     */
+    public void deleteRating(Long studentId, Long ratingId) {
+        SessionRating rating = ratingRepository.findById(ratingId)
+                .orElseThrow(() -> new IllegalArgumentException("Rating not found with ID: " + ratingId));
+
+        if (!rating.getStudent().getId().equals(studentId)) {
+            throw new IllegalArgumentException("You can only delete your own rating");
+        }
+
+        ratingRepository.delete(rating);
+
+        HelpRequest request = rating.getSession().getHelpRequest();
+        request.setStatus(HelpRequestStatus.COMPLETED);
+        helpRequestRepository.save(request);
+
+        tutorProfileService.updateCredibilityScore(rating.getTutor().getId());
     }
 
     /**

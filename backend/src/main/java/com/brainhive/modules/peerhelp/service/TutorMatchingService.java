@@ -1,20 +1,21 @@
 package com.brainhive.modules.peerhelp.service;
 
-import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
-import com.brainhive.modules.peerhelp.model.TutorAvailability;
-import com.brainhive.modules.peerhelp.model.TutorProfile;
-import com.brainhive.modules.peerhelp.repository.TutorAvailabilityRepository;
-import com.brainhive.modules.peerhelp.repository.TutorProfileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.model.TutorAvailability;
+import com.brainhive.modules.peerhelp.model.TutorProfile;
+import com.brainhive.modules.peerhelp.repository.PeerHelpTutorProfileRepository;
+import com.brainhive.modules.peerhelp.repository.TutorAvailabilityRepository;
 
 /**
  * Service for matching students with suitable tutors based on subject and availability.
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 public class TutorMatchingService {
 
     @Autowired
-    private TutorProfileRepository tutorProfileRepository;
+    private PeerHelpTutorProfileRepository tutorProfileRepository;
 
     @Autowired
     private TutorAvailabilityRepository availabilityRepository;

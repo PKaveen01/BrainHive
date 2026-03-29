@@ -1,35 +1,36 @@
 package com.brainhive.modules.peerhelp.service;
 
-import com.brainhive.modules.peerhelp.dto.TutorProfileDTO;
-import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
-import com.brainhive.modules.peerhelp.model.Subject;
-import com.brainhive.modules.peerhelp.model.TutorProfile;
-import com.brainhive.modules.peerhelp.repository.SessionRatingRepository;
-import com.brainhive.modules.peerhelp.repository.SubjectRepository;
-import com.brainhive.modules.peerhelp.repository.TutorProfileRepository;
-import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
-import com.brainhive.modules.user.model.User;
-import com.brainhive.modules.user.model.UserRole;
-import com.brainhive.modules.user.repository.UserRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.brainhive.modules.peerhelp.dto.TutorProfileDTO;
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.model.Subject;
+import com.brainhive.modules.peerhelp.model.TutorProfile;
+import com.brainhive.modules.peerhelp.repository.PeerHelpSubjectRepository;
+import com.brainhive.modules.peerhelp.repository.PeerHelpTutorProfileRepository;
+import com.brainhive.modules.peerhelp.repository.SessionRatingRepository;
+import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
+import com.brainhive.modules.user.model.User;
+import com.brainhive.modules.user.model.UserRole;
+import com.brainhive.modules.user.repository.UserRepository;
 
 @Service
 @Transactional
 public class TutorProfileService {
 
     @Autowired
-    private TutorProfileRepository tutorProfileRepository;
+    private PeerHelpTutorProfileRepository tutorProfileRepository;
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private SubjectRepository subjectRepository;
+    private PeerHelpSubjectRepository subjectRepository;
 
     @Autowired
     private SessionRatingRepository sessionRatingRepository;

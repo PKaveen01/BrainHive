@@ -20,7 +20,7 @@ import com.brainhive.modules.peerhelp.model.Subject;
 import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
 import com.brainhive.modules.peerhelp.repository.LectureAttendanceRepository;
 import com.brainhive.modules.peerhelp.repository.LectureRepository;
-import com.brainhive.modules.peerhelp.repository.SubjectRepository;
+import com.brainhive.modules.peerhelp.repository.PeerHelpSubjectRepository;
 import com.brainhive.modules.user.model.User;
 import com.brainhive.modules.user.model.UserRole;
 import com.brainhive.modules.user.repository.UserRepository;
@@ -36,7 +36,7 @@ public class LectureService {
     private UserRepository userRepository;
 
     @Autowired
-    private SubjectRepository subjectRepository;
+    private PeerHelpSubjectRepository subjectRepository;
 
     @Autowired
     private LectureAttendanceRepository lectureAttendanceRepository;
