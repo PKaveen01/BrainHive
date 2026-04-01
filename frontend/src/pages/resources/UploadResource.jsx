@@ -175,23 +175,40 @@ const UploadResource = () => {
 
         const dbUserId = getDatabaseUserId(currentUser);
         if (dbUserId) {
-            fetchAllUploads(dbUserId);
+            fetchAllUploads(dbUserId, currentUser);
         } else {
             setError('Could not identify user. Please check your login.');
             setLoadingUploads(false);
         }
-    }, []);
+    }, [navigate]);
 
     // ============= FETCH BOOKMARK STATUS =============
-    const fetchBookmarkStatus = async (resources) => {
+    const fetchBookmarkStatus = async (resources, providedUser = null) => {
         try {
-            const dbUserId = getDatabaseUserId(user);
+            const activeUser = providedUser || user || authService.getCurrentUser();
+
+            if (!activeUser) {
+                console.warn('No active user found for bookmark status check');
+                setBookmarkedIds(new Set());
+                return;
+            }
+
+            const dbUserId = getDatabaseUserId(activeUser);
+
+            if (!dbUserId) {
+                console.warn('Database user ID is null, skipping bookmark status check');
+                setBookmarkedIds(new Set());
+                return;
+            }
+
             const bookmarkStatus = {};
 
             for (const resource of resources) {
                 try {
-                    const response = await api.get(`/resources/${resource.id}/bookmarked/status?userId=${dbUserId}`);
-                    bookmarkStatus[resource.id] = response.data.isBookmarked;
+                    const response = await api.get(
+                        `/resources/${resource.id}/bookmarked/status?userId=${dbUserId}`
+                    );
+                    bookmarkStatus[resource.id] = response.data?.isBookmarked || false;
                 } catch (error) {
                     console.error(`Error checking bookmark status for ${resource.id}:`, error);
                     bookmarkStatus[resource.id] = false;
@@ -199,16 +216,20 @@ const UploadResource = () => {
             }
 
             const bookmarked = new Set(
-                Object.keys(bookmarkStatus).filter(id => bookmarkStatus[id])
+                Object.keys(bookmarkStatus)
+                    .filter(id => bookmarkStatus[id])
+                    .map(id => Number(id))
             );
+
             setBookmarkedIds(bookmarked);
         } catch (error) {
             console.error('Error fetching bookmark status:', error);
+            setBookmarkedIds(new Set());
         }
     };
 
     // ============= FETCH ALL UPLOADS =============
-    const fetchAllUploads = async (userId) => {
+    const fetchAllUploads = async (userId, providedUser = null) => {
         try {
             setLoadingUploads(true);
             setError(null);
@@ -223,7 +244,8 @@ const UploadResource = () => {
             }
 
             setUploads(uploadsData);
-            await fetchBookmarkStatus(uploadsData);
+            const currentUser = providedUser || user || authService.getCurrentUser();
+            await fetchBookmarkStatus(uploadsData, currentUser);
 
             const pending = uploadsData.filter(u => u?.status === 'pending').length;
             const active = uploadsData.filter(u => u?.status === 'active').length;
@@ -329,7 +351,6 @@ const UploadResource = () => {
     const validateForm = () => {
         const errors = {};
 
-        // Validate all required fields
         errors.title = validateField('title', formData.title);
         errors.subject = validateField('subject', formData.subject);
         errors.semester = validateField('semester', formData.semester);
@@ -342,7 +363,6 @@ const UploadResource = () => {
 
         errors.tags = validateField('tags', formData.tags);
 
-        // Remove null values
         Object.keys(errors).forEach(key => {
             if (errors[key] === null) delete errors[key];
         });
@@ -398,7 +418,7 @@ const UploadResource = () => {
                 }
             });
 
-            xhr.addEventListener('error', (event) => {
+            xhr.addEventListener('error', () => {
                 reject(new Error('Network error occurred - please check if backend is running on port 8080'));
             });
 
@@ -409,7 +429,6 @@ const UploadResource = () => {
             xhr.timeout = 300000;
             xhr.open('POST', `${API_URL}/api/resources/upload/file`);
             xhr.withCredentials = true;
-
 
             const formData = new FormData();
             formData.append('file', file);
@@ -440,7 +459,6 @@ const UploadResource = () => {
             [name]: newValue
         }));
 
-        // Validate on change after field has been touched
         if (touched[name]) {
             const error = validateField(name, newValue);
             setFormErrors(prev => {
@@ -507,7 +525,6 @@ const UploadResource = () => {
         }));
         setShowPreview(false);
 
-        // Clear relevant errors
         setFormErrors(prev => {
             const newErrors = { ...prev };
             delete newErrors.file;
@@ -526,7 +543,6 @@ const UploadResource = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Mark all fields as touched
         const allFields = ['title', 'subject', 'semester'];
         if (uploadType === 'link' || uploadType === 'video' || uploadType === 'article') {
             allFields.push('link');
@@ -591,7 +607,7 @@ const UploadResource = () => {
                     if (response) {
                         alert('Resource uploaded successfully! It will be active after moderation review.');
                         resetForm();
-                        fetchAllUploads(dbUserId);
+                        fetchAllUploads(dbUserId, currentUser);
                         setActiveTab('my-uploads');
                     }
                 } catch (error) {
@@ -628,7 +644,7 @@ const UploadResource = () => {
                     if (response.data) {
                         alert('Resource added successfully! It will be active after moderation review.');
                         resetForm();
-                        fetchAllUploads(dbUserId);
+                        fetchAllUploads(dbUserId, currentUser);
                         setActiveTab('my-uploads');
                     }
                 } catch (error) {
@@ -663,7 +679,8 @@ const UploadResource = () => {
         if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
         try {
             await api.delete(`/resources/${resourceId}`);
-            fetchAllUploads(getDatabaseUserId(user));
+            const currentUser = user || authService.getCurrentUser();
+            fetchAllUploads(getDatabaseUserId(currentUser), currentUser);
             alert('Resource deleted successfully');
         } catch (error) {
             alert('Failed to delete resource');
@@ -693,7 +710,8 @@ const UploadResource = () => {
             await api.put(`/resources/${editingResource.id}`, updatedData);
             alert('Resource updated successfully');
             setShowEditModal(false);
-            fetchAllUploads(getDatabaseUserId(user));
+            const currentUser = user || authService.getCurrentUser();
+            fetchAllUploads(getDatabaseUserId(currentUser), currentUser);
         } catch (error) {
             alert('Failed to update resource');
         }
@@ -702,10 +720,21 @@ const UploadResource = () => {
     // ============= BOOKMARK OPERATIONS =============
     const handleBookmark = async (resourceId) => {
         try {
-            const dbUserId = getDatabaseUserId(user);
+            const activeUser = user || authService.getCurrentUser();
+            const dbUserId = getDatabaseUserId(activeUser);
+
+            if (!dbUserId) {
+                alert('Unable to identify user');
+                return;
+            }
+
             if (bookmarkedIds.has(resourceId)) {
                 await api.delete(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
-                setBookmarkedIds(prev => { const s = new Set(prev); s.delete(resourceId); return s; });
+                setBookmarkedIds(prev => {
+                    const s = new Set(prev);
+                    s.delete(resourceId);
+                    return s;
+                });
                 alert('Bookmark removed');
             } else {
                 await api.post(`/resources/${resourceId}/bookmark?userId=${dbUserId}`);
@@ -718,54 +747,68 @@ const UploadResource = () => {
     };
 
     // ============= RATING OPERATIONS =============
-    const handleRate = async () => {
-        if (!review.trim()) {
-            alert('Please write a review before submitting.');
+   const handleRate = async () => {
+    if (!review.trim()) {
+        alert('Please write a review before submitting.');
+        return;
+    }
+
+    try {
+        const activeUser = user || authService.getCurrentUser();
+        const dbUserId = getDatabaseUserId(activeUser);
+
+        if (!dbUserId) {
+            alert('Unable to identify user.');
             return;
         }
 
-        try {
-            const dbUserId = getDatabaseUserId(user);
-            const currentUser = authService.getCurrentUser();
-
-            const newReview = {
-                id: Date.now(),
-                userId: dbUserId,
-                userName: currentUser?.name || currentUser?.fullName || 'Anonymous User',
-                userAvatar: (currentUser?.name?.charAt(0) || currentUser?.fullName?.charAt(0) || 'U').toUpperCase(),
+        // ✅ FIX: userId MUST be query param
+        const response = await api.post(
+            `/resources/${ratingModal.resourceId}/rate?userId=${dbUserId}`,
+            {
                 rating: userRating,
-                review: review.trim(),
-                date: new Date().toISOString(),
-                helpful: 0
-            };
+                review: review.trim()
+            }
+        );
 
-            setUploads(prevUploads =>
-                prevUploads.map(upload => {
-                    if (upload.id === ratingModal.resourceId) {
-                        const existingReviews = upload.reviews || [];
-                        const updatedReviews = [...existingReviews, newReview];
-                        const newAverageRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
+        console.log('Rating response:', response.data);
 
-                        return {
-                            ...upload,
-                            reviews: updatedReviews,
-                            averageRating: newAverageRating,
-                            ratingCount: updatedReviews.length
-                        };
-                    }
-                    return upload;
-                })
-            );
+        // ✅ update UI instantly using backend response
+        setUploads(prevUploads =>
+            prevUploads.map(upload => {
+                if (upload.id === ratingModal.resourceId) {
+                    return {
+                        ...upload,
+                        averageRating: response.data.averageRating,
+                        ratingCount: response.data.ratingCount
+                    };
+                }
+                return upload;
+            })
+        );
 
-            alert(`Review submitted successfully!\n\nRating: ${userRating} stars\nReview: ${review}`);
-            setRatingModal({ show: false, resourceId: null });
-            setUserRating(5);
-            setReview('');
-        } catch (error) {
-            console.error('Error submitting rating:', error);
-            alert('Failed to submit rating. Please try again.');
+        // ✅ ALSO update modal (this was missing before)
+        if (detailsModal.show && detailsModal.resource?.id === ratingModal.resourceId) {
+            setDetailsModal(prev => ({
+                ...prev,
+                resource: {
+                    ...prev.resource,
+                    averageRating: response.data.averageRating,
+                    ratingCount: response.data.ratingCount
+                }
+            }));
         }
-    };
+
+        alert('Review submitted successfully!');
+        setRatingModal({ show: false, resourceId: null });
+        setUserRating(5);
+        setReview('');
+
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+        alert(error.response?.data || 'Failed to submit rating');
+    }
+};
 
     // ============= VIEW DETAILS & DOWNLOAD =============
     const handleViewDetails = (resource) => {
@@ -1711,7 +1754,7 @@ const UploadResource = () => {
 
                         <div className="details-modal-footer">
                             <button className="download-btn" onClick={() => handleDownload(detailsModal.resource)}>
-                                Download Resource
+                                Download/View Resource
                             </button>
                             <button className="close-btn" onClick={() => setDetailsModal({ show: false, resource: null })}>
                                 Close

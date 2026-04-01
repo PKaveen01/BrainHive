@@ -99,7 +99,7 @@ public class ResourceServiceImpl implements ResourceService {
         resource.setLicense(resourceDTO.getLicense());
         resource.setAllowRatings(resourceDTO.getAllowRatings() != null ? resourceDTO.getAllowRatings() : true);
         resource.setAllowComments(resourceDTO.getAllowComments() != null ? resourceDTO.getAllowComments() : true);
-        resource.setStatus("pending");
+        resource.setStatus("active");
         resource.setUploadedBy(user);
 
         return resourceRepository.save(resource);
@@ -125,7 +125,7 @@ public class ResourceServiceImpl implements ResourceService {
         resource.setLicense(resourceDTO.getLicense());
         resource.setAllowRatings(resourceDTO.getAllowRatings() != null ? resourceDTO.getAllowRatings() : true);
         resource.setAllowComments(resourceDTO.getAllowComments() != null ? resourceDTO.getAllowComments() : true);
-        resource.setStatus("pending");
+        resource.setStatus("active");
         resource.setUploadedBy(user);
 
         return resourceRepository.save(resource);

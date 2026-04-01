@@ -62,36 +62,50 @@ const BookMarked = () => {
     // ============= INITIALIZATION =============
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
-        
+
         if (!currentUser) {
             navigate('/login');
             return;
         }
+
         setUser(currentUser);
-        fetchBookmarks();
-    }, []);
+        fetchBookmarks(currentUser);
+    }, [navigate]);
 
     // ============= FETCH BOOKMARKS =============
-    const fetchBookmarks = async () => {
+    const fetchBookmarks = async (providedUser = null) => {
         try {
             setLoading(true);
             setError(null);
-            
-            const userId = getDatabaseUserId(user);
-            
-            if (!userId) {
+
+            const activeUser = providedUser || user || authService.getCurrentUser();
+            const userId = getDatabaseUserId(activeUser);
+
+            if (!activeUser || !userId) {
                 setError('Unable to identify user');
+                setBookmarks([]);
+                setStats({
+                    total: 0,
+                    pending: 0,
+                    active: 0,
+                    views: 0,
+                    downloads: 0
+                });
                 setLoading(false);
                 return;
             }
-            
+
+            if (!user) {
+                setUser(activeUser);
+            }
+
             let response;
             try {
                 response = await api.get(`/resources/user/${userId}/bookmarked`);
             } catch (error) {
                 response = await api.get(`/bookmarks/user/${userId}`);
             }
-            
+
             let bookmarksData = [];
             if (response && response.data) {
                 if (Array.isArray(response.data)) {
@@ -104,14 +118,14 @@ const BookMarked = () => {
                     bookmarksData = response.data.bookmarks;
                 }
             }
-            
+
             setBookmarks(bookmarksData);
-            
+
             const pending = bookmarksData.filter(b => b?.status === 'pending').length;
             const active = bookmarksData.filter(b => b?.status === 'active').length;
             const totalViews = bookmarksData.reduce((sum, b) => sum + (b?.viewCount || 0), 0);
             const totalDownloads = bookmarksData.reduce((sum, b) => sum + (b?.downloadCount || 0), 0);
-            
+
             setStats({
                 total: bookmarksData.length,
                 pending,
@@ -119,10 +133,10 @@ const BookMarked = () => {
                 views: totalViews,
                 downloads: totalDownloads
             });
-            
+
         } catch (error) {
             console.error('Error fetching bookmarks:', error);
-            
+
             if (error.response?.status === 404) {
                 setError('No bookmarks found. Start bookmarking resources to see them here!');
             } else if (error.response?.status === 401) {
@@ -131,7 +145,15 @@ const BookMarked = () => {
             } else {
                 setError('Failed to load bookmarks. Please try again.');
             }
+
             setBookmarks([]);
+            setStats({
+                total: 0,
+                pending: 0,
+                active: 0,
+                views: 0,
+                downloads: 0
+            });
         } finally {
             setLoading(false);
         }
@@ -140,11 +162,19 @@ const BookMarked = () => {
     // ============= REMOVE BOOKMARK =============
     const handleRemoveBookmark = async (resourceId) => {
         if (!window.confirm('Remove this bookmark?')) return;
-        
+
         try {
-            const userId = getDatabaseUserId(user);
+            const activeUser = user || authService.getCurrentUser();
+            const userId = getDatabaseUserId(activeUser);
+
+            if (!userId) {
+                setError('Unable to identify user');
+                setTimeout(() => setError(null), 3000);
+                return;
+            }
+
             await api.delete(`/resources/${resourceId}/bookmark?userId=${userId}`);
-            await fetchBookmarks();
+            await fetchBookmarks(activeUser);
             setSuccessMessage('Bookmark removed successfully');
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
@@ -208,18 +238,18 @@ const BookMarked = () => {
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return 'Invalid date';
-            
+
             const now = new Date();
             const diffTime = Math.abs(now - date);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (diffDays === 0) return 'Today';
             if (diffDays === 1) return 'Yesterday';
             if (diffDays < 7) return `${diffDays} days ago`;
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
             });
         } catch (e) {
             return 'Invalid date';
@@ -231,7 +261,7 @@ const BookMarked = () => {
         const fullStars = Math.floor(validRating);
         const hasHalfStar = validRating % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-        
+
         return (
             <span className="stars-container">
                 {[...Array(Math.max(0, fullStars))].map((_, i) => (
@@ -258,7 +288,7 @@ const BookMarked = () => {
             {/* Sidebar */}
             <div className="sidebar">
                 <div className="sidebar-logo">BrainHive</div>
-                
+
                 <div className="sidebar-user">
                     <div className="user-avatar">
                         {user?.name?.charAt(0) || user?.fullName?.charAt(0) || 'A'}
@@ -329,7 +359,10 @@ const BookMarked = () => {
                     <div className="error-message">
                         <span className="error-icon">⚠</span>
                         <strong>Error:</strong> {error}
-                        <button onClick={fetchBookmarks} className="retry-btn">
+                        <button
+                            onClick={() => fetchBookmarks(user || authService.getCurrentUser())}
+                            className="retry-btn"
+                        >
                             Retry
                         </button>
                     </div>
@@ -404,9 +437,9 @@ const BookMarked = () => {
                         <div className="empty-icon">🔖</div>
                         <h3>No bookmarks yet</h3>
                         <p>
-                            {searchTerm 
-                                ? `No results for "${searchTerm}"` 
-                                : error 
+                            {searchTerm
+                                ? `No results for "${searchTerm}"`
+                                : error
                                     ? error
                                     : "Bookmark resources while browsing to see them here"}
                         </p>
@@ -416,7 +449,10 @@ const BookMarked = () => {
                             </button>
                         )}
                         {error && (
-                            <button onClick={fetchBookmarks} className="secondary-btn">
+                            <button
+                                onClick={() => fetchBookmarks(user || authService.getCurrentUser())}
+                                className="secondary-btn"
+                            >
                                 Try Again
                             </button>
                         )}
@@ -435,21 +471,21 @@ const BookMarked = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div className="resource-card-body" onClick={() => handleViewDetails(resource)}>
                                     <h3 className="resource-card-title">{resource.title}</h3>
                                     <div className="resource-meta">
                                         <span className="resource-subject">{resource.subject}</span>
                                         <span className="resource-semester">{resource.semester}</span>
                                     </div>
-                                    
+
                                     {resource.description && (
                                         <p className="resource-description">
                                             {resource.description.substring(0, 100)}
                                             {resource.description.length > 100 ? '...' : ''}
                                         </p>
                                     )}
-                                    
+
                                     {resource.tags && (
                                         <div className="resource-tags">
                                             {resource.tags.split(',').slice(0, 3).map((tag, i) => (
@@ -460,7 +496,7 @@ const BookMarked = () => {
                                             )}
                                         </div>
                                     )}
-                                    
+
                                     <div className="resource-stats">
                                         <div className="stat-item" title="Views">
                                             <span>👁️</span> {resource.viewCount || 0}
@@ -477,17 +513,17 @@ const BookMarked = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="resource-card-footer">
                                     <div className="action-buttons">
-                                        <button 
+                                        <button
                                             className="action-btn view"
                                             onClick={() => handleOpenResource(resource)}
                                             title={resource.link ? "Open Link" : "Download"}
                                         >
                                             {resource.link ? '🔗 Open' : '📥 Download'}
                                         </button>
-                                        <button 
+                                        <button
                                             className="action-btn delete"
                                             onClick={() => handleRemoveBookmark(resource.id)}
                                             title="Remove Bookmark"
@@ -520,7 +556,7 @@ const BookMarked = () => {
                                     </span>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 className="modal-close-btn"
                                 onClick={() => setDetailsModal({ show: false, resource: null })}
                             >
@@ -574,7 +610,7 @@ const BookMarked = () => {
                                         <span className="detail-value">
                                             {renderStars(detailsModal.resource.averageRating || 0)}
                                             <span style={{ marginLeft: '8px' }}>
-                                                ⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0} 
+                                                ⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0}
                                                 ({detailsModal.resource.ratingCount || 0} reviews)
                                             </span>
                                         </span>
@@ -610,13 +646,13 @@ const BookMarked = () => {
                         </div>
 
                         <div className="details-modal-footer">
-                            <button 
+                            <button
                                 className="download-btn"
                                 onClick={() => handleOpenResource(detailsModal.resource)}
                             >
                                 {detailsModal.resource.link ? '🔗 Open Link' : '📥 Download'}
                             </button>
-                            <button 
+                            <button
                                 className="delete-btn"
                                 onClick={() => {
                                     handleRemoveBookmark(detailsModal.resource.id);
@@ -625,7 +661,7 @@ const BookMarked = () => {
                             >
                                 ★ Remove Bookmark
                             </button>
-                            <button 
+                            <button
                                 className="close-btn"
                                 onClick={() => setDetailsModal({ show: false, resource: null })}
                             >

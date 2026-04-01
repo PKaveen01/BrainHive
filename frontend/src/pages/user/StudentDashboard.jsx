@@ -10,13 +10,46 @@ const StudentDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
 
+    // Discovery page states
+    const [courses, setCourses] = useState([]);
+    const [recentResources, setRecentResources] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [courseResources, setCourseResources] = useState([]);
+    const [viewMode, setViewMode] = useState('courses'); // 'courses' or 'resources'
+    const [filterType, setFilterType] = useState('all');
+    const [sortBy, setSortBy] = useState('recent');
+
     useEffect(() => {
         fetchDashboardData();
+        fetchDiscoveryData();
     }, []);
+
+    const mapResourceToUI = (r) => ({
+        id: r.id,
+        title: r.title || 'Untitled Resource',
+        type: r.resourceType || r.type || 'Document',
+        courseCode: r.courseCode || 'GENERAL',
+        courseName: r.subject || r.courseName || 'General',
+        semester: r.semester || 'N/A',
+        uploader: { name: r.uploadedBy?.name || r.uploader?.name || 'Unknown' },
+        saves: r.downloadCount || r.saves || 0,
+        rating: r.averageRating || r.rating || 0,
+        ratingCount: r.ratingCount || 0,
+        tags: Array.isArray(r.tags)
+            ? r.tags
+            : (r.tags ? r.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []),
+        createdAt: r.uploadedAt || r.createdAt || new Date().toISOString(),
+        status: (r.status || 'active').toLowerCase(),
+        views: r.viewCount || r.views || 0,
+        saved: r.saved || false,
+        description: r.description || '',
+        fileUrl: r.fileUrl || r.url || '',
+        linkUrl: r.linkUrl || ''
+    });
 
     const fetchDashboardData = async () => {
         try {
-            // First check if user is authenticated
             const currentUser = authService.getCurrentUser();
             if (!currentUser) {
                 navigate('/login');
@@ -24,7 +57,6 @@ const StudentDashboard = () => {
             }
             setUser(currentUser);
 
-            // Fetch dashboard data
             const response = await api.get('/dashboard/student/info');
             setDashboardData(response.data);
         } catch (error) {
@@ -37,23 +69,173 @@ const StudentDashboard = () => {
         }
     };
 
+    const fetchDiscoveryData = async () => {
+        try {
+            const response = await api.get('/resources/search', {
+                params: {
+                    page: 0,
+                    size: 30
+                }
+            });
+
+            const rawResources = response.data?.content || response.data || [];
+            const formattedResources = rawResources.map(mapResourceToUI);
+
+            setRecentResources(formattedResources);
+
+            const groupedCourses = {};
+            formattedResources.forEach((resource) => {
+                const code = resource.courseCode || 'GENERAL';
+
+                if (!groupedCourses[code]) {
+                    groupedCourses[code] = {
+                        id: code,
+                        code: code,
+                        name: resource.courseName || code,
+                        semester: resource.semester || 'N/A',
+                        resourceCount: 0,
+                        hotTopic: resource.tags?.[0] || null
+                    };
+                }
+
+                groupedCourses[code].resourceCount += 1;
+
+                if (!groupedCourses[code].hotTopic && resource.tags?.length > 0) {
+                    groupedCourses[code].hotTopic = resource.tags[0];
+                }
+            });
+
+            setCourses(Object.values(groupedCourses));
+        } catch (error) {
+            console.error('Error fetching discovery data:', error);
+            setCourses([]);
+            setRecentResources([]);
+        }
+    };
+
+    const fetchCourseResources = async (course) => {
+        setLoading(true);
+        try {
+            const response = await api.get('/resources/search', {
+                params: {
+                    subject: course.name,
+                    semester: course.semester,
+                    page: 0,
+                    size: 30
+                }
+            });
+
+            const rawResources = response.data?.content || response.data || [];
+            const formattedResources = rawResources
+                .map(mapResourceToUI)
+                .filter(resource =>
+                    resource.courseCode === course.code ||
+                    resource.courseName === course.name ||
+                    resource.semester === course.semester
+                );
+
+            setCourseResources(formattedResources);
+            setSelectedCourse(course);
+            setViewMode('resources');
+        } catch (error) {
+            console.error('Error fetching course resources:', error);
+            setCourseResources([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveResource = (resourceId) => {
+        if (viewMode === 'resources') {
+            setCourseResources(prev => prev.map(resource =>
+                resource.id === resourceId
+                    ? { ...resource, saved: true, saves: resource.saves + 1 }
+                    : resource
+            ));
+        } else {
+            setRecentResources(prev => prev.map(resource =>
+                resource.id === resourceId
+                    ? { ...resource, saved: true, saves: resource.saves + 1 }
+                    : resource
+            ));
+        }
+    };
+
+    const handleRequestHelp = (resourceId) => {
+        navigate(`/request-help?resource=${resourceId}`);
+    };
+
+    const handleBackToCourses = () => {
+        setViewMode('courses');
+        setSelectedCourse(null);
+        setCourseResources([]);
+    };
+
+    const getResourceTypeIcon = (type) => {
+        const icons = {
+            'PDF': '📄',
+            'Document': '📝',
+            'Presentation': '📊',
+            'Image': '🖼️',
+            'Video': '🎥',
+            'Link': '🔗',
+            'Article': '📰',
+            'Code': '💻',
+            'Other': '📎'
+        };
+        return icons[type] || '📄';
+    };
+
+    const filteredAndSortedResources = (resources) => {
+        let filtered = [...resources];
+
+        if (filterType !== 'all') {
+            filtered = filtered.filter(r => r.type === filterType);
+        }
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(r =>
+                r.title?.toLowerCase().includes(term) ||
+                r.courseCode?.toLowerCase().includes(term) ||
+                r.courseName?.toLowerCase().includes(term) ||
+                r.tags?.some(tag => tag.toLowerCase().includes(term))
+            );
+        }
+
+        switch (sortBy) {
+            case 'recent':
+                return filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            case 'saves':
+                return filtered.sort((a, b) => b.saves - a.saves);
+            case 'rating':
+                return filtered.sort((a, b) => b.rating - a.rating);
+            default:
+                return filtered;
+        }
+    };
+
     const handleLogout = async () => {
-        await authService.logout();
-        navigate('/');
+        try {
+            await authService.logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            navigate('/');
+        }
     };
 
     const profileCompletion = dashboardData?.profileCompletion || 85;
 
-    if (loading) {
+    if (loading && viewMode === 'courses') {
         return <div className="loading">Loading...</div>;
     }
 
     return (
         <div className="dashboard">
-            {/* Sidebar */}
             <div className="sidebar">
                 <div className="sidebar-logo">BrainHive</div>
-                
+
                 <div className="sidebar-user">
                     <div className="user-avatar">
                         {user?.name?.charAt(0) || 'A'}
@@ -68,8 +250,13 @@ const StudentDashboard = () => {
                     <div className="nav-section">
                         <h3>Resources</h3>
                         <ul>
-                            <li className="active" onClick={() => navigate('/dashboard')}>Discovery</li>
+                            <li className="active" onClick={() => {
+                                setViewMode('courses');
+                                setSelectedCourse(null);
+                            }}>Discovery</li>
                             <li onClick={() => navigate('/upload')}>Upload</li>
+                            <li onClick={() => navigate('/resources/my-uploads')}>My Uploads</li>
+                            <li onClick={() => navigate('/resources/bookmarked')}>Bookmarked</li>
                         </ul>
                     </div>
 
@@ -102,223 +289,381 @@ const StudentDashboard = () => {
                 </nav>
             </div>
 
-            {/* Main Content */}
             <div className="main-content">
-                {/* Welcome Banner */}
-                <div className="welcome-banner">
-                    <div>
-                        <h1 className="welcome-title">
-                            Welcome back, {user?.name || 'Alex'}! 👋
-                        </h1>
-                        <p className="welcome-subtitle">
-                            {dashboardData?.user?.program || 'Computer Science, Year 3'} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                        </p>
-                    </div>
-                    <div className="profile-status">
-                        <div className="progress-circle">
-                            <svg className="progress-svg" viewBox="0 0 48 48">
-                                <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="transparent"
-                                    className="progress-bg"
-                                />
-                                <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="transparent"
-                                    strokeDasharray={125.6}
-                                    strokeDashoffset={125.6 - (125.6 * profileCompletion) / 100}
-                                    className="progress-fill"
-                                />
-                            </svg>
-                            <div className="progress-text">
-                                {profileCompletion}%
+                {viewMode === 'courses' && (
+                    <>
+                        <div className="welcome-banner">
+                            <div>
+                                <h1 className="welcome-title">
+                                    Welcome back, {user?.name || 'Alex'}! 👋
+                                </h1>
+                                <p className="welcome-subtitle">
+                                    {dashboardData?.user?.program || 'Computer Science, Year 3'} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                </p>
+                            </div>
+                            <div className="profile-status">
+                                <div className="progress-circle">
+                                    <svg className="progress-svg" viewBox="0 0 48 48">
+                                        <circle
+                                            cx="24"
+                                            cy="24"
+                                            r="20"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="transparent"
+                                            className="progress-bg"
+                                        />
+                                        <circle
+                                            cx="24"
+                                            cy="24"
+                                            r="20"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="transparent"
+                                            strokeDasharray={125.6}
+                                            strokeDashoffset={125.6 - (125.6 * profileCompletion) / 100}
+                                            className="progress-fill"
+                                        />
+                                    </svg>
+                                    <div className="progress-text">
+                                        {profileCompletion}%
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="profile-status-label">Profile Status</div>
+                                    <button
+                                        onClick={() => navigate('/profile/edit')}
+                                        className="profile-status-link"
+                                    >
+                                        Complete profile
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <div className="profile-status-label">Profile Status</div>
-                            <button
-                                onClick={() => navigate('/profile/edit')}
-                                className="profile-status-link"
-                            >
-                                Complete profile
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Warning Banner */}
-                {profileCompletion < 100 && (
-                    <div className="warning-banner">
-                        <span className="warning-icon">⚠️</span>
-                        <div className="warning-content">
-                            <h3>Complete your profile to unlock all features</h3>
-                            <p>Adding your study preferences helps us recommend better resources and study groups.</p>
+                        {profileCompletion < 100 && (
+                            <div className="warning-banner">
+                                <span className="warning-icon">⚠️</span>
+                                <div className="warning-content">
+                                    <h3>Complete your profile to unlock all features</h3>
+                                    <p>Adding your study preferences helps us recommend better resources and study groups.</p>
+                                </div>
+                                <button
+                                    onClick={() => navigate('/profile/edit')}
+                                    className="warning-button"
+                                >
+                                    Update Now
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-icon blue">
+                                    <span className="icon">📚</span>
+                                </div>
+                                <div>
+                                    <div className="stat-value">
+                                    {recentResources.length}
+</div>
+                                    <div className="stat-label">Resources Saved</div>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon purple">
+                                    <span className="icon">👥</span>
+                                </div>
+                                <div>
+                                    <div className="stat-value">{dashboardData?.stats?.helpSessions || '8'}</div>
+                                    <div className="stat-label">Help Sessions</div>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon teal">
+                                    <span className="icon">📅</span>
+                                </div>
+                                <div>
+                                    <div className="stat-value">{dashboardData?.stats?.groupProjects || '3'}</div>
+                                    <div className="stat-label">Group Projects</div>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon orange">
+                                    <span className="icon">🔥</span>
+                                </div>
+                                <div>
+                                    <div className="stat-value">{dashboardData?.stats?.studyStreak || '12 days'}</div>
+                                    <div className="stat-label">Study Streak</div>
+                                </div>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => navigate('/profile/edit')}
-                            className="warning-button"
-                        >
-                            Update Now
-                        </button>
-                    </div>
+                    </>
                 )}
 
-                {/* Quick Stats */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon blue">
-                            <span className="icon">📚</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.resourcesSaved || '42'}</div>
-                            <div className="stat-label">Resources Saved</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon purple">
-                            <span className="icon">👥</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.helpSessions || '8'}</div>
-                            <div className="stat-label">Help Sessions</div>
+                <div className="discovery-content">
+                    <div className="discovery-search-section">
+                        <div className="search-container">
+                            <span className="search-icon"></span>
+                            <input
+                                type="text"
+                                placeholder={viewMode === 'courses' ? "Search courses..." : "Search resources in this course..."}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
                         </div>
                     </div>
 
-                    <div className="stat-card">
-                        <div className="stat-icon teal">
-                            <span className="icon">📅</span>
+                    {viewMode === 'resources' && selectedCourse && (
+                        <div className="back-button-container">
+                            <button onClick={handleBackToCourses} className="back-button">
+                                ← Back to All Courses
+                            </button>
+                            <h2 className="course-title">{selectedCourse.name} ({selectedCourse.code})</h2>
                         </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.groupProjects || '3'}</div>
-                            <div className="stat-label">Group Projects</div>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="stat-card">
-                        <div className="stat-icon orange">
-                            <span className="icon">🔥</span>
-                        </div>
-                        <div>
-                            <div className="stat-value">{dashboardData?.stats?.studyStreak || '12 days'}</div>
-                            <div className="stat-label">Study Streak</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="dashboard-grid-layout">
-                    {/* Left Column */}
-                    <div className="left-column">
-                        {/* Academic Focus Areas */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Academic Focus Areas</h2>
-                                <button onClick={() => navigate('/focus-areas')} className="card-link">
-                                    Edit Subjects
-                                </button>
+                    {viewMode === 'courses' && (
+                        <>
+                            <div className="section-header">
+                                <h2>Your Course Hub</h2>
+                                <p>Browse resources by course</p>
                             </div>
-                            <div className="focus-areas-list">
-                                {(dashboardData?.focusAreas || [
-                                    { name: 'Data Structures', strength: 30, status: 'Needs attention' },
-                                    { name: 'Database Systems', strength: 65, status: 'Average' },
-                                    { name: 'Programming (Java)', strength: 90, status: 'Strong' },
-                                ]).map((subject, i) => (
-                                    <div key={i} className="focus-item">
-                                        <div className="focus-name">{subject.name}</div>
-                                        <div className="progress-container">
-                                            <div className="progress-bar-container">
-                                                <div 
-                                                    className={`progress-bar ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}
-                                                    style={{ width: `${subject.strength}%` }}
-                                                ></div>
+                            <div className="courses-grid">
+                                {courses
+                                    .filter(course =>
+                                        course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        course.code.toLowerCase().includes(searchTerm.toLowerCase())
+                                    )
+                                    .map((course) => (
+                                        <div
+                                            key={course.id}
+                                            className="course-card"
+                                            onClick={() => fetchCourseResources(course)}
+                                        >
+                                            <div className="course-card-header">
+                                                <span className="course-code">{course.code}</span>
+                                                <span className="course-resource-count">{course.resourceCount} resources</span>
                                             </div>
-                                            <span className={`status-badge ${subject.strength < 50 ? 'weak' : subject.strength < 80 ? 'average' : 'strong'}`}>
-                                                {subject.status}
-                                            </span>
+                                            <h3 className="course-name">{course.name}</h3>
+                                            <p className="course-semester">{course.semester}</p>
+                                            {course.hotTopic && (
+                                                <div className="course-hot-topic">
+                                                    <span className="hot-topic-icon">🔥</span>
+                                                    <span className="hot-topic-text">{course.hotTopic}</span>
+                                                </div>
+                                            )}
+                                            <button className="browse-button">Browse →</button>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
-                        </div>
 
-                        {/* Recommended Resources */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Recommended for You</h2>
-                                <button onClick={() => navigate('/resources')} className="card-link">
-                                    View all →
-                                </button>
+                            <div className="section-header">
+                                <h2>Recently Added Resources</h2>
+                                <p>Latest resources from all courses</p>
                             </div>
-                            <div className="resources-grid">
-                                {(dashboardData?.recommendedResources || [
-                                    { title: 'Binary Trees Explained', type: 'PDF Notes', subject: 'Data Structures' },
-                                    { title: 'SQL Joins Cheat Sheet', type: 'Study Guide', subject: 'Database Systems' },
-                                    { title: 'Java Collections Framework', type: 'Video Tutorial', subject: 'Programming' },
-                                    { title: 'Normalization in DBMS', type: 'PDF Notes', subject: 'Database Systems' },
-                                ]).slice(0, 4).map((resource, i) => (
-                                    <div 
-                                        key={i} 
-                                        className="resource-card"
-                                        onClick={() => navigate(`/resources/${resource.id || i}`)}
+                            <div className="resources-table-container">
+                                <table className="resources-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Resource</th>
+                                            <th>Course</th>
+                                            <th>Type</th>
+                                            <th>Uploader</th>
+                                            <th>Saves</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {recentResources
+                                            .slice()
+                                            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                                            .slice(0, 5)
+                                            .map((resource) => (
+                                                <tr key={resource.id}>
+                                                    <td>
+                                                        <div className="resource-info">
+                                                            <span className="resource-icon">
+                                                                {getResourceTypeIcon(resource.type)}
+                                                            </span>
+                                                            <div>
+                                                                <div className="resource-title">{resource.title}</div>
+                                                                <div className="resource-tags">
+                                                                    {resource.tags?.slice(0, 2).map(tag => (
+                                                                        <span key={tag} className="tag">#{tag}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className="course-badge">{resource.courseCode}</span>
+                                                    </td>
+                                                    <td>{resource.type}</td>
+                                                    <td>{resource.uploader?.name}</td>
+                                                    <td>{resource.saves}</td>
+                                                    <td>
+                                                        <div className="action-buttons">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleSaveResource(resource.id);
+                                                                }}
+                                                                className={`action-btn save-btn ${resource.saved ? 'saved' : ''}`}
+                                                            >
+                                                                {resource.saved ? 'Saved' : 'Save'}
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRequestHelp(resource.id);
+                                                                }}
+                                                                className="action-btn help-btn"
+                                                            >
+                                                                Help
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+
+                    {viewMode === 'resources' && selectedCourse && (
+                        <>
+                            <div className="stats-grid-mini">
+                                <div className="stat-card-mini">
+                                    <div className="stat-value-mini">{courseResources.length}</div>
+                                    <div className="stat-label-mini">Total Resources</div>
+                                </div>
+                                <div className="stat-card-mini">
+                                    <div className="stat-value-mini">
+                                        {courseResources.filter(r => r.status === 'active').length}
+                                    </div>
+                                    <div className="stat-label-mini">Active</div>
+                                </div>
+                                <div className="stat-card-mini">
+                                    <div className="stat-value-mini">
+                                        {courseResources.filter(r => r.status === 'pending').length}
+                                    </div>
+                                    <div className="stat-label-mini">Pending</div>
+                                </div>
+                                <div className="stat-card-mini">
+                                    <div className="stat-value-mini">
+                                        {courseResources.reduce((sum, r) => sum + (r.views || 0), 0)}
+                                    </div>
+                                    <div className="stat-label-mini">Total Views</div>
+                                </div>
+                            </div>
+
+                            <div className="filters-bar">
+                                <div className="filters-left">
+                                    <button
+                                        className={`filter-btn ${filterType === 'all' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('all')}
                                     >
-                                        <div className="resource-subject">{resource.subject}</div>
-                                        <h3 className="resource-title">{resource.title}</h3>
-                                        <p className="resource-type">{resource.type}</p>
-                                    </div>
-                                ))}
+                                        All
+                                    </button>
+                                    <button
+                                        className={`filter-btn ${filterType === 'PDF' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('PDF')}
+                                    >
+                                        PDF
+                                    </button>
+                                    <button
+                                        className={`filter-btn ${filterType === 'Video' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('Video')}
+                                    >
+                                        Video
+                                    </button>
+                                    <button
+                                        className={`filter-btn ${filterType === 'Document' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('Document')}
+                                    >
+                                        Document
+                                    </button>
+                                </div>
+                                <div className="filters-right">
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="sort-select"
+                                    >
+                                        <option value="recent">Most Recent</option>
+                                        <option value="saves">Most Saved</option>
+                                        <option value="rating">Highest Rated</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Right Column */}
-                    <div className="right-column">
-                        {/* Profile Badges */}
-                        <div className="content-card">
-                            <h2 className="badges-title">Your Identity</h2>
-                            <div className="badges-container">
-                                <span className="badge purple">🎓 Student</span>
-                                <span className="badge teal">👥 Group Learner</span>
-                                <span className="badge orange">🦉 Night Owl</span>
-                            </div>
-                        </div>
-
-                        {/* Upcoming Schedule */}
-                        <div className="content-card">
-                            <div className="card-header">
-                                <h2>Upcoming Schedule</h2>
-                            </div>
-                            <div className="schedule-list">
-                                {(dashboardData?.upcomingSchedule || [
-                                    { title: 'Data Structures Tutoring', time: 'Today, 4:00 PM', type: '1-on-1' },
-                                    { title: 'CS301 Project Meeting', time: 'Tomorrow, 2:00 PM', type: 'Group' },
-                                ]).map((session, i) => (
-                                    <div key={i} className="schedule-item">
-                                        <div className={`schedule-dot ${i === 0 ? 'brand' : 'teal'}`}></div>
-                                        <div className="schedule-content">
-                                            <h4>{session.title}</h4>
-                                            <div className="schedule-time">
-                                                <span>📅</span> {session.time}
+                            <div className="resources-list-container">
+                                {filteredAndSortedResources(courseResources).map((resource) => (
+                                    <div key={resource.id} className="resource-list-item">
+                                        <div className="resource-list-icon">
+                                            {getResourceTypeIcon(resource.type)}
+                                        </div>
+                                        <div className="resource-list-content">
+                                            <div className="resource-list-header">
+                                                <h3 className="resource-list-title">{resource.title}</h3>
+                                                <div className="resource-list-meta">
+                                                    <span className="resource-type-badge">{resource.type}</span>
+                                                    {resource.status === 'pending' && (
+                                                        <span className="status-badge pending">Pending Review</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="resource-list-details">
+                                                <span>Uploaded by: {resource.uploader?.name}</span>
+                                                <span>•</span>
+                                                <span>{new Date(resource.createdAt || 0).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="resource-tags-list">
+                                                {resource.tags?.map(tag => (
+                                                    <span key={tag} className="resource-tag">#{tag}</span>
+                                                ))}
+                                            </div>
+                                            <div className="resource-stats">
+                                                <span className="rating">
+                                                    ⭐ {resource.rating ? resource.rating.toFixed(1) : 'New'} ({resource.ratingCount || 0} ratings)
+                                                </span>
+                                                <span className="saves">🔖 {resource.saves} saves</span>
+                                                <span className="views">👁️ {resource.views || 0} views</span>
+                                            </div>
+                                            <div className="resource-actions">
+                                                <button
+                                                    onClick={() => handleSaveResource(resource.id)}
+                                                    className={`action-button save-button ${resource.saved ? 'saved' : ''}`}
+                                                >
+                                                    {resource.saved ? '✓ Saved' : '📌 Save'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRequestHelp(resource.id)}
+                                                    className="action-button help-button"
+                                                >
+                                                    🙋 Request Help
+                                                </button>
                                             </div>
                                         </div>
-                                        <span className="schedule-type">{session.type}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="schedule-footer">
-                                <button onClick={() => navigate('/calendar')} className="schedule-footer-button">
-                                    Open Full Calendar
+
+                            <div className="upload-resource-section">
+                                <button
+                                    onClick={() => navigate('/upload', { state: { prefillCourse: selectedCourse } })}
+                                    className="upload-resource-btn"
+                                >
+                                    + Upload Resource for {selectedCourse.name}
                                 </button>
                             </div>
-                        </div>
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
