@@ -31,8 +31,10 @@ public class TutorProfileResponseDTO {
         dto.setTutorId(profile.getTutor().getId());
         dto.setTutorName(profile.getTutor().getFullName());
         dto.setTutorEmail(profile.getTutor().getEmail());
-        dto.setSubjectId(profile.getSubject().getId());
-        dto.setSubjectName(profile.getSubject().getName());
+        if (profile.getSubject() != null) {
+            dto.setSubjectId(profile.getSubject().getId());
+            dto.setSubjectName(profile.getSubject().getName());
+        }
         dto.setProficiencyLevel(profile.getProficiencyLevel());
         dto.setTotalSessions(profile.getTotalSessions());
         dto.setAverageRating(profile.getAverageRating());

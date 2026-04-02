@@ -21,6 +21,7 @@ import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
 import com.brainhive.modules.user.repository.SubjectRepository;
 import com.brainhive.modules.user.repository.TutorProfileRepository;
 import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
+import com.brainhive.modules.user.model.TutorProfile;
 import com.brainhive.modules.user.model.User;
 import com.brainhive.modules.user.model.UserRole;
 import com.brainhive.modules.user.repository.UserRepository;
@@ -69,6 +70,24 @@ public class HelpRequestService {
         Subject subject = subjectRepository.findById(dto.getSubjectId())
                 .orElseThrow(() -> new IllegalArgumentException("Subject not found with ID: " + dto.getSubjectId()));
 
+        // Check if at least one approved tutor exists for this subject
+        List<TutorProfile> availableTutors = tutorProfileRepository
+                .findAvailableTutorsBySubjectOrderByCredibility(dto.getSubjectId());
+        if (availableTutors.isEmpty()) {
+            throw new IllegalArgumentException(
+                "No approved tutors are currently available for this subject. Please try a different subject.");
+        }
+
+        // Validate preferred tutor if provided
+        User preferredTutor = null;
+        if (dto.getPreferredTutorId() != null) {
+            preferredTutor = userRepository.findById(dto.getPreferredTutorId())
+                    .orElseThrow(() -> new IllegalArgumentException("Preferred tutor not found."));
+            if (preferredTutor.getRole() != UserRole.TUTOR) {
+                throw new IllegalArgumentException("Selected preferred tutor is not a valid tutor.");
+            }
+        }
+
         HelpRequest request = new HelpRequest();
         request.setStudent(student);
         request.setSubject(subject);
@@ -80,6 +99,9 @@ public class HelpRequestService {
         request.setPreferredDateTime(dto.getPreferredDateTime());
         Integer duration = dto.getEstimatedDuration();
         request.setEstimatedDuration(duration == null ? 60 : duration);
+        if (preferredTutor != null) {
+            request.setAssignedTutor(preferredTutor);
+        }
 
         HelpRequest saved = helpRequestRepository.save(request);
         return HelpRequestResponseDTO.fromEntity(saved);

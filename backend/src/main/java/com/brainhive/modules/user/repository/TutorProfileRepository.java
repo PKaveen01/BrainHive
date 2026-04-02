@@ -14,35 +14,27 @@ import java.util.Optional;
 @Repository
 public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long> {
 
-    // user module queries (canonical field is "user")
     Optional<TutorProfile> findByUser(User user);
     Optional<TutorProfile> findByUserId(Long userId);
 
-    // peerhelp module alias queries (tutor = user in our merged entity)
-    default Optional<TutorProfile> findByTutor(User tutor) {
-        return findByUser(tutor);
-    }
+    default Optional<TutorProfile> findByTutor(User tutor) { return findByUser(tutor); }
+    default Optional<TutorProfile> findByTutorId(Long tutorId) { return findByUserId(tutorId); }
 
-    default Optional<TutorProfile> findByTutorId(Long tutorId) {
-        return findByUserId(tutorId);
-    }
-
-    // peerhelp subject-based queries
     List<TutorProfile> findBySubject(Subject subject);
-
     List<TutorProfile> findBySubjectId(Long subjectId);
-
     List<TutorProfile> findByIsAvailableTrue();
 
-    @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true ORDER BY tp.credibilityScore DESC")
+    // Only APPROVED tutors, available, sorted by credibility
+    @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true AND tp.verificationStatus = 'APPROVED' ORDER BY tp.credibilityScore DESC")
     List<TutorProfile> findAvailableTutorsBySubjectOrderByCredibility(@Param("subjectId") Long subjectId);
 
-    @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true AND tp.proficiencyLevel >= :minProficiency ORDER BY tp.credibilityScore DESC")
+    // APPROVED + minimum proficiency
+    @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true AND tp.verificationStatus = 'APPROVED' AND tp.proficiencyLevel >= :minProficiency ORDER BY tp.credibilityScore DESC")
     List<TutorProfile> findQualifiedTutors(@Param("subjectId") Long subjectId, @Param("minProficiency") Integer minProficiency);
 
     boolean existsByUser(User user);
+    default boolean existsByTutor(User tutor) { return existsByUser(tutor); }
 
-    default boolean existsByTutor(User tutor) {
-        return existsByUser(tutor);
-    }
+    // For admin: find by verification status
+    List<TutorProfile> findByVerificationStatus(String verificationStatus);
 }

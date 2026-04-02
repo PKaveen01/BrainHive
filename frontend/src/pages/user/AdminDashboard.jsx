@@ -1,572 +1,357 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+import authService from '../../services/auth.service';
 import './AdminDashboard.css';
-
-// Import recharts components
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
-    const [selectedResource, setSelectedResource] = useState(null);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [user, setUser] = useState(null);
+    const [stats, setStats] = useState(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [pendingTutors, setPendingTutors] = useState([]);
+    const [allTutors, setAllTutors] = useState([]);
+    const [tutorsLoading, setTutorsLoading] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [terminateModal, setTerminateModal] = useState(null);
+    const [terminateDays, setTerminateDays] = useState(7);
+    const [allResources, setAllResources] = useState([]);
+    const [resourceFilter, setResourceFilter] = useState('all');
+    const [resourcesLoading, setResourcesLoading] = useState(false);
+    const [lectures, setLectures] = useState([]);
+    const [lecturesLoading, setLecturesLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [actionMessage, setActionMessage] = useState('');
+    const [actionError, setActionError] = useState('');
 
-    // Dummy Data
-    const stats = {
-        totalUsers: 1248,
-        totalStudents: 1156,
-        totalTutors: 86,
-        totalAdmins: 6,
-        pendingTutors: 12,
-        totalResources: 342,
-        pendingResources: 18,
-        reportedResources: 23,
-        totalHelpRequests: 456,
-        pendingHelpRequests: 34,
-        completedSessions: 389,
-        totalGroups: 78,
-        activeGroups: 52,
-        platformRating: 4.7
+    useEffect(() => {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || currentUser.role !== 'ADMIN') { navigate('/login'); return; }
+        setUser(currentUser);
+        fetchStats();
+    }, [navigate]);
+
+    useEffect(() => {
+        if (activeTab === 'tutors') fetchTutors();
+        else if (activeTab === 'users') fetchUsers();
+        else if (activeTab === 'resources') fetchResources();
+        else if (activeTab === 'lectures') fetchLectures();
+    }, [activeTab]);
+
+    const showSuccess = (msg) => { setActionMessage(msg); setActionError(''); setTimeout(() => setActionMessage(''), 3500); };
+    const showError   = (msg) => { setActionError(msg); setActionMessage(''); setTimeout(() => setActionError(''), 4000); };
+
+    const fetchStats = async () => {
+        setStatsLoading(true);
+        try { const r = await api.get('/admin/stats'); setStats(r.data); }
+        catch (e) { if (e.response?.status === 401) { navigate('/login'); return; } }
+        finally { setStatsLoading(false); }
+    };
+    const fetchTutors = async () => {
+        setTutorsLoading(true);
+        try {
+            const [p, a] = await Promise.all([api.get('/admin/tutors/pending'), api.get('/admin/tutors')]);
+            setPendingTutors(p.data || []); setAllTutors(a.data || []);
+        } catch(e){console.error(e);} finally { setTutorsLoading(false); }
+    };
+    const fetchUsers = async () => {
+        setUsersLoading(true);
+        try { const r = await api.get('/admin/users'); setUsers(r.data || []); }
+        catch(e){console.error(e);} finally { setUsersLoading(false); }
+    };
+    const fetchResources = async () => {
+        setResourcesLoading(true);
+        try { const r = await api.get('/admin/resources'); setAllResources(r.data || []); }
+        catch(e){console.error(e);} finally { setResourcesLoading(false); }
+    };
+    const fetchLectures = async () => {
+        setLecturesLoading(true);
+        try { const r = await api.get('/admin/lectures'); setLectures(r.data || []); }
+        catch(e){console.error(e);} finally { setLecturesLoading(false); }
     };
 
-    // User growth data
-    const userGrowthData = [
-        { month: 'Jan', students: 820, tutors: 45, total: 865 },
-        { month: 'Feb', students: 890, tutors: 52, total: 942 },
-        { month: 'Mar', students: 945, tutors: 58, total: 1003 },
-        { month: 'Apr', students: 1010, tutors: 64, total: 1074 },
-        { month: 'May', students: 1085, tutors: 72, total: 1157 },
-        { month: 'Jun', students: 1156, tutors: 86, total: 1242 }
-    ];
-
-    // Resource activity data
-    const resourceActivityData = [
-        { week: 'Week 1', uploaded: 45, approved: 38, rejected: 7 },
-        { week: 'Week 2', uploaded: 52, approved: 44, rejected: 8 },
-        { week: 'Week 3', uploaded: 48, approved: 42, rejected: 6 },
-        { week: 'Week 4', uploaded: 55, approved: 47, rejected: 8 }
-    ];
-
-    // Help requests data
-    const helpRequestsData = [
-        { day: 'Mon', requests: 28, completed: 22 },
-        { day: 'Tue', requests: 32, completed: 26 },
-        { day: 'Wed', requests: 35, completed: 30 },
-        { day: 'Thu', requests: 30, completed: 25 },
-        { day: 'Fri', requests: 25, completed: 21 },
-        { day: 'Sat', requests: 18, completed: 15 },
-        { day: 'Sun', requests: 15, completed: 12 }
-    ];
-
-    // Subject distribution data
-    const subjectDistribution = [
-        { name: 'Data Structures', count: 245, color: '#2563eb' },
-        { name: 'Algorithms', count: 198, color: '#7c3aed' },
-        { name: 'Databases', count: 167, color: '#0d9488' },
-        { name: 'Web Dev', count: 143, color: '#ea580c' },
-        { name: 'Operating Systems', count: 112, color: '#f59e0b' },
-        { name: 'Networks', count: 98, color: '#ef4444' }
-    ];
-
-    // Pending tutor applications
-    const pendingTutors = [
-        { id: 1, name: 'Dr. Emily Chen', email: 'emily.chen@university.edu', qualification: 'Ph.D. in Mathematics', subjects: ['Calculus', 'Linear Algebra', 'Statistics'], appliedDate: '2024-03-20', status: 'pending' },
-        { id: 2, name: 'Prof. James Wilson', email: 'j.wilson@university.edu', qualification: 'M.Sc. in Physics', subjects: ['Physics', 'Mechanics', 'Thermodynamics'], appliedDate: '2024-03-19', status: 'pending' },
-        { id: 3, name: 'Dr. Sarah Ahmed', email: 's.ahmed@university.edu', qualification: 'Ph.D. in Computer Science', subjects: ['Algorithms', 'Data Structures', 'AI'], appliedDate: '2024-03-18', status: 'pending' },
-        { id: 4, name: 'Prof. Michael Brown', email: 'm.brown@university.edu', qualification: 'M.Sc. in Chemistry', subjects: ['Organic Chemistry', 'Inorganic Chemistry'], appliedDate: '2024-03-17', status: 'pending' }
-    ];
-
-    // Pending resources for moderation
-    const pendingResources = [
-        { id: 1, title: 'Advanced Algorithms Notes', type: 'PDF', subject: 'Algorithms', uploadedBy: 'Alex Johnson', uploadedDate: '2024-03-21', status: 'pending' },
-        { id: 2, title: 'Database Design Tutorial', type: 'Video', subject: 'Databases', uploadedBy: 'Emma Davis', uploadedDate: '2024-03-20', status: 'pending' },
-        { id: 3, title: 'Data Structures Cheat Sheet', type: 'PDF', subject: 'Data Structures', uploadedBy: 'Michael Chen', uploadedDate: '2024-03-19', status: 'pending' },
-        { id: 4, title: 'Web Development Guide', type: 'Link', subject: 'Web Dev', uploadedBy: 'Sarah Williams', uploadedDate: '2024-03-18', status: 'pending' }
-    ];
-
-    // Reported resources
-    const reportedResources = [
-        { id: 1, title: 'Outdated Programming Notes', reason: 'Outdated Content', reportedBy: 'John Doe', reportedDate: '2024-03-21', status: 'reported' },
-        { id: 2, title: 'Incomplete Tutorial', reason: 'Poor Quality', reportedBy: 'Jane Smith', reportedDate: '2024-03-20', status: 'reported' },
-        { id: 3, title: 'Copyrighted Material', reason: 'Copyright Issue', reportedBy: 'Admin', reportedDate: '2024-03-19', status: 'reported' }
-    ];
-
-    // Recent users
-    const recentUsers = [
-        { id: 1, name: 'Alice Johnson', email: 'alice@university.edu', role: 'STUDENT', joinedDate: '2024-03-21', status: 'active' },
-        { id: 2, name: 'Bob Williams', email: 'bob@university.edu', role: 'STUDENT', joinedDate: '2024-03-20', status: 'active' },
-        { id: 3, name: 'Carol Martinez', email: 'carol@university.edu', role: 'TUTOR', joinedDate: '2024-03-19', status: 'pending_approval' },
-        { id: 4, name: 'David Lee', email: 'david@university.edu', role: 'STUDENT', joinedDate: '2024-03-18', status: 'active' }
-    ];
-
-    const handleApproveTutor = (tutorId) => {
-        alert(`Tutor ${tutorId} approved successfully! (Demo)`);
+    const handleApproveTutor = async (id) => {
+        setActionLoading(id);
+        try { await api.post(`/admin/tutors/${id}/approve`); showSuccess('Tutor approved!'); fetchTutors(); fetchStats(); }
+        catch(e){ showError(e.response?.data?.message || 'Failed to approve.'); }
+        setActionLoading(null);
     };
-
-    const handleRejectTutor = (tutorId) => {
-        alert(`Tutor ${tutorId} rejected. (Demo)`);
+    const handleRejectTutor = async (id) => {
+        if (!window.confirm('Reject this tutor application?')) return;
+        setActionLoading(id);
+        try { await api.post(`/admin/tutors/${id}/reject`); showSuccess('Tutor rejected.'); fetchTutors(); fetchStats(); }
+        catch(e){ showError(e.response?.data?.message || 'Failed to reject.'); }
+        setActionLoading(null);
     };
-
-    const handleApproveResource = (resourceId) => {
-        alert(`Resource ${resourceId} approved successfully! (Demo)`);
+    const handleTerminateUser = async () => {
+        if (!terminateModal) return;
+        const u = terminateModal.user;
+        setActionLoading(u.id);
+        try {
+            await api.post(`/admin/users/${u.id}/terminate`, { durationDays: terminateDays });
+            showSuccess(`${u.fullName} terminated for ${terminateDays} day(s).`);
+            setTerminateModal(null); fetchUsers(); fetchStats();
+        } catch(e){ showError(e.response?.data?.message || 'Failed to terminate.'); }
+        setActionLoading(null);
     };
-
-    const handleRejectResource = (resourceId) => {
-        alert(`Resource ${resourceId} rejected. (Demo)`);
+    const handleReactivateUser = async (u) => {
+        if (!window.confirm(`Reactivate ${u.fullName}?`)) return;
+        setActionLoading(u.id);
+        try { await api.post(`/admin/users/${u.id}/reactivate`); showSuccess(`${u.fullName} reactivated.`); fetchUsers(); fetchStats(); }
+        catch(e){ showError(e.response?.data?.message || 'Failed to reactivate.'); }
+        setActionLoading(null);
     };
-
-    const handleRemoveResource = (resourceId) => {
-        alert(`Resource ${resourceId} removed. (Demo)`);
+    const handleRemoveUser = async (u) => {
+        if (!window.confirm(`Permanently remove ${u.fullName}? This cannot be undone.`)) return;
+        setActionLoading(u.id);
+        try { await api.delete(`/admin/users/${u.id}`); showSuccess(`${u.fullName} removed.`); fetchUsers(); fetchStats(); }
+        catch(e){ showError(e.response?.data?.message || 'Failed to remove.'); }
+        setActionLoading(null);
     };
-
-    const handleResolveReport = (reportId) => {
-        alert(`Report ${reportId} resolved. (Demo)`);
+    const handleApproveResource = async (id) => {
+        setActionLoading(id);
+        try { await api.post(`/admin/resources/${id}/approve`); showSuccess('Resource approved.'); fetchResources(); fetchStats(); }
+        catch(e){ showError('Failed to approve resource.'); }
+        setActionLoading(null);
     };
-
-    const handleUserAction = (userId, action) => {
-        alert(`${action} user ${userId} (Demo)`);
+    const handleRemoveResource = async (id) => {
+        if (!window.confirm('Remove this resource?')) return;
+        setActionLoading(id);
+        try { await api.post(`/admin/resources/${id}/remove`); showSuccess('Resource removed.'); fetchResources(); fetchStats(); }
+        catch(e){ showError('Failed to remove resource.'); }
+        setActionLoading(null);
     };
-
-    const handleLogout = () => {
-        navigate('/login');
+    const handleDeleteLecture = async (lec) => {
+        if (!window.confirm(`Delete lecture "${lec.title}"?`)) return;
+        setActionLoading(lec.id);
+        try { await api.delete(`/admin/lectures/${lec.id}`); showSuccess('Lecture deleted.'); fetchLectures(); }
+        catch(e){ showError('Failed to delete lecture.'); }
+        setActionLoading(null);
     };
+    const handleLogout = async () => { await authService.logout(); navigate('/'); };
+
+    const fmt   = (dt) => dt ? new Date(dt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const fmtDt = (dt) => dt ? new Date(dt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    const statusColor = { PENDING:'#f59e0b', APPROVED:'#10b981', REJECTED:'#ef4444', ACTIVE:'#10b981', TERMINATED:'#ef4444' };
+
+    const filteredResources = resourceFilter === 'all' ? allResources : allResources.filter(r => r.status === resourceFilter);
+    const resCounts = allResources.reduce((acc,r) => { acc[r.status]=(acc[r.status]||0)+1; return acc; }, {});
 
     return (
         <div className="admin-dashboard">
-            {/* Sidebar */}
             <div className="admin-sidebar">
                 <div className="sidebar-logo">🧠 BrainHive Admin</div>
-                
                 <div className="sidebar-user">
                     <div className="user-avatar">A</div>
-                    <div className="user-info">
-                        <h4>Admin User</h4>
-                        <p>System Administrator</p>
-                    </div>
+                    <div className="user-info"><h4>{user?.name || 'Admin'}</h4><p>Administrator</p></div>
                 </div>
-
                 <nav className="sidebar-nav">
-                    <div className="nav-section">
-                        <h3>Dashboard</h3>
-                        <ul>
-                            <li className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
-                                <span>📊</span> Overview
+                    <ul>
+                        {[['overview','📊 Overview'],['tutors','👨‍🏫 Tutor Management'],['users','👥 Users'],['resources','📚 Resources'],['lectures','🎓 Lectures']].map(([tab,label]) => (
+                            <li key={tab} className={activeTab===tab?'active':''} onClick={() => setActiveTab(tab)}>
+                                {label}
+                                {tab==='tutors' && stats?.pendingTutors>0 && <span className="nav-badge">{stats.pendingTutors}</span>}
                             </li>
-                            <li className={activeTab === 'users' ? 'active' : ''} onClick={() => setActiveTab('users')}>
-                                <span>👥</span> User Management
-                            </li>
-                            <li className={activeTab === 'tutors' ? 'active' : ''} onClick={() => setActiveTab('tutors')}>
-                                <span>👨‍🏫</span> Tutor Approvals
-                            </li>
-                            <li className={activeTab === 'resources' ? 'active' : ''} onClick={() => setActiveTab('resources')}>
-                                <span>📚</span> Resource Moderation
-                            </li>
-                            <li className={activeTab === 'reports' ? 'active' : ''} onClick={() => setActiveTab('reports')}>
-                                <span>🚩</span> Reported Content
-                            </li>
-                            <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
-                                <span>📈</span> Analytics
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div className="nav-section">
-                        <h3>Settings</h3>
-                        <ul>
-                            <li onClick={() => navigate('/admin/settings')}>
-                                <span>⚙️</span> System Settings
-                            </li>
-                            <li onClick={handleLogout} className="logout-item">
-                                <span>🚪</span> Logout
-                            </li>
-                        </ul>
-                    </div>
+                        ))}
+                    </ul>
                 </nav>
+                <button className="logout-btn" onClick={handleLogout}>🚪 Logout</button>
             </div>
 
-            {/* Main Content */}
             <div className="admin-main">
-                {/* Header */}
-                <div className="admin-header">
-                    <h1>Admin Dashboard</h1>
-                    <div className="admin-date">
-                        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                {actionMessage && <div className="action-banner success">✅ {actionMessage}</div>}
+                {actionError   && <div className="action-banner error">❌ {actionError}</div>}
+
+                {/* OVERVIEW */}
+                {activeTab==='overview' && (
+                    <div className="admin-content">
+                        <div className="content-header"><h2>Platform Overview</h2><button className="btn-refresh" onClick={fetchStats}>🔄 Refresh</button></div>
+                        {statsLoading ? <div className="loading-state"><div className="spinner"></div><p>Loading…</p></div> : stats ? (
+                            <>
+                                <div className="stats-cards">
+                                    {[['blue','👥',stats.totalUsers,'Total Users'],['green','🎓',stats.totalStudents,'Students'],['purple','👨‍🏫',stats.totalTutors,'Tutors'],['orange','⏳',stats.pendingTutors,'Pending Tutors'],['teal','📚',stats.totalResources,'Resources'],['red','🚩',(stats.pendingResources||0)+(stats.flaggedResources||0),'Needs Review']].map(([c,ic,v,l]) => (
+                                        <div key={l} className={`stat-card ${c}`}><div className="stat-icon">{ic}</div><div className="stat-val">{v??0}</div><div className="stat-lbl">{l}</div></div>
+                                    ))}
+                                </div>
+                                {stats.pendingTutors>0 && <div className="alert-card"><span>⚠️ <strong>{stats.pendingTutors}</strong> tutor application(s) pending.</span><button className="btn-link" onClick={()=>setActiveTab('tutors')}>Review →</button></div>}
+                                {((stats.pendingResources||0)+(stats.flaggedResources||0))>0 && <div className="alert-card warning"><span>📋 <strong>{(stats.pendingResources||0)+(stats.flaggedResources||0)}</strong> resource(s) need moderation.</span><button className="btn-link" onClick={()=>setActiveTab('resources')}>Review →</button></div>}
+                            </>
+                        ) : <p>Failed to load. <button onClick={fetchStats}>Retry</button></p>}
+                    </div>
+                )}
+
+                {/* TUTORS */}
+                {activeTab==='tutors' && (
+                    <div className="admin-content">
+                        <div className="content-header"><h2>Tutor Management</h2><button className="btn-refresh" onClick={fetchTutors}>🔄 Refresh</button></div>
+                        {tutorsLoading ? <div className="loading-state"><div className="spinner"></div><p>Loading…</p></div> : (
+                            <>
+                                {pendingTutors.length>0 ? (
+                                    <>
+                                        <h3 className="section-title">⏳ Pending Applications ({pendingTutors.length})</h3>
+                                        <div className="tutor-list">
+                                            {pendingTutors.map(t => (
+                                                <div key={t.id} className="tutor-card">
+                                                    <div className="tutor-card-header">
+                                                        <div className="tutor-avatar">{(t.name||'T').charAt(0)}</div>
+                                                        <div><h4>{t.name}</h4><p>{t.email}</p></div>
+                                                        <span className="status-pill pending">PENDING</span>
+                                                    </div>
+                                                    <div className="tutor-details">
+                                                        {t.qualification && <span>🎓 {t.qualification}</span>}
+                                                        {t.yearsOfExperience!=null && <span>📅 {t.yearsOfExperience} yrs</span>}
+                                                        {t.subject && <span>📚 {t.subject}</span>}
+                                                        <span>🗓 {fmt(t.createdAt)}</span>
+                                                    </div>
+                                                    {t.bio && <p className="tutor-bio">"{t.bio}"</p>}
+                                                    <div className="tutor-actions">
+                                                        <button className="btn-approve" onClick={()=>handleApproveTutor(t.id)} disabled={actionLoading===t.id}>{actionLoading===t.id?'…':'✅ Approve'}</button>
+                                                        <button className="btn-reject"  onClick={()=>handleRejectTutor(t.id)}  disabled={actionLoading===t.id}>{actionLoading===t.id?'…':'❌ Reject'}</button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : <div className="empty-state">✅ No pending tutor applications.</div>}
+                                <h3 className="section-title">All Tutors ({allTutors.length})</h3>
+                                <div className="data-table"><table>
+                                    <thead><tr><th>Name</th><th>Email</th><th>Subject</th><th>Sessions</th><th>Rating</th><th>Status</th></tr></thead>
+                                    <tbody>{allTutors.map(t=>(
+                                        <tr key={t.id}>
+                                            <td>{t.name}</td><td>{t.email}</td>
+                                            <td>{t.subject||t.expertSubjects?.join(', ')||'—'}</td>
+                                            <td>{t.totalSessions||0}</td>
+                                            <td>{(t.averageRating||0).toFixed(1)} ⭐</td>
+                                            <td><span className="status-pill" style={{background:(statusColor[t.verificationStatus]||'#9ca3af')+'22',color:statusColor[t.verificationStatus]||'#9ca3af'}}>{t.verificationStatus}</span></td>
+                                        </tr>
+                                    ))}</tbody>
+                                </table></div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* USERS */}
+                {activeTab==='users' && (
+                    <div className="admin-content">
+                        <div className="content-header"><h2>All Users ({users.length})</h2><button className="btn-refresh" onClick={fetchUsers}>🔄 Refresh</button></div>
+                        {usersLoading ? <div className="loading-state"><div className="spinner"></div><p>Loading…</p></div> : (
+                            <div className="data-table"><table>
+                                <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                                <tbody>{users.map((u,i)=>(
+                                    <tr key={u.id} className={u.accountStatus==='TERMINATED'?'row-terminated':''}>
+                                        <td>{i+1}</td>
+                                        <td>{u.fullName}</td>
+                                        <td>{u.email}</td>
+                                        <td><span className={`role-pill ${u.role?.toLowerCase()}`}>{u.role}</span></td>
+                                        <td>
+                                            <span className="status-pill" style={{background:(statusColor[u.accountStatus]||'#9ca3af')+'22',color:statusColor[u.accountStatus]||'#9ca3af'}}>{u.accountStatus||'ACTIVE'}</span>
+                                            {u.terminatedUntil && <span className="terminated-until"> until {fmt(u.terminatedUntil)}</span>}
+                                        </td>
+                                        <td>{fmt(u.createdAt)}</td>
+                                        <td>
+                                            <div className="action-btns">
+                                                {u.accountStatus==='TERMINATED'
+                                                    ? <button className="btn-sm btn-approve" onClick={()=>handleReactivateUser(u)} disabled={actionLoading===u.id}>{actionLoading===u.id?'…':'✅ Reactivate'}</button>
+                                                    : <button className="btn-sm btn-warn"    onClick={()=>{setTerminateModal({user:u});setTerminateDays(7);}} disabled={actionLoading===u.id}>🔒 Terminate</button>
+                                                }
+                                                <button className="btn-sm btn-reject" onClick={()=>handleRemoveUser(u)} disabled={actionLoading===u.id}>{actionLoading===u.id?'…':'🗑 Remove'}</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}</tbody>
+                            </table></div>
+                        )}
+                    </div>
+                )}
+
+                {/* RESOURCES */}
+                {activeTab==='resources' && (
+                    <div className="admin-content">
+                        <div className="content-header"><h2>Resources Management</h2><button className="btn-refresh" onClick={fetchResources}>🔄 Refresh</button></div>
+                        <div className="filter-tabs">
+                            {[['all',`All (${allResources.length})`],['pending',`Pending (${resCounts['pending']||0})`],['active',`Active (${resCounts['active']||0})`],['flagged',`Flagged (${resCounts['flagged']||0})`],['removed',`Removed (${resCounts['removed']||0})`]].map(([v,l])=>(
+                                <button key={v} className={`filter-tab${resourceFilter===v?' active':''}`} onClick={()=>setResourceFilter(v)}>{l}</button>
+                            ))}
+                        </div>
+                        {resourcesLoading ? <div className="loading-state"><div className="spinner"></div><p>Loading…</p></div>
+                        : filteredResources.length===0 ? <div className="empty-state">No resources for this filter.</div>
+                        : <div className="resource-mod-list">{filteredResources.map(r=>(
+                            <div key={r.id} className="resource-mod-card">
+                                <div className="resource-mod-header">
+                                    <div>
+                                        <h4>{r.title}</h4>
+                                        <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
+                                            <span className="badge-subject">{r.subject}</span>
+                                            <span className="badge-type">{r.type}</span>
+                                        </div>
+                                    </div>
+                                    <span className="status-pill" style={{
+                                        background:r.status==='flagged'?'#fef2f2':r.status==='active'?'#f0fdf4':r.status==='removed'?'#f3f4f6':'#fffbeb',
+                                        color:     r.status==='flagged'?'#dc2626':r.status==='active'?'#16a34a':r.status==='removed'?'#6b7280':'#d97706'
+                                    }}>{r.status?.toUpperCase()}</span>
+                                </div>
+                                <div className="resource-mod-meta">
+                                    <span>👤 {r.uploadedBy} ({r.uploadedByEmail})</span>
+                                    <span>📅 {fmt(r.uploadedAt)}</span>
+                                    {r.moderationNotes && <span>📝 {r.moderationNotes}</span>}
+                                </div>
+                                {r.status!=='removed' && (
+                                    <div className="resource-actions">
+                                        {r.status!=='active' && <button className="btn-approve" onClick={()=>handleApproveResource(r.id)} disabled={actionLoading===r.id}>{actionLoading===r.id?'…':'✅ Approve'}</button>}
+                                        <button className="btn-reject" onClick={()=>handleRemoveResource(r.id)} disabled={actionLoading===r.id}>{actionLoading===r.id?'…':'🗑 Remove'}</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}</div>}
+                    </div>
+                )}
+
+                {/* LECTURES */}
+                {activeTab==='lectures' && (
+                    <div className="admin-content">
+                        <div className="content-header"><h2>All Lectures ({lectures.length})</h2><button className="btn-refresh" onClick={fetchLectures}>🔄 Refresh</button></div>
+                        {lecturesLoading ? <div className="loading-state"><div className="spinner"></div><p>Loading…</p></div>
+                        : lectures.length===0 ? <div className="empty-state">No lectures scheduled yet.</div>
+                        : <div className="data-table"><table>
+                            <thead><tr><th>Title</th><th>Subject</th><th>Tutor</th><th>Scheduled At</th><th>Duration</th><th>Meeting Link</th><th>Actions</th></tr></thead>
+                            <tbody>{lectures.map(lec=>(
+                                <tr key={lec.id}>
+                                    <td><strong>{lec.title}</strong></td>
+                                    <td>{lec.subjectName}</td>
+                                    <td>{lec.tutorName}</td>
+                                    <td>{fmtDt(lec.scheduledAt)}</td>
+                                    <td>{lec.durationMinutes} min</td>
+                                    <td>{lec.meetingLink ? <a href={lec.meetingLink} target="_blank" rel="noreferrer" className="meeting-link">🔗 Join</a> : <span className="text-muted">—</span>}</td>
+                                    <td><button className="btn-sm btn-reject" onClick={()=>handleDeleteLecture(lec)} disabled={actionLoading===lec.id}>{actionLoading===lec.id?'…':'🗑 Delete'}</button></td>
+                                </tr>
+                            ))}</tbody>
+                        </table></div>}
+                    </div>
+                )}
+            </div>
+
+            {/* TERMINATE MODAL */}
+            {terminateModal && (
+                <div className="modal-overlay" onClick={()=>setTerminateModal(null)}>
+                    <div className="modal-box" onClick={e=>e.stopPropagation()}>
+                        <h3>🔒 Terminate User</h3>
+                        <p>Terminate <strong>{terminateModal.user.fullName}</strong>?</p>
+                        <div className="modal-field">
+                            <label>Duration</label>
+                            <select value={terminateDays} onChange={e=>setTerminateDays(Number(e.target.value))}>
+                                {[1,3,7,14,30,90,365].map(d=><option key={d} value={d}>{d===365?'1 year':`${d} day${d>1?'s':''}`}</option>)}
+                            </select>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-approve" onClick={handleTerminateUser} disabled={actionLoading===terminateModal.user.id}>{actionLoading===terminateModal.user.id?'…':'Confirm Terminate'}</button>
+                            <button className="btn-outline" onClick={()=>setTerminateModal(null)}>Cancel</button>
+                        </div>
                     </div>
                 </div>
-
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                    <div className="admin-content">
-                        {/* Stats Cards */}
-                        <div className="stats-grid">
-                            <div className="stat-card">
-                                <div className="stat-icon users">👥</div>
-                                <div className="stat-info">
-                                    <h3>{stats.totalUsers}</h3>
-                                    <p>Total Users</p>
-                                    <span className="stat-change positive">↑ +12% this month</span>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon tutors">👨‍🏫</div>
-                                <div className="stat-info">
-                                    <h3>{stats.totalTutors}</h3>
-                                    <p>Active Tutors</p>
-                                    <span className="stat-change positive">↑ +8 new this week</span>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon resources">📚</div>
-                                <div className="stat-info">
-                                    <h3>{stats.totalResources}</h3>
-                                    <p>Total Resources</p>
-                                    <span className="stat-change pending">{stats.pendingResources} pending review</span>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon help">🤝</div>
-                                <div className="stat-info">
-                                    <h3>{stats.completedSessions}</h3>
-                                    <p>Completed Sessions</p>
-                                    <span className="stat-change positive">↑ 89% success rate</span>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon groups">👥</div>
-                                <div className="stat-info">
-                                    <h3>{stats.activeGroups}</h3>
-                                    <p>Active Groups</p>
-                                    <span className="stat-change positive">↑ +12 this month</span>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon rating">⭐</div>
-                                <div className="stat-info">
-                                    <h3>{stats.platformRating}</h3>
-                                    <p>Platform Rating</p>
-                                    <span className="stat-change positive">Excellent</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Charts */}
-                        <div className="charts-row">
-                            <div className="chart-card">
-                                <h3>User Growth Trend</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={userGrowthData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="month" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Area type="monotone" dataKey="students" stackId="1" stroke="#2563eb" fill="#2563eb" fillOpacity={0.3} name="Students" />
-                                        <Area type="monotone" dataKey="tutors" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} name="Tutors" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="chart-card">
-                                <h3>Subject Popularity</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PieChart>
-                                        <Pie
-                                            data={subjectDistribution}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            dataKey="count"
-                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                        >
-                                            {subjectDistribution.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        <div className="charts-row">
-                            <div className="chart-card">
-                                <h3>Resource Moderation Activity</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={resourceActivityData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="week" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Bar dataKey="uploaded" fill="#2563eb" name="Uploaded" />
-                                        <Bar dataKey="approved" fill="#10b981" name="Approved" />
-                                        <Bar dataKey="rejected" fill="#ef4444" name="Rejected" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="chart-card">
-                                <h3>Help Requests Trend</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={helpRequestsData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="day" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="requests" stroke="#f59e0b" name="Requests" />
-                                        <Line type="monotone" dataKey="completed" stroke="#10b981" name="Completed" />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* User Management Tab */}
-                {activeTab === 'users' && (
-                    <div className="admin-content">
-                        <div className="content-header">
-                            <h2>User Management</h2>
-                            <button className="btn-primary" onClick={() => alert('Add new user (Demo)')}>
-                                + Add User
-                            </button>
-                        </div>
-
-                        <div className="users-table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Role</th>
-                                        <th>Joined Date</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {recentUsers.map(user => (
-                                        <tr key={user.id}>
-                                            <td><strong>{user.name}</strong></td>
-                                            <td>{user.email}</td>
-                                            <td><span className={`role-badge ${user.role.toLowerCase()}`}>{user.role}</span></td>
-                                            <td>{user.joinedDate}</td>
-                                            <td>
-                                                <span className={`status-badge ${user.status}`}>
-                                                    {user.status === 'active' ? 'Active' : 'Pending'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button className="action-btn edit" onClick={() => handleUserAction(user.id, 'Edit')}>Edit</button>
-                                                <button className="action-btn suspend" onClick={() => handleUserAction(user.id, 'Suspend')}>Suspend</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {/* Tutor Approvals Tab */}
-                {activeTab === 'tutors' && (
-                    <div className="admin-content">
-                        <div className="content-header">
-                            <h2>Pending Tutor Applications ({pendingTutors.length})</h2>
-                        </div>
-
-                        <div className="applications-grid">
-                            {pendingTutors.map(tutor => (
-                                <div key={tutor.id} className="application-card">
-                                    <div className="application-header">
-                                        <div className="tutor-avatar">{tutor.name.charAt(0)}</div>
-                                        <div className="tutor-info">
-                                            <h4>{tutor.name}</h4>
-                                            <p>{tutor.email}</p>
-                                        </div>
-                                    </div>
-                                    <div className="application-details">
-                                        <div className="detail-row">
-                                            <span className="detail-label">Qualification:</span>
-                                            <span>{tutor.qualification}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="detail-label">Expert Subjects:</span>
-                                            <div className="subjects-list">
-                                                {tutor.subjects.map((subject, i) => (
-                                                    <span key={i} className="subject-tag">{subject}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="detail-label">Applied:</span>
-                                            <span>{tutor.appliedDate}</span>
-                                        </div>
-                                    </div>
-                                    <div className="application-actions">
-                                        <button className="btn-approve" onClick={() => handleApproveTutor(tutor.id)}>✓ Approve</button>
-                                        <button className="btn-reject" onClick={() => handleRejectTutor(tutor.id)}>✗ Reject</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Resource Moderation Tab */}
-                {activeTab === 'resources' && (
-                    <div className="admin-content">
-                        <div className="content-header">
-                            <h2>Pending Resources ({pendingResources.length})</h2>
-                        </div>
-
-                        <div className="resources-table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>Type</th>
-                                        <th>Subject</th>
-                                        <th>Uploaded By</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {pendingResources.map(resource => (
-                                        <tr key={resource.id}>
-                                            <td><strong>{resource.title}</strong></td>
-                                            <td><span className="type-badge">{resource.type}</span></td>
-                                            <td>{resource.subject}</td>
-                                            <td>{resource.uploadedBy}</td>
-                                            <td>{resource.uploadedDate}</td>
-                                            <td>
-                                                <button className="action-btn approve" onClick={() => handleApproveResource(resource.id)}>Approve</button>
-                                                <button className="action-btn reject" onClick={() => handleRejectResource(resource.id)}>Reject</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {/* Reported Content Tab */}
-                {activeTab === 'reports' && (
-                    <div className="admin-content">
-                        <div className="content-header">
-                            <h2>Reported Content ({reportedResources.length})</h2>
-                        </div>
-
-                        <div className="reports-list">
-                            {reportedResources.map(report => (
-                                <div key={report.id} className="report-card">
-                                    <div className="report-header">
-                                        <h4>{report.title}</h4>
-                                        <span className="report-status">{report.status}</span>
-                                    </div>
-                                    <div className="report-details">
-                                        <div className="detail-row">
-                                            <span className="detail-label">Reason:</span>
-                                            <span className="report-reason">{report.reason}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="detail-label">Reported By:</span>
-                                            <span>{report.reportedBy}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="detail-label">Date:</span>
-                                            <span>{report.reportedDate}</span>
-                                        </div>
-                                    </div>
-                                    <div className="report-actions">
-                                        <button className="btn-approve" onClick={() => handleResolveReport(report.id)}>Resolve & Keep</button>
-                                        <button className="btn-reject" onClick={() => handleRemoveResource(report.id)}>Remove Content</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Analytics Tab */}
-                {activeTab === 'analytics' && (
-                    <div className="admin-content">
-                        <div className="content-header">
-                            <h2>Platform Analytics</h2>
-                        </div>
-
-                        <div className="analytics-grid">
-                            <div className="analytics-card">
-                                <h3>User Engagement</h3>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">78%</div>
-                                    <div className="stat-label">Active Users</div>
-                                </div>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">32 min</div>
-                                    <div className="stat-label">Avg. Session Duration</div>
-                                </div>
-                            </div>
-
-                            <div className="analytics-card">
-                                <h3>Content Performance</h3>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">2,847</div>
-                                    <div className="stat-label">Total Downloads</div>
-                                </div>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">4.8</div>
-                                    <div className="stat-label">Avg. Resource Rating</div>
-                                </div>
-                            </div>
-
-                            <div className="analytics-card">
-                                <h3>Peer Help Impact</h3>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">92%</div>
-                                    <div className="stat-label">Satisfaction Rate</div>
-                                </div>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">24 hrs</div>
-                                    <div className="stat-label">Avg. Response Time</div>
-                                </div>
-                            </div>
-
-                            <div className="analytics-card">
-                                <h3>Group Collaboration</h3>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">78</div>
-                                    <div className="stat-label">Active Groups</div>
-                                </div>
-                                <div className="analytics-stat">
-                                    <div className="stat-value">342</div>
-                                    <div className="stat-label">Tasks Completed</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+            )}
         </div>
     );
 };

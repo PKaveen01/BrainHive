@@ -24,6 +24,13 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
+    // Account status: ACTIVE, PENDING, TERMINATED, REJECTED
+    @Column(name = "account_status")
+    private String accountStatus = "ACTIVE";
+
+    @Column(name = "terminated_until")
+    private LocalDateTime terminatedUntil;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -38,6 +45,7 @@ public class User {
         this.password = password;
         this.fullName = fullName;
         this.role = role;
+        this.accountStatus = "ACTIVE";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -58,6 +66,12 @@ public class User {
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }
 
+    public String getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
+
+    public LocalDateTime getTerminatedUntil() { return terminatedUntil; }
+    public void setTerminatedUntil(LocalDateTime terminatedUntil) { this.terminatedUntil = terminatedUntil; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -68,6 +82,7 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (accountStatus == null) accountStatus = "ACTIVE";
     }
 
     @PreUpdate

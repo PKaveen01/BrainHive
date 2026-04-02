@@ -38,6 +38,11 @@ const StudentDashboard = () => {
     const [myRequests, setMyRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
     const [requestsError, setRequestsError] = useState('');
+    const [ratingModal, setRatingModal] = useState(null); // { sessionId, tutorName }
+    const [ratingForm, setRatingForm] = useState({ rating: 5, feedback: '', wouldRecommend: true });
+    const [ratingSubmitting, setRatingSubmitting] = useState(false);
+    const [ratingMessage, setRatingMessage] = useState('');
+    const [ratedSessionIds, setRatedSessionIds] = useState(new Set());
 
     useEffect(() => {
         fetchDashboardData();
@@ -180,6 +185,33 @@ const StudentDashboard = () => {
     const handleOpenMyRequests = async () => {
         setActiveTab('my-requests');
         if (myRequests.length === 0) await fetchMyRequests();
+    };
+
+    const openRatingModal = (sessionId, tutorName) => {
+        setRatingModal({ sessionId, tutorName });
+        setRatingForm({ rating: 5, feedback: '', wouldRecommend: true });
+        setRatingMessage('');
+    };
+
+    const submitRating = async () => {
+        if (!ratingModal) return;
+        setRatingSubmitting(true);
+        try {
+            await api.post('/peerhelp/ratings', {
+                sessionId: ratingModal.sessionId,
+                rating: ratingForm.rating,
+                feedback: ratingForm.feedback || null,
+                wouldRecommend: ratingForm.wouldRecommend,
+            });
+            setRatedSessionIds(prev => new Set([...prev, ratingModal.sessionId]));
+            setRatingMessage('Thank you for your feedback!');
+            setTimeout(() => { setRatingModal(null); setRatingMessage(''); }, 2000);
+            fetchMyRequests();
+        } catch (err) {
+            setRatingMessage(err.response?.data?.message || 'Failed to submit rating. Please try again.');
+        } finally {
+            setRatingSubmitting(false);
+        }
     };
 
     if (loading) {
@@ -560,6 +592,17 @@ const StudentDashboard = () => {
                                             {request.session.notes && (
                                                 <p><strong>Tutor Notes:</strong> {request.session.notes}</p>
                                             )}
+                                            {request.session.isCompleted && !ratedSessionIds.has(request.session.id) && request.status !== 'RATED' && (
+                                                <button
+                                                    className="btn-rate-tutor"
+                                                    onClick={() => openRatingModal(request.session.id, request.session.tutorName)}
+                                                >
+                                                    ⭐ Rate Your Tutor
+                                                </button>
+                                            )}
+                                            {(ratedSessionIds.has(request.session.id) || request.status === 'RATED') && (
+                                                <p className="rating-done-note">✅ You have rated this session.</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -568,6 +611,64 @@ const StudentDashboard = () => {
                     </div>
                 )}
             </div>
+
+            {/* ── RATING MODAL ───────────────────────────────── */}
+            {ratingModal && (
+                <div className="modal-overlay" onClick={() => setRatingModal(null)}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        <h3>⭐ Rate Your Session</h3>
+                        <p>How was your session with <strong>{ratingModal.tutorName}</strong>?</p>
+
+                        <div className="modal-field">
+                            <label>Overall Rating</label>
+                            <div className="star-picker">
+                                {[1,2,3,4,5].map(n => (
+                                    <span
+                                        key={n}
+                                        className={`star ${ratingForm.rating >= n ? 'filled' : ''}`}
+                                        onClick={() => setRatingForm(f => ({ ...f, rating: n }))}
+                                    >★</span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="modal-field">
+                            <label>Feedback (optional)</label>
+                            <textarea
+                                rows={3}
+                                placeholder="Share your experience..."
+                                value={ratingForm.feedback}
+                                onChange={e => setRatingForm(f => ({ ...f, feedback: e.target.value }))}
+                                className="rating-textarea"
+                            />
+                        </div>
+
+                        <div className="modal-field">
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={ratingForm.wouldRecommend}
+                                    onChange={e => setRatingForm(f => ({ ...f, wouldRecommend: e.target.checked }))}
+                                />
+                                I would recommend this tutor
+                            </label>
+                        </div>
+
+                        {ratingMessage && (
+                            <p className={ratingMessage.startsWith('Thank') ? 'rating-success' : 'rating-error'}>
+                                {ratingMessage}
+                            </p>
+                        )}
+
+                        <div className="modal-actions">
+                            <button className="btn-submit-rating" onClick={submitRating} disabled={ratingSubmitting}>
+                                {ratingSubmitting ? 'Submitting…' : 'Submit Rating'}
+                            </button>
+                            <button className="btn-cancel-rating" onClick={() => setRatingModal(null)}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
