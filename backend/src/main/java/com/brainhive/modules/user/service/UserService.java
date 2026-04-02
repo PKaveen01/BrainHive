@@ -33,11 +33,9 @@ public class UserService {
                 return new LoginResponseDTO(false, "User not found", null, null, null, null);
             }
 
-            // Check if role matches
-            UserRole role = UserRole.valueOf(loginRequest.getRole().toUpperCase());
-            if (!user.getRole().equals(role)) {
-                return new LoginResponseDTO(false, "Invalid role selected", null, null, null, null);
-            }
+            // REMOVE THIS ROLE CHECK COMPLETELY
+            // The frontend's role selector should be ignored for security
+            // User logs in with email/password only - role is determined by database
 
             // FIXED: Use password encoder to check password
             if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
@@ -60,8 +58,15 @@ public class UserService {
             session.setAttribute("userName", user.getFullName());
             session.setAttribute("userRole", user.getRole().toString());
 
-            // Determine redirect URL based on role
-            String redirectUrl = user.getRole() == UserRole.STUDENT ? "/dashboard/student" : "/dashboard/tutor";
+            // Determine redirect URL based on role (from database, not frontend)
+            String redirectUrl;
+            if (user.getRole() == UserRole.ADMIN) {
+                redirectUrl = "/dashboard/admin";
+            } else if (user.getRole() == UserRole.STUDENT) {
+                redirectUrl = "/dashboard/student";
+            } else {
+                redirectUrl = "/dashboard/tutor";
+            }
 
             return new LoginResponseDTO(
                     true,
