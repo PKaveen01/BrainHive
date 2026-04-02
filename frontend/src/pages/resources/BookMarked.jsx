@@ -17,7 +17,7 @@ export default function BookMarked() {
     const [search, setSearch] = useState('');
 
     // Rate modal
-    const [rateModal, setRateModal] = useState({ show:false, resourceId:null, title:'' });
+    const [rateModal, setRateModal] = useState({ show: false, resourceId: null, title: '' });
     const [rating, setRating] = useState(5);
     const [review, setReview] = useState('');
     const [rateLoading, setRateLoading] = useState(false);
@@ -100,7 +100,7 @@ export default function BookMarked() {
         setRateLoading(true);
         try {
             await api.post(`/resources/${rateModal.resourceId}/rate`, { userId: uid(), rating, review });
-            setRateModal({ show:false, resourceId:null, title:'' });
+            setRateModal({ show: false, resourceId: null, title: '' });
             setRating(5); setReview('');
             fetchBookmarks(uid());
             showSuccess('Rating submitted!');
@@ -122,90 +122,196 @@ export default function BookMarked() {
         <div className="dashboard">
             <StudentSidebar user={user} />
             <div className="main-content">
-                <div className="page-header-row">
+                <div className="bm-page-header">
                     <div>
                         <h1>🔖 Bookmarked Resources</h1>
-                        <p className="page-subtitle">Resources you've saved for later</p>
+                        <p className="bm-page-subtitle">Resources you've saved for later</p>
                     </div>
-                    <button className="btn-secondary" onClick={() => navigate('/resources/discovery')}>🔍 Discover More</button>
+                    <button className="bm-btn-primary" onClick={() => navigate('/resources/discovery')}>
+                        🔍 Discover More
+                    </button>
                 </div>
 
-                {success && <div className="alert-success">✅ {success}</div>}
-                {error   && <div className="alert-error">⚠️ {error}</div>}
-
-                <div className="uploads-toolbar">
-                    <input className="search-input" placeholder="Search bookmarks..." value={search} onChange={e => setSearch(e.target.value)} />
-                    <span className="bm-count">{bookmarks.length} saved resource{bookmarks.length !== 1 ? 's' : ''}</span>
-                </div>
-
-                {loading && <div className="loading-state"><div className="spinner" /><p>Loading your bookmarks...</p></div>}
-
-                {!loading && filtered.length === 0 && (
-                    <div className="empty-state">
-                        <div className="empty-icon">🔖</div>
-                        <h3>{bookmarks.length === 0 ? "No bookmarks yet" : "No bookmarks match your search"}</h3>
-                        <p>Browse the discovery page and bookmark resources you find useful.</p>
-                        <button className="btn-primary" onClick={() => navigate('/resources/discovery')}>Discover Resources</button>
+                {/* Alert Messages */}
+                {success && (
+                    <div className="bm-alert bm-alert-success">
+                        <span className="bm-alert-icon">✅</span>
+                        <span>{success}</span>
+                    </div>
+                )}
+                {error && (
+                    <div className="bm-alert bm-alert-error">
+                        <span className="bm-alert-icon">⚠️</span>
+                        <span>{error}</span>
                     </div>
                 )}
 
-                <div className="uploads-list">
-                    {filtered.map(r => (
-                        <div key={r.id} className="upload-card">
-                            <div className="upload-card-header">
-                                <div className="upload-title-row">
-                                    <span className="type-icon-lg">{typeIcon[r.type?.toLowerCase()] || '📁'}</span>
-                                    <div>
-                                        <h3>{r.title}</h3>
-                                        <div className="upload-badges">
-                                            {r.subject  && <span className="badge badge-blue">{r.subject}</span>}
-                                            {r.semester && <span className="badge badge-gray">{r.semester}</span>}
-                                            {r.type     && <span className="badge badge-purple">{r.type.toUpperCase()}</span>}
-                                            {r.fileSize && <span className="badge badge-gray">{fmtSize(r.fileSize)}</span>}
+                {/* Toolbar */}
+                <div className="bm-toolbar">
+                    <div className="bm-search-wrapper">
+                        <span className="bm-search-icon">🔍</span>
+                        <input 
+                            className="bm-search-input" 
+                            placeholder="Search bookmarks by title or subject..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                        />
+                    </div>
+                    <div className="bm-count-badge">
+                        <span className="bm-count-icon">🔖</span>
+                        <span className="bm-count-text">{bookmarks.length} saved resource{bookmarks.length !== 1 ? 's' : ''}</span>
+                    </div>
+                </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="bm-loading-state">
+                        <div className="bm-spinner"></div>
+                        <p>Loading your bookmarks...</p>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && filtered.length === 0 && (
+                    <div className="bm-empty-state">
+                        <div className="bm-empty-icon">🔖</div>
+                        <h3>{bookmarks.length === 0 ? "No bookmarks yet" : "No bookmarks match your search"}</h3>
+                        <p>Browse the discovery page and bookmark resources you find useful.</p>
+                        <button className="bm-btn-primary" onClick={() => navigate('/resources/discovery')}>
+                            Discover Resources
+                        </button>
+                    </div>
+                )}
+
+                {/* Bookmarks Grid */}
+                {!loading && filtered.length > 0 && (
+                    <div className="bm-bookmarks-grid">
+                        {filtered.map((r, idx) => (
+                            <div key={r.id} className="bm-bookmark-card" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                <div className="bm-card-header">
+                                    <div className="bm-title-section">
+                                        <span className="bm-type-icon">{typeIcon[r.type?.toLowerCase()] || '📁'}</span>
+                                        <div className="bm-title-info">
+                                            <h3>{r.title}</h3>
+                                            <div className="bm-badges-horizontal">
+    {r.subject && <span className="bm-badge bm-badge-blue">{r.subject}</span>}
+    {r.type && <span className="bm-badge bm-badge-purple">{r.type.toUpperCase()}</span>}
+</div>
                                         </div>
                                     </div>
+                                    
                                 </div>
-                                {r.uploadedBy && (
-                                    <div className="uploader-chip">
-                                        <span className="uploader-avatar-sm">{(r.uploadedBy.fullName||r.uploadedBy||'?').charAt(0).toUpperCase()}</span>
-                                        <span>{r.uploadedBy.fullName || r.uploadedBy}</span>
+
+                                {r.description && (
+                                    <p className="bm-description">{r.description}</p>
+                                )}
+
+                                {r.tags && (
+                                    <div className="bm-tags-container">
+                                        {r.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 4).map(t => (
+                                            <span key={t} className="bm-tag">#{t}</span>
+                                        ))}
                                     </div>
                                 )}
-                            </div>
 
-                            {r.description && <p className="upload-desc">{r.description}</p>}
+                                <div className="bm-stats-section">
+                                    <div className="bm-rating-display">
+                                        <span className="bm-stars">
+                                            {[1,2,3,4,5].map(s => (
+                                                <span 
+                                                    key={s} 
+                                                    className={`bm-star ${s <= Math.round(r.averageRating || 0) ? 'bm-star-filled' : ''}`}
+                                                >
+                                                    ★
+                                                </span>
+                                            ))}
+                                        </span>
+                                        <span className="bm-rating-value">{(r.averageRating || 0).toFixed(1)}</span>
+                                        <span className="bm-rating-count">({r.ratingCount || 0} reviews)</span>
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span>📅</span> {fmt(r.uploadedAt)}
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span>👁</span> {r.viewCount || 0} views
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span>⬇</span> {r.downloadCount || 0} downloads
+                                    </div>
+                                </div>
 
-                            <div className="upload-meta">
-                                <span>📅 {fmt(r.uploadedAt)}</span>
-                                <span>👁 {r.viewCount||0} views</span>
-                                <span>⬇ {r.downloadCount||0} downloads</span>
-                                <span>⭐ {(r.averageRating||0).toFixed(1)} ({r.ratingCount||0})</span>
+                                <div className="bm-actions-wrapper">
+    <div className="bm-actions-top-row">
+        {r.filePath && (
+            <button className="bm-btn-action bm-btn-download" onClick={() => handleDownload(r)}>
+                ⬇ Download
+            </button>
+        )}
+        <button className="bm-btn-action bm-btn-rate" onClick={() => setRateModal({ show: true, resourceId: r.id, title: r.title })}>
+            ⭐ Rate
+        </button>
+        <button 
+            className="bm-btn-action bm-btn-remove" 
+            onClick={() => handleRemove(r.id)} 
+            disabled={removingId === r.id}
+        >
+            {removingId === r.id ? 'Removing...' : '🔖 Remove'}
+        </button>
+    </div>
+    <button className="bm-btn-view-full" onClick={() => handleView(r)}>
+        👁 View Full Resource
+    </button>
+</div>
+                                
                             </div>
-
-                            <div className="upload-actions">
-                                <button className="btn-action btn-view"     onClick={() => handleView(r)}>👁 View</button>
-                                {r.filePath && <button className="btn-action btn-download" onClick={() => handleDownload(r)}>⬇ Download</button>}
-                                <button className="btn-action btn-rate"     onClick={() => setRateModal({ show:true, resourceId:r.id, title:r.title })}>⭐ Rate</button>
-                                <button className="btn-action btn-delete"   onClick={() => handleRemove(r.id)} disabled={removingId === r.id}>
-                                    {removingId === r.id ? 'Removing...' : '🔖 Remove'}
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Rate Modal */}
+            {/* Rating Modal */}
             {rateModal.show && (
-                <div className="modal-overlay" onClick={() => setRateModal({ show:false, resourceId:null, title:'' })}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>⭐ Rate: {rateModal.title}</h3>
-                        <div className="star-rating">{[1,2,3,4,5].map(s => <button key={s} className={`star ${s<=rating?'filled':''}`} onClick={() => setRating(s)}>★</button>)}</div>
-                        <p className="rating-label">{['','Poor','Fair','Good','Very Good','Excellent'][rating]}</p>
-                        <div className="form-group"><label>Review (optional)</label><textarea value={review} onChange={e => setReview(e.target.value)} rows={3} placeholder="Share your thoughts..." /></div>
-                        <div className="modal-actions">
-                            <button className="btn-secondary" onClick={() => setRateModal({ show:false, resourceId:null, title:'' })}>Cancel</button>
-                            <button className="btn-primary"   onClick={handleRateSubmit} disabled={rateLoading}>{rateLoading ? 'Submitting...' : 'Submit Rating'}</button>
+                <div className="bm-modal-overlay" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                    <div className="bm-modal" onClick={e => e.stopPropagation()}>
+                        <div className="bm-modal-header">
+                            <h3>⭐ Rate Resource</h3>
+                            <button className="bm-modal-close" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="bm-modal-body">
+                            <p className="bm-modal-subtitle">{rateModal.title}</p>
+                            <div className="bm-star-rating">
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <button 
+                                        key={s} 
+                                        className={`bm-star-btn ${s <= rating ? 'bm-star-filled' : ''}`} 
+                                        onClick={() => setRating(s)}
+                                        onMouseEnter={() => setRating(s)}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="bm-rating-text">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}</p>
+                            <div className="bm-form-group">
+                                <label>Review (optional)</label>
+                                <textarea 
+                                    className="bm-form-textarea"
+                                    value={review} 
+                                    onChange={e => setReview(e.target.value)} 
+                                    rows={3} 
+                                    placeholder="Share your thoughts about this resource..."
+                                />
+                            </div>
+                        </div>
+                        <div className="bm-modal-actions">
+                            <button className="bm-btn-secondary" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                                Cancel
+                            </button>
+                            <button className="bm-btn-primary" onClick={handleRateSubmit} disabled={rateLoading}>
+                                {rateLoading ? 'Submitting...' : 'Submit Rating'}
+                            </button>
                         </div>
                     </div>
                 </div>

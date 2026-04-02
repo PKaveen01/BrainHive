@@ -114,36 +114,33 @@ public class ProfileService {
                 return new RegistrationResponseDTO(false, "Email already registered", null, false, null);
             }
 
-            // Create user
+            // Create user - PENDING until admin approves
             User user = new User();
             user.setEmail(request.getEmail());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setFullName(request.getFullName());
             user.setRole(UserRole.TUTOR);
+            user.setAccountStatus("PENDING");
             user = userRepository.save(user);
 
-            // Create tutor profile
+            // Create tutor profile - verificationStatus starts as PENDING
             TutorProfile profile = new TutorProfile(user);
             profile.setQualification(request.getQualification());
             profile.setYearsOfExperience(request.getYearsOfExperience());
             profile.setBio(request.getBio());
             profile.setMaxConcurrentStudents(request.getMaxConcurrentStudents() != null ?
                     request.getMaxConcurrentStudents() : 5);
+            profile.setVerificationStatus("PENDING");
             profile.setProfileCompleted(true);
             tutorProfileRepository.save(profile);
 
-            // AUTO-LOGIN: Create session for the user
-            session.setAttribute("userId", user.getId());
-            session.setAttribute("userEmail", user.getEmail());
-            session.setAttribute("userName", user.getFullName());
-            session.setAttribute("userRole", user.getRole().toString());
-
+            // Do NOT auto-login - tutor must wait for admin approval
             return new RegistrationResponseDTO(
                     true,
-                    "Tutor registered successfully. Your account will be reviewed by an admin.",
+                    "Registration successful! Your tutor account is pending admin approval. You will be able to log in once approved.",
                     user.getId(),
                     true,
-                    "/dashboard/tutor"
+                    "/login"
             );
 
         } catch (Exception e) {

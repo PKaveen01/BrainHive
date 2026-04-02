@@ -57,56 +57,65 @@ export default function GroupsPage() {
   };
 
   const goalColor = { EXAM: '#e74c3c', ASSIGNMENT: '#f39c12', PROJECT: '#3498db', GENERAL: '#2ecc71' };
+  const goalIcon = { EXAM: '🎯', ASSIGNMENT: '📝', PROJECT: '🚀', GENERAL: '💬' };
 
   return (
-    <div className="collab-layout">
+    <div className="dashboard">
       <StudentSidebar />
-      <div className="collab-main">
-        <div className="collab-header">
+      <div className="main-content">
+        <div className="cg-page-header">
           <div>
-            <h1>Study Groups</h1>
-            <p>Collaborate, discuss, and achieve goals together</p>
+            <h1>👥 Study Groups</h1>
+            <p className="cg-page-subtitle">Collaborate, discuss, and achieve goals together</p>
           </div>
-          <div className="collab-header-actions">
-            <button className="btn-secondary" onClick={() => { setShowJoin(true); setError(''); }}>
+          <div className="cg-header-actions">
+            <button className="cg-btn-secondary" onClick={() => { setShowJoin(true); setError(''); }}>
               🔗 Join Group
             </button>
-            <button className="btn-primary" onClick={() => { setShowCreate(true); setError(''); }}>
+            <button className="cg-btn-primary" onClick={() => { setShowCreate(true); setError(''); }}>
               + Create Group
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="collab-loading">Loading your groups...</div>
+          <div className="cg-loading-state">
+            <div className="cg-spinner"></div>
+            <p>Loading your groups...</p>
+          </div>
         ) : groups.length === 0 ? (
-          <div className="collab-empty">
-            <div className="collab-empty-icon">👥</div>
+          <div className="cg-empty-state">
+            <div className="cg-empty-icon">👥</div>
             <h3>No groups yet</h3>
             <p>Create a study group or join one with an invite code</p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
-              <button className="btn-primary" onClick={() => setShowCreate(true)}>Create Group</button>
-              <button className="btn-secondary" onClick={() => setShowJoin(true)}>Join with Code</button>
+            <div className="cg-empty-actions">
+              <button className="cg-btn-primary" onClick={() => setShowCreate(true)}>Create Group</button>
+              <button className="cg-btn-secondary" onClick={() => setShowJoin(true)}>Join with Code</button>
             </div>
           </div>
         ) : (
-          <div className="groups-grid">
-            {groups.map(g => (
-              <div key={g.id} className="group-card" onClick={() => navigate(`/collaboration/groups/${g.id}`)}>
-                <div className="group-card-header">
-                  <span className="group-goal-badge" style={{ background: goalColor[g.goal] || '#888' }}>
-                    {g.goal}
+          <div className="cg-groups-grid">
+            {groups.map((g, idx) => (
+              <div 
+                key={g.id} 
+                className="cg-group-card" 
+                onClick={() => navigate(`/collaboration/groups/${g.id}`)}
+                style={{ animationDelay: `${idx * 0.05}s` }}
+              >
+                <div className="cg-card-header">
+                  <span className="cg-goal-badge" style={{ background: goalColor[g.goal] || '#888' }}>
+                    {goalIcon[g.goal]} {g.goal}
                   </span>
-                  <span className="group-members-count">👥 {g.currentMembers}/{g.maxMembers}</span>
+                  <span className="cg-members-count">👥 {g.currentMembers}/{g.maxMembers}</span>
                 </div>
-                <h3 className="group-card-name">{g.name}</h3>
-                <p className="group-card-subject">📚 {g.subject}</p>
-                <p className="group-card-desc">{g.description || 'No description'}</p>
-                <div className="group-card-footer">
-                  <span className="group-role-badge" style={{ background: g.currentUserRole === 'ADMIN' ? '#6c5ce7' : '#636e72' }}>
-                    {g.currentUserRole}
+                <h3 className="cg-group-name">{g.name}</h3>
+                <p className="cg-group-subject">📚 {g.subject}</p>
+                {g.description && <p className="cg-group-desc">{g.description}</p>}
+                <div className="cg-card-footer">
+                  <span className="cg-role-badge" style={{ background: g.currentUserRole === 'ADMIN' ? '#8b5cf6' : '#64748b' }}>
+                    {g.currentUserRole === 'ADMIN' ? '👑 Admin' : '👤 Member'}
                   </span>
-                  <span className="group-created">by {g.createdByName}</span>
+                  <span className="cg-created-by">by {g.createdByName}</span>
                 </div>
               </div>
             ))}
@@ -116,43 +125,64 @@ export default function GroupsPage() {
 
       {/* Create Group Modal */}
       {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="cg-modal-overlay" onClick={() => setShowCreate(false)}>
+          <div className="cg-modal" onClick={e => e.stopPropagation()}>
+            <div className="cg-modal-header">
               <h2>Create Study Group</h2>
-              <button className="modal-close" onClick={() => setShowCreate(false)}>✕</button>
+              <button className="cg-modal-close" onClick={() => setShowCreate(false)}>✕</button>
             </div>
-            {error && <div className="modal-error">{error}</div>}
-            <form onSubmit={handleCreate} className="modal-form">
-              <div className="form-group">
+            {error && <div className="cg-modal-error">{error}</div>}
+            <form onSubmit={handleCreate} className="cg-modal-form">
+              <div className="cg-form-group">
                 <label>Group Name *</label>
-                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. CS301 Exam Prep" />
+                <input 
+                  required 
+                  value={form.name} 
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. CS301 Exam Prep" 
+                  className="cg-form-input"
+                />
               </div>
-              <div className="form-group">
+              <div className="cg-form-group">
                 <label>Subject *</label>
-                <input required value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}
-                  placeholder="e.g. Data Structures" />
+                <input 
+                  required 
+                  value={form.subject} 
+                  onChange={e => setForm({ ...form, subject: e.target.value })}
+                  placeholder="e.g. Data Structures" 
+                  className="cg-form-input"
+                />
               </div>
-              <div className="form-group">
+              <div className="cg-form-group">
                 <label>Goal</label>
-                <select value={form.goal} onChange={e => setForm({ ...form, goal: e.target.value })}>
-                  {GOALS.map(g => <option key={g} value={g}>{g}</option>)}
+                <select value={form.goal} onChange={e => setForm({ ...form, goal: e.target.value })} className="cg-form-select">
+                  {GOALS.map(g => <option key={g} value={g}>{goalIcon[g]} {g}</option>)}
                 </select>
               </div>
-              <div className="form-group">
+              <div className="cg-form-group">
                 <label>Description</label>
-                <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                  placeholder="What is this group about?" rows={3} />
+                <textarea 
+                  value={form.description} 
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  placeholder="What is this group about?" 
+                  rows={3} 
+                  className="cg-form-textarea"
+                />
               </div>
-              <div className="form-group">
+              <div className="cg-form-group">
                 <label>Max Members</label>
-                <input type="number" min={2} max={50} value={form.maxMembers}
-                  onChange={e => setForm({ ...form, maxMembers: parseInt(e.target.value) })} />
+                <input 
+                  type="number" 
+                  min={2} 
+                  max={50} 
+                  value={form.maxMembers}
+                  onChange={e => setForm({ ...form, maxMembers: parseInt(e.target.value) })} 
+                  className="cg-form-input"
+                />
               </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Group</button>
+              <div className="cg-modal-actions">
+                <button type="button" className="cg-btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
+                <button type="submit" className="cg-btn-primary">Create Group</button>
               </div>
             </form>
           </div>
@@ -161,22 +191,28 @@ export default function GroupsPage() {
 
       {/* Join Group Modal */}
       {showJoin && (
-        <div className="modal-overlay" onClick={() => setShowJoin(false)}>
-          <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="cg-modal-overlay" onClick={() => setShowJoin(false)}>
+          <div className="cg-modal cg-modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="cg-modal-header">
               <h2>Join a Group</h2>
-              <button className="modal-close" onClick={() => setShowJoin(false)}>✕</button>
+              <button className="cg-modal-close" onClick={() => setShowJoin(false)}>✕</button>
             </div>
-            {error && <div className="modal-error">{error}</div>}
-            <form onSubmit={handleJoin} className="modal-form">
-              <div className="form-group">
+            {error && <div className="cg-modal-error">{error}</div>}
+            <form onSubmit={handleJoin} className="cg-modal-form">
+              <div className="cg-form-group">
                 <label>Invite Code *</label>
-                <input required value={inviteCode} onChange={e => setInviteCode(e.target.value)}
-                  placeholder="Enter 8-character invite code" style={{ textTransform: 'uppercase', letterSpacing: '4px', fontSize: '18px', textAlign: 'center' }} />
+                <input 
+                  required 
+                  value={inviteCode} 
+                  onChange={e => setInviteCode(e.target.value)}
+                  placeholder="Enter 8-character invite code" 
+                  className="cg-invite-input"
+                />
+                <p className="cg-input-hint">Ask the group admin for the invite code</p>
               </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowJoin(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Join Group</button>
+              <div className="cg-modal-actions">
+                <button type="button" className="cg-btn-secondary" onClick={() => setShowJoin(false)}>Cancel</button>
+                <button type="submit" className="cg-btn-primary">Join Group</button>
               </div>
             </form>
           </div>

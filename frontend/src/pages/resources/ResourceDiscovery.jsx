@@ -28,6 +28,13 @@ const ResourceDiscovery = () => {
     const [reportModal, setReportModal] = useState({ show: false, resourceId: null });
     const [reportReason, setReportReason] = useState('');
     const [reportLoading, setReportLoading] = useState(false);
+    
+    // Rating modal state
+    const [rateModal, setRateModal] = useState({ show: false, resourceId: null, title: '' });
+    const [rating, setRating] = useState(5);
+    const [review, setReview] = useState('');
+    const [rateLoading, setRateLoading] = useState(false);
+    const [userRatings, setUserRatings] = useState(new Map()); // Store user's rating for each resource
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -35,6 +42,7 @@ const ResourceDiscovery = () => {
         setUser(currentUser);
         fetchResources();
         fetchBookmarks(currentUser.userId);
+        fetchUserRatings(currentUser.userId);
     }, [navigate]);
 
     const fetchResources = useCallback(async (q = '', subj = '', type = '') => {
@@ -60,6 +68,18 @@ const ResourceDiscovery = () => {
             const res = await api.get(`/resources/bookmarks/${userId}`);
             const ids = (res.data || []).map(r => r.id);
             setBookmarkedIds(new Set(ids));
+        } catch { /* ignore */ }
+    };
+
+    const fetchUserRatings = async (userId) => {
+        if (!userId) return;
+        try {
+            const res = await api.get(`/resources/user/${userId}/ratings`);
+            const ratings = new Map();
+            (res.data || []).forEach(rating => {
+                ratings.set(rating.resourceId, rating.rating);
+            });
+            setUserRatings(ratings);
         } catch { /* ignore */ }
     };
 
@@ -104,6 +124,29 @@ const ResourceDiscovery = () => {
         api.post(`/resources/${resourceId}/view`).catch(() => {});
     };
 
+    // Rating handlers
+    const handleRateSubmit = async () => {
+        setRateLoading(true);
+        try {
+            await api.post(`/resources/${rateModal.resourceId}/rate`, { 
+                userId: String(user?.userId), 
+                rating, 
+                review 
+            });
+            // Refresh resources to update average rating
+            await fetchResources(search, subjectFilter, typeFilter);
+            await fetchUserRatings(user?.userId);
+            setRateModal({ show: false, resourceId: null, title: '' });
+            setRating(5);
+            setReview('');
+            alert('Rating submitted successfully!');
+        } catch (e) {
+            alert('Failed to submit rating.');
+        } finally {
+            setRateLoading(false);
+        }
+    };
+
     // Collect unique subjects for filter
     const uniqueSubjects = [...new Set(resources.map(r => r.subject).filter(Boolean))].sort();
     const uniqueTypes = [...new Set(resources.map(r => r.type).filter(Boolean))].sort();
@@ -125,28 +168,34 @@ const ResourceDiscovery = () => {
         <div className="dashboard">
             <StudentSidebar user={user} />
             <div className="main-content">
-                <div className="page-header">
+                <div className="rds-page-header">
                     <div>
                         <h1>🔍 Resource Discovery</h1>
-                        <p className="page-subtitle">Personalized resources ranked by your weak areas and current subjects</p>
+                        <p className="rds-page-subtitle">Personalized resources ranked by your weak areas and current subjects</p>
                     </div>
-                    <button className="btn-primary" onClick={() => navigate('/upload')}>+ Upload Resource</button>
+                    <button className="rds-btn-primary" onClick={() => navigate('/upload')}>
+                        + Upload Resource
+                    </button>
                 </div>
 
                 {/* Personalization legend */}
-                <div className="relevance-legend">
+                <div className="rds-relevance-legend">
                     {Object.entries(relevanceMeta).map(([key, val]) => (
-                        <div key={key} className="legend-item" style={{ background: val.bg, border: `1px solid ${val.border}`, color: val.color }}>
+                        <div 
+                            key={key} 
+                            className="rds-legend-item" 
+                            style={{ background: val.bg, border: `1px solid ${val.border}`, color: val.color }}
+                        >
                             {val.label}
                         </div>
                     ))}
-                    <span className="legend-note">Resources are ranked by your academic profile</span>
+                    <span className="rds-legend-note">Resources are ranked by your academic profile</span>
                 </div>
 
                 {/* Search & Filters */}
-                <div className="discovery-filters">
-                    <div className="search-bar">
-                        <span className="search-icon">🔍</span>
+                <div className="rds-discovery-filters">
+                    <div className="rds-search-bar">
+                        <span className="rds-search-icon">🔍</span>
                         <input
                             type="text"
                             value={search}
@@ -154,22 +203,32 @@ const ResourceDiscovery = () => {
                             onKeyDown={handleKeyDown}
                             placeholder="Search resources by title, topic, or tags..."
                         />
-                        <button className="btn-primary" onClick={handleSearch}>Search</button>
+                        <button className="rds-btn-primary rds-btn-sm" onClick={handleSearch}>
+                            Search
+                        </button>
                     </div>
-                    <div className="filter-row">
-                        <select value={subjectFilter} onChange={e => { setSubjectFilter(e.target.value); fetchResources(search, e.target.value, typeFilter); }}>
+                    <div className="rds-filter-row">
+                        <select 
+                            className="rds-filter-select"
+                            value={subjectFilter} 
+                            onChange={e => { setSubjectFilter(e.target.value); fetchResources(search, e.target.value, typeFilter); }}
+                        >
                             <option value="">All Subjects</option>
                             {uniqueSubjects.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                        <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); fetchResources(search, subjectFilter, e.target.value); }}>
+                        <select 
+                            className="rds-filter-select"
+                            value={typeFilter} 
+                            onChange={e => { setTypeFilter(e.target.value); fetchResources(search, subjectFilter, e.target.value); }}
+                        >
                             <option value="">All Types</option>
                             {uniqueTypes.map(t => <option key={t} value={t}>{typeIcons[t] || '📁'} {t.toUpperCase()}</option>)}
                         </select>
-                        <div className="relevance-filter-tabs">
+                        <div className="rds-relevance-filter-tabs">
                             {['ALL', 'weak-area', 'current-subject', 'general'].map(tag => (
                                 <button
                                     key={tag}
-                                    className={`filter-chip ${relevanceFilter === tag ? 'active' : ''}`}
+                                    className={`rds-filter-chip ${relevanceFilter === tag ? 'rds-filter-chip-active' : ''}`}
                                     onClick={() => setRelevanceFilter(tag)}
                                 >
                                     {tag === 'ALL' ? `All (${resources.length})` : relevanceMeta[tag]?.label + ` (${resources.filter(r => r.relevanceTag === tag).length})`}
@@ -179,38 +238,57 @@ const ResourceDiscovery = () => {
                     </div>
                 </div>
 
-                {loading && <div className="loading-state"><div className="spinner"></div><p>Loading personalized resources...</p></div>}
-                {error && <div className="alert alert-error">⚠️ {typeof error === 'string' ? error : 'Error loading resources.'} <button onClick={() => fetchResources(search, subjectFilter, typeFilter)} className="retry-btn">Retry</button></div>}
+                {loading && (
+                    <div className="rds-loading-state">
+                        <div className="rds-spinner"></div>
+                        <p>Loading personalized resources...</p>
+                    </div>
+                )}
+                
+                {error && (
+                    <div className="rds-alert rds-alert-error">
+                        ⚠️ {typeof error === 'string' ? error : 'Error loading resources.'} 
+                        <button onClick={() => fetchResources(search, subjectFilter, typeFilter)} className="rds-retry-btn">
+                            Retry
+                        </button>
+                    </div>
+                )}
 
                 {!loading && !error && filtered.length === 0 && (
-                    <div className="empty-state">
-                        <div className="empty-icon">📚</div>
+                    <div className="rds-empty-state">
+                        <div className="rds-empty-icon">📚</div>
                         <h3>No resources found</h3>
                         <p>Try adjusting your filters or be the first to upload a resource!</p>
-                        <button className="btn-primary" onClick={() => navigate('/upload')}>Upload Resource</button>
+                        <button className="rds-btn-primary" onClick={() => navigate('/upload')}>
+                            Upload Resource
+                        </button>
                     </div>
                 )}
 
                 {!loading && filtered.length > 0 && (
-                    <div className="resources-grid">
+                    <div className="rds-resources-grid">
                         {filtered.map((r, idx) => {
                             const meta = relevanceMeta[r.relevanceTag] || relevanceMeta['general'];
                             const isBookmarked = bookmarkedIds.has(r.id);
                             const bookmarkBusy = bookmarkLoading.has(r.id);
+                            const userRating = userRatings.get(r.id);
                             return (
                                 <div
                                     key={r.id}
-                                    className="resource-card"
+                                    className="rds-resource-card"
                                     style={{ borderTop: `3px solid ${meta.border}` }}
                                 >
                                     {/* Top row: rank + relevance badge */}
-                                    <div className="resource-card-top">
-                                        <span className="resource-rank">#{idx + 1}</span>
-                                        <span className="relevance-badge" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                                    <div className="rds-card-top">
+                                        <span className="rds-resource-rank">#{idx + 1}</span>
+                                        <span 
+                                            className="rds-relevance-badge" 
+                                            style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
+                                        >
                                             {meta.label}
                                         </span>
                                         <button
-                                            className={`bookmark-btn ${isBookmarked ? 'bookmarked' : ''}`}
+                                            className={`rds-bookmark-btn ${isBookmarked ? 'rds-bookmark-active' : ''}`}
                                             onClick={() => handleBookmark(r.id)}
                                             disabled={bookmarkBusy}
                                             title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
@@ -220,50 +298,66 @@ const ResourceDiscovery = () => {
                                     </div>
 
                                     {/* Title + type */}
-                                    <div className="resource-title-row">
-                                        <span className="type-icon">{typeIcons[r.type?.toLowerCase()] || '📁'}</span>
-                                        <h3 className="resource-title">{r.title}</h3>
+                                    <div className="rds-title-row">
+                                        <span className="rds-type-icon">{typeIcons[r.type?.toLowerCase()] || '📁'}</span>
+                                        <h3 className="rds-resource-title">{r.title}</h3>
                                     </div>
 
                                     {/* Metadata badges */}
-                                    <div className="resource-badges">
-                                        {r.subject && <span className="badge badge-blue">{r.subject}</span>}
-                                        {r.semester && <span className="badge badge-gray">{r.semester}</span>}
-                                        {r.type && <span className="badge badge-purple">{r.type.toUpperCase()}</span>}
-                                        {r.fileSize && <span className="badge badge-gray">{fileSize(r.fileSize)}</span>}
+                                    <div className="rds-badges-container">
+                                        {r.subject && <span className="rds-badge rds-badge-blue">{r.subject}</span>}
+                                        {r.semester && <span className="rds-badge rds-badge-gray">{r.semester}</span>}
+                                        {r.type && <span className="rds-badge rds-badge-purple">{r.type.toUpperCase()}</span>}
+                                        {r.fileSize && <span className="rds-badge rds-badge-gray">{fileSize(r.fileSize)}</span>}
                                     </div>
 
-                                    {r.description && <p className="resource-desc">{r.description}</p>}
+                                    {r.description && <p className="rds-resource-desc">{r.description}</p>}
 
                                     {r.tags && (
-                                        <div className="resource-tags">
+                                        <div className="rds-tags-container">
                                             {r.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 4).map(t => (
-                                                <span key={t} className="tag">#{t}</span>
+                                                <span key={t} className="rds-tag">#{t}</span>
                                             ))}
                                         </div>
                                     )}
 
-                                    {/* Stats */}
-                                    <div className="resource-stats">
-                                        <span>⭐ {(r.averageRating || 0).toFixed(1)} ({r.ratingCount || 0})</span>
-                                        <span>👁 {r.viewCount || 0}</span>
-                                        <span>⬇ {r.downloadCount || 0}</span>
-                                        <span>📅 {fmt(r.uploadedAt)}</span>
+                                    {/* Stats with rating stars */}
+                                    <div className="rds-stats-section">
+                                        <div className="rds-rating-display">
+                                            <span className="rds-stars">
+                                                {[1,2,3,4,5].map(s => (
+                                                    <span 
+                                                        key={s} 
+                                                        className={`rds-star ${s <= Math.round(r.averageRating || 0) ? 'rds-star-filled' : ''}`}
+                                                    >
+                                                        ★
+                                                    </span>
+                                                ))}
+                                            </span>
+                                            <span className="rds-rating-value">{(r.averageRating || 0).toFixed(1)}</span>
+                                            <span className="rds-rating-count">({r.ratingCount || 0} reviews)</span>
+                                        </div>
+                                        <div className="rds-stat-item">
+                                            <span>👁</span> {r.viewCount || 0}
+                                        </div>
+                                        <div className="rds-stat-item">
+                                            <span>⬇</span> {r.downloadCount || 0}
+                                        </div>
+                                        <div className="rds-stat-item">
+                                            <span>📅</span> {fmt(r.uploadedAt)}
+                                        </div>
                                     </div>
 
-                                    <div className="resource-uploader">
-                                        <span className="uploader-avatar">{(r.uploaderName || '?').charAt(0).toUpperCase()}</span>
-                                        <span>{r.uploaderName || 'Unknown'}</span>
-                                    </div>
+                                    
 
                                     {/* Actions */}
-                                    <div className="resource-actions">
+                                    <div className="rds-actions-section">
                                         {r.link ? (
                                             <a
                                                 href={r.link}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="btn-primary btn-sm"
+                                                className="rds-btn-primary rds-btn-sm"
                                                 onClick={() => handleView(r.id)}
                                             >
                                                 🔗 Open Link
@@ -273,16 +367,22 @@ const ResourceDiscovery = () => {
                                                 href={r.filePath}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="btn-primary btn-sm"
+                                                className="rds-btn-primary rds-btn-sm"
                                                 onClick={() => handleView(r.id)}
                                             >
                                                 ⬇ View / Download
                                             </a>
                                         ) : (
-                                            <span className="no-file">No file attached</span>
+                                            <span className="rds-no-file">No file attached</span>
                                         )}
+                                        <button 
+                                            className="rds-btn-rate"
+                                            onClick={() => setRateModal({ show: true, resourceId: r.id, title: r.title })}
+                                        >
+                                            {userRating ? '⭐ Edit Rating' : '⭐ Rate'}
+                                        </button>
                                         <button
-                                            className="btn-report"
+                                            className="rds-btn-report"
                                             onClick={() => setReportModal({ show: true, resourceId: r.id })}
                                         >
                                             🚩 Report
@@ -296,12 +396,16 @@ const ResourceDiscovery = () => {
 
                 {/* Report Modal */}
                 {reportModal.show && (
-                    <div className="modal-overlay" onClick={() => setReportModal({ show: false, resourceId: null })}>
-                        <div className="modal" onClick={e => e.stopPropagation()}>
+                    <div className="rds-modal-overlay" onClick={() => setReportModal({ show: false, resourceId: null })}>
+                        <div className="rds-modal" onClick={e => e.stopPropagation()}>
                             <h3>🚩 Report Resource</h3>
-                            <div className="form-group">
+                            <div className="rds-form-group">
                                 <label>Reason</label>
-                                <select value={reportReason} onChange={e => setReportReason(e.target.value)}>
+                                <select 
+                                    className="rds-form-select"
+                                    value={reportReason} 
+                                    onChange={e => setReportReason(e.target.value)}
+                                >
                                     <option value="">Select reason...</option>
                                     <option value="Inappropriate content">Inappropriate content</option>
                                     <option value="Copyright violation">Copyright violation</option>
@@ -310,10 +414,53 @@ const ResourceDiscovery = () => {
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
-                            <div className="modal-actions">
-                                <button className="btn-secondary" onClick={() => setReportModal({ show: false, resourceId: null })}>Cancel</button>
-                                <button className="btn-primary" onClick={handleReport} disabled={reportLoading}>
+                            <div className="rds-modal-actions">
+                                <button className="rds-btn-secondary" onClick={() => setReportModal({ show: false, resourceId: null })}>
+                                    Cancel
+                                </button>
+                                <button className="rds-btn-primary" onClick={handleReport} disabled={reportLoading}>
                                     {reportLoading ? 'Submitting...' : 'Submit Report'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Rating Modal */}
+                {rateModal.show && (
+                    <div className="rds-modal-overlay" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                        <div className="rds-modal" onClick={e => e.stopPropagation()}>
+                            <h3>⭐ Rate Resource</h3>
+                            <p className="rds-modal-subtitle">{rateModal.title}</p>
+                            <div className="rds-star-rating">
+                                {[1,2,3,4,5].map(s => (
+                                    <button 
+                                        key={s} 
+                                        className={`rds-star-btn ${s <= rating ? 'rds-star-filled' : ''}`} 
+                                        onClick={() => setRating(s)}
+                                        onMouseEnter={() => setRating(s)}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="rds-rating-label">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}</p>
+                            <div className="rds-form-group">
+                                <label>Review (optional)</label>
+                                <textarea 
+                                    className="rds-form-textarea"
+                                    value={review} 
+                                    onChange={e => setReview(e.target.value)} 
+                                    rows={3} 
+                                    placeholder="Share your thoughts about this resource..."
+                                />
+                            </div>
+                            <div className="rds-modal-actions">
+                                <button className="rds-btn-secondary" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                                    Cancel
+                                </button>
+                                <button className="rds-btn-primary" onClick={handleRateSubmit} disabled={rateLoading}>
+                                    {rateLoading ? 'Submitting...' : 'Submit Rating'}
                                 </button>
                             </div>
                         </div>

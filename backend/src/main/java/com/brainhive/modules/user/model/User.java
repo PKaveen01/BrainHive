@@ -24,12 +24,14 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
-    // Account status: ACTIVE, PENDING, TERMINATED, REJECTED
-    @Column(name = "account_status")
+    /**
+     * Account status:
+     *   ACTIVE   – fully usable account (students, approved tutors, admins)
+     *   PENDING  – tutor waiting for admin approval
+     *   SUSPENDED – blocked by admin
+     */
+    @Column(name = "account_status", nullable = false)
     private String accountStatus = "ACTIVE";
-
-    @Column(name = "terminated_until")
-    private LocalDateTime terminatedUntil;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -37,7 +39,6 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Constructors
     public User() {}
 
     public User(String email, String password, String fullName, UserRole role) {
@@ -69,9 +70,6 @@ public class User {
     public String getAccountStatus() { return accountStatus; }
     public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
 
-    public LocalDateTime getTerminatedUntil() { return terminatedUntil; }
-    public void setTerminatedUntil(LocalDateTime terminatedUntil) { this.terminatedUntil = terminatedUntil; }
-
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -82,7 +80,6 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (accountStatus == null) accountStatus = "ACTIVE";
     }
 
     @PreUpdate

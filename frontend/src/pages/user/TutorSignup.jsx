@@ -20,6 +20,7 @@ const TutorSignup = () => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
     const [subjects, setSubjects] = useState([]);
     
     // State for availability slots (simplified for demo)
@@ -153,9 +154,8 @@ const TutorSignup = () => {
             const response = await authService.registerTutor(formData);
             
             if (response && response.success) {
-                // Show success message and redirect
-                alert('Tutor registration successful! Your account will be reviewed by an admin. You can login after approval.');
-                navigate('/login');
+                // Show in-page success screen — tutor must wait for approval
+                setRegistrationSuccess(true);
             } else {
                 setServerError(response.message || 'Registration failed. Please try again.');
             }
@@ -180,6 +180,34 @@ const TutorSignup = () => {
         number: /[0-9]/.test(formData.password)
     };
     const strengthCount = Object.values(passwordStrength).filter(Boolean).length;
+
+    // Show success screen after registration — tutor must wait for admin approval
+    if (registrationSuccess) {
+        return (
+            <div className="auth-container">
+                <div className="auth-card" style={{ textAlign: 'center', padding: '48px 32px' }}>
+                    <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎉</div>
+                    <h2 style={{ color: '#1f2937', marginBottom: '12px' }}>Registration Successful!</h2>
+                    <p style={{ color: '#6b7280', fontSize: '15px', lineHeight: '1.6', marginBottom: '24px' }}>
+                        Your tutor account has been created and is <strong>pending admin approval</strong>.
+                        You will be able to log in once an administrator reviews and approves your application.
+                    </p>
+                    <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px', marginBottom: '28px', textAlign: 'left' }}>
+                        <p style={{ margin: 0, color: '#92400e', fontSize: '14px' }}>
+                            ⏳ <strong>What happens next?</strong><br />
+                            An admin will review your qualification and details. Once approved, you will be able to log in with your email and password.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/login')}
+                        style={{ padding: '12px 32px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                        Go to Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="auth-container">
