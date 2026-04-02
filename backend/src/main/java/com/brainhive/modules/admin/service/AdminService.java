@@ -40,6 +40,7 @@ public class AdminService {
 
     // ─── Stats ───────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public AdminStatsDTO getStats() {
         List<User> allUsers = userRepository.findAll();
         long totalStudents   = allUsers.stream().filter(u -> u.getRole() == UserRole.STUDENT).count();
@@ -66,7 +67,7 @@ public class AdminService {
         return s;
     }
 
-    /** Extended dashboard stats (used by friend's AdminController) */
+    @Transactional(readOnly = true)
     public Map<String, Object> getDashboardStats() {
         long totalStudents   = userRepository.findByRole(UserRole.STUDENT).size();
         long totalTutors     = userRepository.findByRole(UserRole.TUTOR).stream()
@@ -88,11 +89,13 @@ public class AdminService {
     // ─── Users ───────────────────────────────────────────────────────────────
 
     /** Returns all users as UserDTO (simpler view used by original admin module) */
+    @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream().map(this::toUserDTO).collect(Collectors.toList());
     }
 
     /** Returns all non-admin users as AdminUserDTO (richer view with account status) */
+    @Transactional(readOnly = true)
     public List<AdminUserDTO> getAllUsersDetailed() {
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() != UserRole.ADMIN)
@@ -172,11 +175,13 @@ public class AdminService {
 
     // ─── Tutors ──────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<TutorApplicationDTO> getPendingTutors() {
         return tutorProfileRepository.findByVerificationStatus("PENDING").stream()
                 .map(this::toTutorApplicationDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<TutorApplicationDTO> getAllTutors() {
         return tutorProfileRepository.findAll().stream()
                 .map(this::toTutorApplicationDTO).collect(Collectors.toList());
@@ -247,6 +252,7 @@ public class AdminService {
 
     // ─── Resources ───────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<ResourceModDTO> getReportedResources() {
         Set<Resource> combined = new LinkedHashSet<>();
         combined.addAll(resourceRepository.findByStatus("flagged"));
@@ -254,6 +260,7 @@ public class AdminService {
         return combined.stream().map(this::toResourceModDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ResourceModDTO> getAllResources() {
         return resourceRepository.findAll().stream()
                 .map(this::toResourceModDTO)
@@ -280,6 +287,7 @@ public class AdminService {
 
     // ─── Lectures ────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<LectureResponseDTO> getAllLectures() {
         return lectureRepository.findAllByOrderByScheduledAtDesc()
                 .stream()
@@ -300,9 +308,12 @@ public class AdminService {
     private TutorApplicationDTO toTutorApplicationDTO(TutorProfile tp) {
         TutorApplicationDTO dto = new TutorApplicationDTO();
         dto.setId(tp.getId());
-        dto.setUserId(tp.getUser().getId());
-        dto.setName(tp.getUser().getFullName());
-        dto.setEmail(tp.getUser().getEmail());
+        // user is lazy — safe inside @Transactional
+        if (tp.getUser() != null) {
+            dto.setUserId(tp.getUser().getId());
+            dto.setName(tp.getUser().getFullName());
+            dto.setEmail(tp.getUser().getEmail());
+        }
         dto.setQualification(tp.getQualification());
         dto.setBio(tp.getBio());
         dto.setYearsOfExperience(tp.getYearsOfExperience());
@@ -310,8 +321,13 @@ public class AdminService {
         dto.setAverageRating(tp.getAverageRating());
         dto.setTotalSessions(tp.getTotalSessions());
         if (tp.getSubject() != null) dto.setSubject(tp.getSubject().getName());
-        if (tp.getExpertSubjects() != null)
-            dto.setExpertSubjects(tp.getExpertSubjects().stream().map(s -> s.getName()).collect(Collectors.toList()));
+        try {
+            if (tp.getExpertSubjects() != null && !tp.getExpertSubjects().isEmpty())
+                dto.setExpertSubjects(tp.getExpertSubjects().stream()
+                        .map(s -> s.getName()).collect(Collectors.toList()));
+        } catch (Exception ignored) {
+            // expertSubjects lazy load failed — leave as null, non-critical
+        }
         dto.setCreatedAt(tp.getCreatedAt());
         return dto;
     }

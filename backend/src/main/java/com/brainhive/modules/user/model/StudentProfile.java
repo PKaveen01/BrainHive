@@ -1,5 +1,6 @@
 package com.brainhive.modules.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ public class StudentProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -48,6 +50,7 @@ public class StudentProfile {
     private LocalDateTime updatedAt;
 
     // Relationships
+    @JsonIgnore
     @ManyToMany
     @JoinTable(
             name = "student_subjects",
@@ -56,6 +59,7 @@ public class StudentProfile {
     )
     private Set<Subject> subjects = new HashSet<>();
 
+    @JsonIgnore
     @ElementCollection
     @CollectionTable(name = "student_weak_subjects", joinColumns = @JoinColumn(name = "student_id"))
     @Column(name = "subject_name")

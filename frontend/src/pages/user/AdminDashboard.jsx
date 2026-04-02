@@ -37,6 +37,7 @@ const AdminDashboard = () => {
     const [pendingTutors, setPendingTutors] = useState([]);
     const [recentUsers, setRecentUsers] = useState([]);
     const [loadingTutors, setLoadingTutors] = useState(false);
+    const [tutorFetchError, setTutorFetchError] = useState(null);
     const [actionMessage, setActionMessage] = useState(null);
 
     // Charts keep dummy data (analytics not yet in backend)
@@ -92,11 +93,19 @@ const AdminDashboard = () => {
 
     const fetchPendingTutors = async () => {
         setLoadingTutors(true);
+        setTutorFetchError(null);
         try {
             const res = await api.get('/admin/tutors/pending');
-            setPendingTutors(Array.isArray(res.data) ? res.data : []);
+            const data = Array.isArray(res.data) ? res.data : [];
+            setPendingTutors(data);
         } catch (e) {
             console.error('Failed to load pending tutors:', e);
+            const status = e?.response?.status;
+            if (status === 401 || status === 403) {
+                setTutorFetchError('Session expired or unauthorised. Please log out and log back in as admin.');
+            } else {
+                setTutorFetchError(`Could not load tutor applications (${status || 'network error'}). Click Refresh to try again.`);
+            }
         } finally {
             setLoadingTutors(false);
         }
@@ -108,6 +117,7 @@ const AdminDashboard = () => {
             setRecentUsers(Array.isArray(res.data) ? res.data : []);
         } catch (e) {
             console.error('Failed to load users:', e);
+            showMessage('Could not load user list. Please refresh.', true);
         }
     };
 
@@ -144,12 +154,18 @@ const AdminDashboard = () => {
     const handleUserAction = async (userId, action) => {
         try {
             if (action === 'Suspend') {
-                if (!window.confirm('Suspend this user?')) return;
-                await api.post(`/admin/users/${userId}/suspend`);
-                showMessage('User suspended.');
+                const days = window.prompt('Suspend this user for how many days?', '30');
+                if (days === null) return; // user cancelled
+                const durationDays = parseInt(days, 10);
+                if (isNaN(durationDays) || durationDays < 1) {
+                    showMessage('Please enter a valid number of days (minimum 1).', true);
+                    return;
+                }
+                await api.post(`/admin/users/${userId}/terminate`, { durationDays });
+                showMessage(`User suspended for ${durationDays} day(s).`);
             } else if (action === 'Activate') {
-                await api.post(`/admin/users/${userId}/activate`);
-                showMessage('User activated.');
+                await api.post(`/admin/users/${userId}/reactivate`);
+                showMessage('User reactivated successfully.');
             } else {
                 showMessage(`${action} — not yet implemented.`);
                 return;
@@ -415,7 +431,7 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td>
-                                                {user.accountStatus === 'SUSPENDED' ? (
+                                                {(user.accountStatus === 'SUSPENDED' || user.accountStatus === 'TERMINATED' || user.accountStatus === 'REJECTED') ? (
                                                     <button className="action-btn approve" onClick={() => handleUserAction(user.id, 'Activate')}>Activate</button>
                                                 ) : (
                                                     <button className="action-btn suspend" onClick={() => handleUserAction(user.id, 'Suspend')}>Suspend</button>
@@ -441,7 +457,16 @@ const AdminDashboard = () => {
                             <div className="loading-state">Loading pending applications...</div>
                         )}
 
-                        {!loadingTutors && pendingTutors.length === 0 && (
+                        {!loadingTutors && tutorFetchError && (
+                            <div className="empty-state-admin">
+                                <div className="empty-icon-admin">⚠️</div>
+                                <h3>Could Not Load Applications</h3>
+                                <p>{tutorFetchError}</p>
+                                <button className="btn-secondary" style={{marginTop:'12px'}} onClick={fetchPendingTutors}>↻ Try Again</button>
+                            </div>
+                        )}
+
+                        {!loadingTutors && !tutorFetchError && pendingTutors.length === 0 && (
                             <div className="empty-state-admin">
                                 <div className="empty-icon-admin">✅</div>
                                 <h3>No Pending Applications</h3>

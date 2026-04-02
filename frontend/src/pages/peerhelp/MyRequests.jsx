@@ -87,7 +87,8 @@ const MyRequests = () => {
             await api.post('/peerhelp/ratings', {
                 sessionId: ratingModal.sessionId,
                 rating,
-                comment: ratingComment
+                feedback: ratingComment,
+                wouldRecommend: true
             });
             setRatingModal({ show: false, requestId: null, sessionId: null });
             setRating(5);
