@@ -20,10 +20,75 @@ const StudentDashboard = () => {
     const [filterType, setFilterType] = useState('all');
     const [sortBy, setSortBy] = useState('recent');
 
+    // Rating states
+    const [ratingModal, setRatingModal] = useState({ show: false, resourceId: null });
+    const [userRating, setUserRating] = useState(5);
+    const [review, setReview] = useState('');
+
     useEffect(() => {
         fetchDashboardData();
         fetchDiscoveryData();
     }, []);
+
+    const normalizeUrl = (url) => {
+        if (!url || typeof url !== 'string') return '';
+
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) return '';
+
+        if (/^https?:\/\//i.test(trimmedUrl)) {
+            return trimmedUrl;
+        }
+
+        if (
+            trimmedUrl.startsWith('/') ||
+            trimmedUrl.startsWith('./') ||
+            trimmedUrl.startsWith('../')
+        ) {
+            return trimmedUrl;
+        }
+
+        return `https://${trimmedUrl}`;
+    };
+
+    const getViewableUrl = (resource) => {
+        const possibleUrls = [
+            resource?.linkUrl,
+            resource?.url,
+            resource?.resourceUrl,
+            resource?.link,
+            resource?.externalUrl,
+            resource?.websiteUrl,
+            resource?.fileUrl
+        ];
+
+        for (const value of possibleUrls) {
+            const normalized = normalizeUrl(value);
+            if (normalized) {
+                return normalized;
+            }
+        }
+
+        return '';
+    };
+
+    const getDownloadableUrl = (resource) => {
+        const possibleUrls = [
+            resource?.filePath,
+            resource?.fileUrl,
+            resource?.downloadUrl,
+            resource?.url
+        ];
+
+        for (const value of possibleUrls) {
+            const normalized = normalizeUrl(value);
+            if (normalized) {
+                return normalized;
+            }
+        }
+
+        return '';
+    };
 
     const mapResourceToUI = (r) => ({
         id: r.id,
@@ -45,7 +110,15 @@ const StudentDashboard = () => {
         saved: r.saved || false,
         description: r.description || '',
         fileUrl: r.fileUrl || r.url || '',
-        linkUrl: r.linkUrl || ''
+        linkUrl: r.linkUrl || r.url || r.fileUrl || '',
+        filePath: r.filePath || r.fileUrl || '',
+        url: r.url || '',
+        resourceUrl: r.resourceUrl || '',
+        link: r.link || '',
+        downloadUrl: r.downloadUrl || '',
+        externalUrl: r.externalUrl || '',
+        websiteUrl: r.websiteUrl || '',
+        allowRatings: r.allowRatings !== false
     });
 
     const fetchDashboardData = async () => {
@@ -165,6 +238,114 @@ const StudentDashboard = () => {
         navigate(`/request-help?resource=${resourceId}`);
     };
 
+    const handleViewResource = async (resource, e) => {
+        if (e) e.stopPropagation();
+
+        try {
+            const url = getViewableUrl(resource);
+
+            if (!url) {
+                console.log('RESOURCE OBJECT:', resource);
+                alert('No link found in resource');
+                return;
+            }
+
+            try {
+                if (resource?.id) {
+                    await api.post(`/resources/${resource.id}/view`);
+                }
+            } catch (viewError) {
+                console.warn('View count update failed:', viewError);
+            }
+
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error('View failed:', error);
+            alert('Failed to open resource');
+        }
+    };
+
+    const handleDownloadResource = async (resource, e) => {
+        if (e) e.stopPropagation();
+
+        try {
+            if (!resource?.id) {
+                return;
+            }
+
+            const downloadUrl = getDownloadableUrl(resource);
+
+            if (!downloadUrl) {
+                alert('File URL not found');
+                return;
+            }
+
+            await api.post(`/resources/${resource.id}/download`);
+            window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert(error.response?.data?.message || 'Failed to download resource');
+        }
+    };
+
+    const handleRate = async () => {
+        if (!review.trim()) {
+            alert('Please write a review before submitting.');
+            return;
+        }
+
+        try {
+            const activeUser = user || authService.getCurrentUser();
+            if (!activeUser) {
+                alert('Unable to identify user.');
+                return;
+            }
+
+            // Keeping same rating-submit logic pattern as your working upload page
+            const dbUserId = '1';
+
+            const response = await api.post(
+                `/resources/${ratingModal.resourceId}/rate?userId=${dbUserId}`,
+                {
+                    rating: userRating,
+                    review: review.trim()
+                }
+            );
+
+            setRecentResources(prev =>
+                prev.map(resource =>
+                    resource.id === ratingModal.resourceId
+                        ? {
+                            ...resource,
+                            rating: response.data.averageRating,
+                            ratingCount: response.data.ratingCount
+                        }
+                        : resource
+                )
+            );
+
+            setCourseResources(prev =>
+                prev.map(resource =>
+                    resource.id === ratingModal.resourceId
+                        ? {
+                            ...resource,
+                            rating: response.data.averageRating,
+                            ratingCount: response.data.ratingCount
+                        }
+                        : resource
+                )
+            );
+
+            alert('Rating submitted!');
+            setRatingModal({ show: false, resourceId: null });
+            setUserRating(5);
+            setReview('');
+        } catch (error) {
+            console.error('Error submitting rating:', error);
+            alert(error.response?.data || 'Failed to submit rating');
+        }
+    };
+
     const handleBackToCourses = () => {
         setViewMode('courses');
         setSelectedCourse(null);
@@ -184,6 +365,25 @@ const StudentDashboard = () => {
             'Other': '📎'
         };
         return icons[type] || '📄';
+    };
+
+    const renderStars = (rating) => {
+        const validRating = Number(rating) || 0;
+        const fullStars = Math.floor(validRating);
+        const hasHalfStar = validRating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+        return (
+            <span className="stars-container">
+                {[...Array(Math.max(0, fullStars))].map((_, i) => (
+                    <span key={`full-${i}`} className="star full">★</span>
+                ))}
+                {hasHalfStar && <span className="star half">½</span>}
+                {[...Array(Math.max(0, emptyStars))].map((_, i) => (
+                    <span key={`empty-${i}`} className="star empty">☆</span>
+                ))}
+            </span>
+        );
     };
 
     const filteredAndSortedResources = (resources) => {
@@ -364,8 +564,8 @@ const StudentDashboard = () => {
                                 </div>
                                 <div>
                                     <div className="stat-value">
-                                    {recentResources.length}
-</div>
+                                        {recentResources.length}
+                                    </div>
                                     <div className="stat-label">Resources Saved</div>
                                 </div>
                             </div>
@@ -474,6 +674,7 @@ const StudentDashboard = () => {
                                             <th>Type</th>
                                             <th>Uploader</th>
                                             <th>Saves</th>
+                                            <th>Rating</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -506,7 +707,35 @@ const StudentDashboard = () => {
                                                     <td>{resource.uploader?.name}</td>
                                                     <td>{resource.saves}</td>
                                                     <td>
+                                                        {resource.ratingCount > 0 ? (
+                                                            <>
+                                                                {renderStars(resource.rating)}
+                                                                <span style={{ marginLeft: '6px', fontSize: '12px', color: '#666' }}>
+                                                                    ({resource.ratingCount || 0})
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span style={{ fontSize: '12px', color: '#666' }}>New</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
                                                         <div className="action-buttons">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleViewResource(resource, e);
+                                                                }}
+                                                                className="action-btn view-btn"
+                                                            >
+                                                                View
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => handleDownloadResource(resource, e)}
+                                                                className="action-btn download-btn"
+                                                                style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
+                                                            >
+                                                                Download
+                                                            </button>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -516,6 +745,17 @@ const StudentDashboard = () => {
                                                             >
                                                                 {resource.saved ? 'Saved' : 'Save'}
                                                             </button>
+                                                            {resource.allowRatings && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setRatingModal({ show: true, resourceId: resource.id });
+                                                                    }}
+                                                                    className="action-btn"
+                                                                >
+                                                                    ⭐ Rate
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -630,18 +870,51 @@ const StudentDashboard = () => {
                                             </div>
                                             <div className="resource-stats">
                                                 <span className="rating">
-                                                    ⭐ {resource.rating ? resource.rating.toFixed(1) : 'New'} ({resource.ratingCount || 0} ratings)
+                                                    {resource.ratingCount > 0 ? (
+                                                        <>
+                                                            {renderStars(resource.rating)}
+                                                            <span style={{ marginLeft: '6px' }}>
+                                                                ({resource.ratingCount || 0})
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        'New'
+                                                    )}
                                                 </span>
                                                 <span className="saves">🔖 {resource.saves} saves</span>
                                                 <span className="views">👁️ {resource.views || 0} views</span>
                                             </div>
                                             <div className="resource-actions">
                                                 <button
+                                                    onClick={(e) => handleViewResource(resource, e)}
+                                                    className="action-button view-button"
+                                                >
+                                                    👁️ View
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDownloadResource(resource, e)}
+                                                    className="action-button download-button"
+                                                    style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
+                                                >
+                                                    ⬇️ Download
+                                                </button>
+                                                <button
                                                     onClick={() => handleSaveResource(resource.id)}
                                                     className={`action-button save-button ${resource.saved ? 'saved' : ''}`}
                                                 >
                                                     {resource.saved ? '✓ Saved' : '📌 Save'}
                                                 </button>
+                                                {resource.allowRatings && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (e) e.stopPropagation();
+                                                            setRatingModal({ show: true, resourceId: resource.id });
+                                                        }}
+                                                        className="action-button"
+                                                    >
+                                                        ⭐ Rate
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleRequestHelp(resource.id)}
                                                     className="action-button help-button"
@@ -666,6 +939,74 @@ const StudentDashboard = () => {
                     )}
                 </div>
             </div>
+
+            {ratingModal.show && (
+                <div className="modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null })}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h2>Rate this Resource</h2>
+
+                        <div className="rating-input">
+                            <label>Your Rating:</label>
+                            <div className="rating-stars">
+                                {[5, 4, 3, 2, 1].map((star) => (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        className={`star-btn ${userRating >= star ? 'active' : ''}`}
+                                        onClick={() => setUserRating(star)}
+                                        title={`${star} star${star !== 1 ? 's' : ''}`}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                            </div>
+                            <select
+                                value={userRating}
+                                onChange={(e) => setUserRating(parseInt(e.target.value))}
+                                className="rating-select"
+                            >
+                                <option value={5}>5 Stars - Excellent</option>
+                                <option value={4}>4 Stars - Very Good</option>
+                                <option value={3}>3 Stars - Good</option>
+                                <option value={2}>2 Stars - Fair</option>
+                                <option value={1}>1 Star - Poor</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Write a Review *</label>
+                            <textarea
+                                value={review}
+                                onChange={(e) => setReview(e.target.value)}
+                                placeholder="What did you think about this resource? Share your experience to help others..."
+                                rows="4"
+                                style={{ resize: 'vertical', width: '100%' }}
+                                required
+                            />
+                            <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '8px', display: 'block' }}>
+                                Your review will be visible to other users and helps the community.
+                            </small>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setRatingModal({ show: false, resourceId: null });
+                                    setUserRating(5);
+                                    setReview('');
+                                }}
+                                className="cancel-btn"
+                            >
+                                Cancel
+                            </button>
+                            <button type="button" onClick={handleRate} className="submit-btn">
+                                Submit Rating & Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
