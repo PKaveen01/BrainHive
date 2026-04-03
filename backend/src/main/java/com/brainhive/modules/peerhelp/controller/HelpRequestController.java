@@ -1,20 +1,37 @@
 package com.brainhive.modules.peerhelp.controller;
 
-import com.brainhive.modules.peerhelp.dto.*;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.brainhive.modules.peerhelp.dto.ApiResponse;
+import com.brainhive.modules.peerhelp.dto.ApproveRequestDTO;
+import com.brainhive.modules.peerhelp.dto.CreateHelpRequestDTO;
+import com.brainhive.modules.peerhelp.dto.CreateHelpRequestMessageDTO;
+import com.brainhive.modules.peerhelp.dto.HelpRequestMessageResponseDTO;
+import com.brainhive.modules.peerhelp.dto.HelpRequestResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorSessionResponseDTO;
+import com.brainhive.modules.peerhelp.service.HelpRequestMessageService;
 import com.brainhive.modules.peerhelp.service.HelpRequestService;
 import com.brainhive.modules.peerhelp.service.TutorMatchingService;
 import com.brainhive.modules.user.model.User;
 import com.brainhive.modules.user.model.UserRole;
 import com.brainhive.modules.user.service.UserService;
+
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/peerhelp/requests")
@@ -29,6 +46,9 @@ public class HelpRequestController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private HelpRequestMessageService helpRequestMessageService;
 
     /**
      * Create a new help request (Student only).
@@ -254,5 +274,55 @@ public class HelpRequestController {
                     .body(ApiResponse.error("No matching tutor found"));
         }
         return ResponseEntity.ok(ApiResponse.success("Best match retrieved successfully", tutor));
+    }
+
+    @GetMapping("/{requestId}/messages")
+    public ResponseEntity<ApiResponse<List<HelpRequestMessageResponseDTO>>> getRequestMessages(
+            @PathVariable Long requestId,
+            HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+
+            List<HelpRequestMessageResponseDTO> messages = helpRequestMessageService
+                    .getMessages(requestId, currentUser.getId());
+            return ResponseEntity.ok(ApiResponse.success("Conversation fetched successfully", messages));
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{requestId}/messages")
+    public ResponseEntity<ApiResponse<HelpRequestMessageResponseDTO>> sendRequestMessage(
+            @PathVariable Long requestId,
+            @Valid @RequestBody CreateHelpRequestMessageDTO dto,
+            HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+
+            HelpRequestMessageResponseDTO sent = helpRequestMessageService
+                    .sendMessage(requestId, currentUser.getId(), dto);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Message sent successfully", sent));
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
 }

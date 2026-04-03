@@ -2,6 +2,7 @@ import React from 'react';
 
 const TutorHelpRequestsPanel = ({
     availableRequests,
+    assignedRequests,
     acceptMessage,
     fetchPeerHelpData,
     handleDecline,
@@ -14,6 +15,12 @@ const TutorHelpRequestsPanel = ({
     setAcceptingRequestId,
     acceptSubmitting,
     upcomingSessions,
+    requestChats,
+    requestChatInput,
+    setRequestChatInput,
+    chatSending,
+    chatErrors,
+    sendRequestMessage,
     setActiveTab
 }) => (
     <div className="dashboard-grid">
@@ -122,6 +129,69 @@ const TutorHelpRequestsPanel = ({
                         <h3>{session.title}</h3>
                         <p>With: {session.student}</p>
                         <span className="session-time">📅 {session.time}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div className="dashboard-card">
+            <div className="card-header">
+                <h2>Assigned Request Conversations</h2>
+                <button type="button" className="view-all" onClick={fetchPeerHelpData}>Refresh</button>
+            </div>
+            <div className="card-content">
+                {assignedRequests.length === 0 && (
+                    <p className="header-subtitle">No assigned requests yet. Accept a request to start chatting.</p>
+                )}
+                {assignedRequests.map((request) => (
+                    <div key={`assigned-${request.id}`} className="request-chat-panel">
+                        <div className="request-chat-header">
+                            <h4>{request.student}</h4>
+                            <span className="request-chat-topic">{request.subject}</span>
+                        </div>
+                        {chatErrors[request.id] && <p className="request-chat-error">{chatErrors[request.id]}</p>}
+                        <div className="request-chat-thread">
+                            {(requestChats[request.id] || []).length === 0 && (
+                                <p className="request-chat-empty">No messages yet. Start the conversation.</p>
+                            )}
+                            {(requestChats[request.id] || []).map((message) => (
+                                <div
+                                    key={message.id}
+                                    className={`request-chat-bubble ${message.senderRole === 'TUTOR' ? 'mine' : 'other'}`}
+                                >
+                                    <div className="request-chat-meta">
+                                        <strong>{message.senderName}</strong>
+                                        <span>{message.createdAt ? new Date(message.createdAt).toLocaleString() : ''}</span>
+                                    </div>
+                                    <p>{message.message}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="request-chat-compose">
+                            <input
+                                type="text"
+                                placeholder="Type your message..."
+                                value={requestChatInput[request.id] || ''}
+                                onChange={(e) => setRequestChatInput((prev) => ({
+                                    ...prev,
+                                    [request.id]: e.target.value
+                                }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        sendRequestMessage(request.id);
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className="btn-accept"
+                                onClick={() => sendRequestMessage(request.id)}
+                                disabled={!!chatSending[request.id]}
+                            >
+                                {chatSending[request.id] ? 'Sending...' : 'Send'}
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

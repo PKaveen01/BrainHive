@@ -37,6 +37,10 @@ const StudentDashboard = () => {
     const [myRequests, setMyRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
     const [requestsError, setRequestsError] = useState('');
+    const [requestChats, setRequestChats] = useState({});
+    const [requestChatInput, setRequestChatInput] = useState({});
+    const [chatSending, setChatSending] = useState({});
+    const [chatErrors, setChatErrors] = useState({});
     const [tutors, setTutors] = useState([]);
     const [tutorsLoading, setTutorsLoading] = useState(false);
     const [tutorsError, setTutorsError] = useState('');
@@ -151,6 +155,18 @@ const StudentDashboard = () => {
         return date.toLocaleString();
     };
 
+    const toValidDate = (value) => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const isSameDay = (a, b) => (
+        a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate()
+    );
+
     const fetchLectures = async () => {
         try {
             setLectureLoading(true);
@@ -170,6 +186,72 @@ const StudentDashboard = () => {
         setActiveTab('lectures');
         if (lectures.length === 0) await fetchLectures();
     };
+
+    const now = new Date();
+    const lectureBuckets = lectures.reduce(
+        (acc, lecture) => {
+            const scheduledAt = toValidDate(lecture.scheduledAt);
+            if (!scheduledAt) {
+                acc.upcoming.push(lecture);
+                return acc;
+            }
+
+            if (isSameDay(scheduledAt, now)) {
+                if (scheduledAt < now) {
+                    acc.expired.push(lecture);
+                } else {
+                    acc.today.push(lecture);
+                }
+                return acc;
+            }
+
+            if (scheduledAt > now) {
+                acc.upcoming.push(lecture);
+            } else {
+                acc.expired.push(lecture);
+            }
+
+            return acc;
+        },
+        { today: [], upcoming: [], expired: [] }
+    );
+
+    const renderLectureCard = (lecture, status) => (
+        <article key={lecture.id} className={`lecture-modern-card ${status}`}>
+            <div className="lecture-modern-top">
+                <div className="lecture-modern-title-wrap">
+                    <h3>{lecture.title}</h3>
+                    <span className={`lecture-status-chip ${status}`}>
+                        {status === 'today' ? 'Today' : status === 'upcoming' ? 'Upcoming' : 'Expired'}
+                    </span>
+                </div>
+                <p className="lecture-modern-subject">{lecture.subjectName}</p>
+            </div>
+
+            <p className="lecture-modern-description">{lecture.description || 'No description available.'}</p>
+
+            <div className="lecture-modern-meta">
+                <span>👨‍🏫 {lecture.tutorName}</span>
+                <span>🗓️ {formatDateTime(lecture.scheduledAt)}</span>
+                <span>⏱️ {lecture.durationMinutes || 0} mins</span>
+            </div>
+
+            <div className="lecture-modern-actions">
+                {lecture.meetingLink && status !== 'expired' && (
+                    <a href={lecture.meetingLink} target="_blank" rel="noreferrer" className="lecture-link-btn">
+                        Join Lecture
+                    </a>
+                )}
+                <button
+                    type="button"
+                    className="btn-accept lecture-details-btn"
+                    onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
+                >
+                    More Details
+                </button>
+            </div>
+        </article>
+    );
 
     const fetchMyRequests = async () => {
         try {
@@ -194,6 +276,7 @@ const StudentDashboard = () => {
             }));
 
             setMyRequests(merged);
+            await refreshRequestConversations(merged);
         } catch (error) {
             console.error('Error fetching my requests:', error);
             setRequestsError(error.response?.data?.message || 'Unable to load your request details.');
@@ -203,10 +286,61 @@ const StudentDashboard = () => {
         }
     };
 
+    const fetchRequestConversation = async (requestId) => {
+        try {
+            const response = await api.get(`/peerhelp/requests/${requestId}/messages`);
+            setRequestChats((prev) => ({ ...prev, [requestId]: response.data?.data || [] }));
+            setChatErrors((prev) => ({ ...prev, [requestId]: '' }));
+        } catch (error) {
+            console.error('Error fetching request conversation:', error);
+            const rawMessage = error.response?.data?.message || '';
+            const friendlyMessage = rawMessage.includes('No static resource')
+                ? 'Conversation service is updating. Please restart backend and refresh.'
+                : (rawMessage || 'Unable to load conversation.');
+            setChatErrors((prev) => ({
+                ...prev,
+                [requestId]: friendlyMessage
+            }));
+        }
+    };
+
+    const refreshRequestConversations = async (requestList) => {
+        await Promise.all((requestList || []).map((request) => fetchRequestConversation(request.id)));
+    };
+
+    const sendRequestMessage = async (requestId) => {
+        const text = (requestChatInput[requestId] || '').trim();
+        if (!text) return;
+
+        try {
+            setChatSending((prev) => ({ ...prev, [requestId]: true }));
+            await api.post(`/peerhelp/requests/${requestId}/messages`, { message: text });
+            setRequestChatInput((prev) => ({ ...prev, [requestId]: '' }));
+            await fetchRequestConversation(requestId);
+        } catch (error) {
+            console.error('Error sending request message:', error);
+            setChatErrors((prev) => ({
+                ...prev,
+                [requestId]: error.response?.data?.message || 'Unable to send message.'
+            }));
+        } finally {
+            setChatSending((prev) => ({ ...prev, [requestId]: false }));
+        }
+    };
+
     const handleOpenMyRequests = async () => {
         setActiveTab('my-requests');
         if (myRequests.length === 0) await fetchMyRequests();
     };
+
+    useEffect(() => {
+        if (activeTab !== 'my-requests' || myRequests.length === 0) return undefined;
+        const poller = setInterval(() => {
+            refreshRequestConversations(myRequests);
+        }, 5000);
+        return () => clearInterval(poller);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, myRequests]);
 
     if (loading) {
         return (
@@ -654,25 +788,45 @@ const StudentDashboard = () => {
                             {!lectureLoading && !lectureError && lectures.length === 0 && (
                                 <p className="header-subtitle">No lectures available right now.</p>
                             )}
-                            {!lectureLoading && !lectureError && lectures.map((lecture) => (
-                                <div key={lecture.id} className="session-item lecture-item">
-                                    <h3>{lecture.title}</h3>
-                                    <p><strong>Subject:</strong> {lecture.subjectName}</p>
-                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
-                                    <p>{lecture.description}</p>
-                                    <span className="session-time">📅 {formatDateTime(lecture.scheduledAt)} • {lecture.durationMinutes} mins</span>
-                                    {lecture.meetingLink && (
-                                        <p><a href={lecture.meetingLink} target="_blank" rel="noreferrer">Join lecture</a></p>
-                                    )}
-                                    <button
-                                        type="button"
-                                        className="btn-accept lecture-details-btn"
-                                        onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
-                                    >
-                                        More Details
-                                    </button>
+                            {!lectureLoading && !lectureError && lectures.length > 0 && (
+                                <div className="lectures-board">
+                                    <section className="lecture-bucket today">
+                                        <div className="lecture-bucket-header">
+                                            <h3>Today</h3>
+                                            <span>{lectureBuckets.today.length}</span>
+                                        </div>
+                                        <div className="lecture-bucket-list">
+                                            {lectureBuckets.today.length > 0
+                                                ? lectureBuckets.today.map((lecture) => renderLectureCard(lecture, 'today'))
+                                                : <p className="bucket-empty">No lectures later today.</p>}
+                                        </div>
+                                    </section>
+
+                                    <section className="lecture-bucket upcoming">
+                                        <div className="lecture-bucket-header">
+                                            <h3>Upcoming</h3>
+                                            <span>{lectureBuckets.upcoming.length}</span>
+                                        </div>
+                                        <div className="lecture-bucket-list">
+                                            {lectureBuckets.upcoming.length > 0
+                                                ? lectureBuckets.upcoming.map((lecture) => renderLectureCard(lecture, 'upcoming'))
+                                                : <p className="bucket-empty">No upcoming lectures.</p>}
+                                        </div>
+                                    </section>
+
+                                    <section className="lecture-bucket expired">
+                                        <div className="lecture-bucket-header">
+                                            <h3>Expired</h3>
+                                            <span>{lectureBuckets.expired.length}</span>
+                                        </div>
+                                        <div className="lecture-bucket-list">
+                                            {lectureBuckets.expired.length > 0
+                                                ? lectureBuckets.expired.map((lecture) => renderLectureCard(lecture, 'expired'))
+                                                : <p className="bucket-empty">No expired lectures.</p>}
+                                        </div>
+                                    </section>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 )}
@@ -715,6 +869,55 @@ const StudentDashboard = () => {
                                             )}
                                         </div>
                                     )}
+
+                                    <div className="request-chat-panel">
+                                        <h4>Conversation</h4>
+                                        {chatErrors[request.id] && (
+                                            <p className="request-chat-error">{chatErrors[request.id]}</p>
+                                        )}
+                                        <div className="request-chat-thread">
+                                            {(requestChats[request.id] || []).length === 0 && (
+                                                <p className="request-chat-empty">No messages yet. Start the conversation.</p>
+                                            )}
+                                            {(requestChats[request.id] || []).map((message) => (
+                                                <div
+                                                    key={message.id}
+                                                    className={`request-chat-bubble ${message.senderRole === 'STUDENT' ? 'mine' : 'other'}`}
+                                                >
+                                                    <div className="request-chat-meta">
+                                                        <strong>{message.senderName}</strong>
+                                                        <span>{formatDateTime(message.createdAt)}</span>
+                                                    </div>
+                                                    <p>{message.message}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="request-chat-compose">
+                                            <input
+                                                type="text"
+                                                placeholder="Type your message..."
+                                                value={requestChatInput[request.id] || ''}
+                                                onChange={(e) => setRequestChatInput((prev) => ({
+                                                    ...prev,
+                                                    [request.id]: e.target.value
+                                                }))}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        sendRequestMessage(request.id);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-accept"
+                                                onClick={() => sendRequestMessage(request.id)}
+                                                disabled={!!chatSending[request.id]}
+                                            >
+                                                {chatSending[request.id] ? 'Sending...' : 'Send'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

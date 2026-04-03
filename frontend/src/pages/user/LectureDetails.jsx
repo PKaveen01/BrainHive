@@ -120,35 +120,43 @@ const LectureDetails = () => {
 
     return (
         <div className="dashboard">
-            <div className="main-content lecture-detail-page">
-                <button type="button" className="view-all" onClick={() => navigate('/dashboard/student')}>← Back to Student Dashboard</button>
+            <div className="main-content lecture-detail-page lecture-details-shell">
+                <button type="button" className="view-all lecture-back-link" onClick={() => navigate('/dashboard/student')}>← Back to Student Dashboard</button>
 
-                {error && <p className="header-subtitle">{error}</p>}
-                {message && <p className="lecture-message">{message}</p>}
+                {error && <p className="lecture-status-message lecture-status-error">{error}</p>}
+                {message && <p className="lecture-status-message lecture-status-success">{message}</p>}
 
                 {lecture && (
-                    <div className="dashboard-grid">
-                        <div className="dashboard-card">
-                            <div className="card-header">
+                    <div className="dashboard-grid lecture-details-grid">
+                        <div className="dashboard-card lecture-info-card">
+                            <div className="card-header lecture-info-header">
                                 <h2>{lecture.title}</h2>
                             </div>
-                            <div className="card-content">
-                                <p><strong>Subject:</strong> {lecture.subjectName}</p>
-                                <p><strong>Tutor:</strong> {lecture.tutorName}</p>
-                                <p><strong>Scheduled:</strong> {formatDateTime(lecture.scheduledAt)}</p>
-                                <p><strong>Duration:</strong> {lecture.durationMinutes} minutes</p>
-                                <p><strong>Attendees:</strong> {lecture.attendeeCount}</p>
-                                <p>{lecture.description}</p>
+                            <div className="card-content lecture-info-content">
+                                <p className="lecture-eyebrow">Lecture Overview</p>
+                                <div className="lecture-info-list">
+                                    <p><strong>Subject:</strong> {lecture.subjectName}</p>
+                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
+                                    <p><strong>Scheduled:</strong> {formatDateTime(lecture.scheduledAt)}</p>
+                                </div>
+
+                                <div className="lecture-mini-stats">
+                                    <span className="lecture-mini-stat">Duration: {lecture.durationMinutes} mins</span>
+                                    <span className="lecture-mini-stat">Attendees: {lecture.attendeeCount}</span>
+                                    <span className="lecture-mini-stat">Type: Live Session</span>
+                                </div>
+
+                                <p className="lecture-description-text">{lecture.description}</p>
 
                                 {lecture.meetingLink && (
-                                    <p>
-                                        <a href={lecture.meetingLink} target="_blank" rel="noreferrer">Open lecture link</a>
-                                    </p>
+                                    <a href={lecture.meetingLink} target="_blank" rel="noreferrer" className="lecture-open-link">
+                                        Open lecture link
+                                    </a>
                                 )}
 
                                 <button
                                     type="button"
-                                    className="btn-accept"
+                                    className="btn-accept lecture-attend-btn"
                                     onClick={handleAttendLecture}
                                     disabled={attending || lecture.attendedByCurrentUser}
                                 >
@@ -157,11 +165,11 @@ const LectureDetails = () => {
                             </div>
                         </div>
 
-                        <div className="dashboard-card">
-                            <div className="card-header">
+                        <div className="dashboard-card lecture-help-card">
+                            <div className="card-header lecture-help-header">
                                 <h2>Request Help for This Lecture</h2>
                             </div>
-                            <form className="lecture-form" onSubmit={handleSubmitHelpRequest}>
+                            <form className="lecture-form lecture-help-form" onSubmit={handleSubmitHelpRequest}>
                                 <label className="lecture-label" htmlFor="topic">Topic</label>
                                 <input
                                     id="topic"
@@ -181,37 +189,47 @@ const LectureDetails = () => {
                                     required
                                 />
 
-                                <label className="lecture-label" htmlFor="preferredDateTime">Preferred Date & Time</label>
-                                <input
-                                    id="preferredDateTime"
-                                    type="datetime-local"
-                                    value={helpForm.preferredDateTime}
-                                    onChange={(e) => handleHelpInput('preferredDateTime', e.target.value)}
-                                />
+                                <div className="lecture-form-row lecture-form-row-two">
+                                    <div className="lecture-form-field">
+                                        <label className="lecture-label" htmlFor="preferredDateTime">Preferred Date & Time</label>
+                                        <input
+                                            id="preferredDateTime"
+                                            type="datetime-local"
+                                            value={helpForm.preferredDateTime}
+                                            onChange={(e) => handleHelpInput('preferredDateTime', e.target.value)}
+                                        />
+                                    </div>
 
-                                <label className="lecture-label" htmlFor="estimatedDuration">Duration (minutes)</label>
-                                <input
-                                    id="estimatedDuration"
-                                    type="number"
-                                    min="15"
-                                    max="180"
-                                    value={helpForm.estimatedDuration}
-                                    onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
-                                    required
-                                />
+                                    <div className="lecture-form-field">
+                                        <label className="lecture-label" htmlFor="estimatedDuration">Duration (minutes)</label>
+                                        <input
+                                            id="estimatedDuration"
+                                            type="number"
+                                            min="15"
+                                            max="180"
+                                            value={helpForm.estimatedDuration}
+                                            onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                                <label className="lecture-label" htmlFor="urgencyLevel">Urgency (1-5)</label>
-                                <input
-                                    id="urgencyLevel"
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    value={helpForm.urgencyLevel}
-                                    onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
-                                    required
-                                />
+                                <div className="lecture-form-row lecture-form-row-single">
+                                    <div className="lecture-form-field">
+                                        <label className="lecture-label" htmlFor="urgencyLevel">Urgency (1-5)</label>
+                                        <input
+                                            id="urgencyLevel"
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            value={helpForm.urgencyLevel}
+                                            onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                                <button type="submit" className="btn-accept" disabled={submittingHelp}>
+                                <button type="submit" className="btn-accept lecture-help-submit" disabled={submittingHelp}>
                                     {submittingHelp ? 'Sending...' : 'Help Request'}
                                 </button>
                             </form>

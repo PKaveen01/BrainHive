@@ -37,6 +37,7 @@ const TutorDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [activeTab, setActiveTab] = useState('help-requests');
     const [availableRequests, setAvailableRequests] = useState([]);
+    const [assignedRequests, setAssignedRequests] = useState([]);
     const [upcomingSessions, setUpcomingSessions] = useState([]);
     const [availabilitySlots, setAvailabilitySlots] = useState([]);
     const [lectureSubjects, setLectureSubjects] = useState([]);
@@ -63,6 +64,10 @@ const TutorDashboard = () => {
     const [acceptSubmitting, setAcceptSubmitting] = useState(false);
     const [acceptMessage, setAcceptMessage] = useState('');
     const [fetchError, setFetchError] = useState('');
+    const [requestChats, setRequestChats] = useState({});
+    const [requestChatInput, setRequestChatInput] = useState({});
+    const [chatSending, setChatSending] = useState({});
+    const [chatErrors, setChatErrors] = useState({});
 
     const formatDateTime = (value) => {
         if (!value) return 'Not scheduled';
@@ -126,8 +131,9 @@ const TutorDashboard = () => {
     const fetchPeerHelpData = async () => {
         try {
             setFetchError('');
-            const [availableRes, sessionsRes, availabilityRes, lectureRes, subjectRes] = await Promise.allSettled([
+            const [availableRes, assignedRes, sessionsRes, availabilityRes, lectureRes, subjectRes] = await Promise.allSettled([
                 api.get('/peerhelp/requests/available'),
+                api.get('/peerhelp/requests/assigned'),
                 api.get('/peerhelp/sessions/upcoming'),
                 api.get('/peerhelp/availability/me'),
                 api.get('/peerhelp/lectures/my'),
@@ -136,6 +142,14 @@ const TutorDashboard = () => {
 
             if (availableRes.status === 'fulfilled') setAvailableRequests((availableRes.value.data?.data || []).map(mapRequestFromApi));
             else setAvailableRequests([]);
+
+            if (assignedRes.status === 'fulfilled') {
+                const assigned = (assignedRes.value.data?.data || []).map(mapRequestFromApi);
+                setAssignedRequests(assigned);
+                await refreshRequestConversations(assigned);
+            } else {
+                setAssignedRequests([]);
+            }
 
             if (sessionsRes.status === 'fulfilled') setUpcomingSessions((sessionsRes.value.data?.data || []).map(mapSessionFromApi));
             else setUpcomingSessions([]);
@@ -149,7 +163,7 @@ const TutorDashboard = () => {
             if (subjectRes.status === 'fulfilled') setLectureSubjects(subjectRes.value.data?.data || []);
             else setLectureSubjects([]);
 
-            const firstFailure = [availableRes, sessionsRes, availabilityRes, lectureRes, subjectRes]
+            const firstFailure = [availableRes, assignedRes, sessionsRes, availabilityRes, lectureRes, subjectRes]
                 .find((result) => result.status === 'rejected');
 
             if (firstFailure?.reason?.response?.status === 401) { navigate('/login'); return; }
@@ -243,6 +257,57 @@ const TutorDashboard = () => {
     const handleDecline = (student) => {
         alert(`Decline action for ${student} is not exposed in current peerhelp API.`);
     };
+
+    const fetchRequestConversation = async (requestId) => {
+        try {
+            const response = await api.get(`/peerhelp/requests/${requestId}/messages`);
+            setRequestChats((prev) => ({ ...prev, [requestId]: response.data?.data || [] }));
+            setChatErrors((prev) => ({ ...prev, [requestId]: '' }));
+        } catch (error) {
+            console.error('Error fetching request conversation:', error);
+            const rawMessage = error.response?.data?.message || '';
+            const friendlyMessage = rawMessage.includes('No static resource')
+                ? 'Conversation service is updating. Please restart backend and refresh.'
+                : (rawMessage || 'Unable to load conversation.');
+            setChatErrors((prev) => ({
+                ...prev,
+                [requestId]: friendlyMessage
+            }));
+        }
+    };
+
+    const refreshRequestConversations = async (requestList) => {
+        await Promise.all((requestList || []).map((request) => fetchRequestConversation(request.id)));
+    };
+
+    const sendRequestMessage = async (requestId) => {
+        const text = (requestChatInput[requestId] || '').trim();
+        if (!text) return;
+
+        try {
+            setChatSending((prev) => ({ ...prev, [requestId]: true }));
+            await api.post(`/peerhelp/requests/${requestId}/messages`, { message: text });
+            setRequestChatInput((prev) => ({ ...prev, [requestId]: '' }));
+            await fetchRequestConversation(requestId);
+        } catch (error) {
+            console.error('Error sending request message:', error);
+            setChatErrors((prev) => ({
+                ...prev,
+                [requestId]: error.response?.data?.message || 'Unable to send message.'
+            }));
+        } finally {
+            setChatSending((prev) => ({ ...prev, [requestId]: false }));
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab !== 'help-requests' || assignedRequests.length === 0) return undefined;
+        const poller = setInterval(() => {
+            refreshRequestConversations(assignedRequests);
+        }, 5000);
+        return () => clearInterval(poller);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, assignedRequests]);
 
     const handleLectureInput = (field, value) => {
         setLectureForm((prev) => ({ ...prev, [field]: value }));
@@ -367,6 +432,7 @@ const TutorDashboard = () => {
                 {activeTab === 'help-requests' && (
                     <TutorHelpRequestsPanel
                         availableRequests={availableRequests}
+                        assignedRequests={assignedRequests}
                         acceptMessage={acceptMessage}
                         fetchPeerHelpData={fetchPeerHelpData}
                         handleDecline={handleDecline}
@@ -379,6 +445,12 @@ const TutorDashboard = () => {
                         setAcceptingRequestId={setAcceptingRequestId}
                         acceptSubmitting={acceptSubmitting}
                         upcomingSessions={upcomingSessions}
+                        requestChats={requestChats}
+                        requestChatInput={requestChatInput}
+                        setRequestChatInput={setRequestChatInput}
+                        chatSending={chatSending}
+                        chatErrors={chatErrors}
+                        sendRequestMessage={sendRequestMessage}
                         setActiveTab={setActiveTab}
                     />
                 )}
