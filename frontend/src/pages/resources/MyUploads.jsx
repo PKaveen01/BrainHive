@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import TutorLayout from '../user/TutorLayout';
 import './MyUploads.css';
 
 const statusColor = { active:'#16a34a', pending:'#d97706', flagged:'#dc2626', removed:'#6b7280' };
@@ -140,9 +141,23 @@ export default function MyUploads() {
         downloads: uploads.reduce((s, r) => s + (r.downloadCount || 0), 0),
     };
 
+    // Determine which sidebar to render based on user role
+    const renderSidebar = () => {
+        if (!user) return null;
+        
+        // Check if user has tutor role
+        const isTutor = user.role === 'tutor' || user.userType === 'tutor';
+        
+        if (isTutor) {
+            return <TutorLayout user={user} />;
+        } else {
+            return <StudentSidebar user={user} />;
+        }
+    };
+
     return (
         <div className="dashboard">
-            <StudentSidebar user={user} />
+            {renderSidebar()}
             <div className="main-content">
                 <div className="mu-page-header">
                     <div>
@@ -237,66 +252,66 @@ export default function MyUploads() {
                 {/* Uploads List */}
                 {!loading && filtered.length > 0 && (
                     <div className="mu-uploads-grid">
-    {filtered.map((r, idx) => (
-        <div key={r.id} className="mu-upload-card" style={{ animationDelay: `${idx * 0.05}s` }}>
-            {/* Header - same as before */}
-            <div className="mu-card-header">
-                <div className="mu-title-section">
-                    <span className="mu-type-icon">{typeIcon[r.type?.toLowerCase()] || '📁'}</span>
-                    <div className="mu-title-info">
-                        <h3>{r.title}</h3>
-                        <div className="mu-badges">
-                            {r.subject && <span className="mu-badge mu-badge-blue">{r.subject}</span>}
-                            {r.semester && <span className="mu-badge mu-badge-gray">{r.semester}</span>}
-                            {r.type && <span className="mu-badge mu-badge-purple">{r.type.toUpperCase()}</span>}
-                            {r.fileSize && <span className="mu-badge mu-badge-gray">{fmtSize(r.fileSize)}</span>}
-                        </div>
-                    </div>
-                </div>
-                <span 
-                    className="mu-status-badge" 
-                    style={{ 
-                        background: (statusColor[r.status] || '#9ca3af') + '15', 
-                        color: statusColor[r.status] || '#9ca3af',
-                        border: `1px solid ${(statusColor[r.status] || '#9ca3af') + '30'}`
-                    }}
-                >
-                    {(r.status || 'unknown').toUpperCase()}
-                </span>
-            </div>
+                        {filtered.map((r, idx) => (
+                            <div key={r.id} className="mu-upload-card" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                {/* Header */}
+                                <div className="mu-card-header">
+                                    <div className="mu-title-section">
+                                        <span className="mu-type-icon">{typeIcon[r.type?.toLowerCase()] || '📁'}</span>
+                                        <div className="mu-title-info">
+                                            <h3>{r.title}</h3>
+                                            <div className="mu-badges">
+                                                {r.subject && <span className="mu-badge mu-badge-blue">{r.subject}</span>}
+                                                {r.semester && <span className="mu-badge mu-badge-gray">{r.semester}</span>}
+                                                {r.type && <span className="mu-badge mu-badge-purple">{r.type.toUpperCase()}</span>}
+                                                {r.fileSize && <span className="mu-badge mu-badge-gray">{fmtSize(r.fileSize)}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span 
+                                        className="mu-status-badge" 
+                                        style={{ 
+                                            background: (statusColor[r.status] || '#9ca3af') + '15', 
+                                            color: statusColor[r.status] || '#9ca3af',
+                                            border: `1px solid ${(statusColor[r.status] || '#9ca3af') + '30'}`
+                                        }}
+                                    >
+                                        {(r.status || 'unknown').toUpperCase()}
+                                    </span>
+                                </div>
 
-            {r.description && <p className="mu-description">{r.description}</p>}
+                                {r.description && <p className="mu-description">{r.description}</p>}
 
-            <div className="mu-meta-info">
-                <div className="mu-meta-item"><span>📅</span> {fmt(r.uploadedAt)}</div>
-                <div className="mu-meta-item"><span>👁</span> {r.viewCount || 0} views</div>
-                <div className="mu-meta-item"><span>⬇</span> {r.downloadCount || 0} downloads</div>
-                <div className="mu-rating">
-                    <div className="mu-stars">
-                        {[1,2,3,4,5].map(s => (
-                            <span key={s} className={`mu-star ${s <= Math.round(r.averageRating || 0) ? 'mu-star-filled' : ''}`}>★</span>
+                                <div className="mu-meta-info">
+                                    <div className="mu-meta-item"><span>📅</span> {fmt(r.uploadedAt)}</div>
+                                    <div className="mu-meta-item"><span>👁</span> {r.viewCount || 0} views</div>
+                                    <div className="mu-meta-item"><span>⬇</span> {r.downloadCount || 0} downloads</div>
+                                    <div className="mu-rating">
+                                        <div className="mu-stars">
+                                            {[1,2,3,4,5].map(s => (
+                                                <span key={s} className={`mu-star ${s <= Math.round(r.averageRating || 0) ? 'mu-star-filled' : ''}`}>★</span>
+                                            ))}
+                                        </div>
+                                        <span className="mu-rating-value">{(r.averageRating || 0).toFixed(1)}</span>
+                                        <span className="mu-rating-count">({r.ratingCount || 0})</span>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="mu-actions-wrapper">
+                                    <div className="mu-actions-top-row">
+                                        <button className="mu-btn-action mu-btn-view" onClick={() => handleView(r)}>👁 View</button>
+                                        {r.filePath && <button className="mu-btn-action mu-btn-download" onClick={() => handleDownload(r)}>⬇ Download</button>}
+                                        <button className="mu-btn-action mu-btn-edit" onClick={() => openEdit(r)}>✏️ Edit</button>
+                                    </div>
+                                    <div className="mu-actions-bottom-row">
+                                        <button className="mu-btn-action mu-btn-rate" onClick={() => setRateModal({ show: true, resourceId: r.id, title: r.title })}>⭐ Rate</button>
+                                        <button className="mu-btn-action mu-btn-delete" onClick={() => setDeleteId(r.id)}>🗑 Delete</button>
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
-                    <span className="mu-rating-value">{(r.averageRating || 0).toFixed(1)}</span>
-                    <span className="mu-rating-count">({r.ratingCount || 0})</span>
-                </div>
-            </div>
-
-            {/* NEW BUTTON LAYOUT */}
-            <div className="mu-actions-wrapper">
-                <div className="mu-actions-top-row">
-                    <button className="mu-btn-action mu-btn-view" onClick={() => handleView(r)}>👁 View</button>
-                    {r.filePath && <button className="mu-btn-action mu-btn-download" onClick={() => handleDownload(r)}>⬇ Download</button>}
-                    <button className="mu-btn-action mu-btn-edit" onClick={() => openEdit(r)}>✏️ Edit</button>
-                </div>
-                <div className="mu-actions-bottom-row">
-                    <button className="mu-btn-action mu-btn-rate" onClick={() => setRateModal({ show: true, resourceId: r.id, title: r.title })}>⭐ Rate</button>
-                    <button className="mu-btn-action mu-btn-delete" onClick={() => setDeleteId(r.id)}>🗑 Delete</button>
-                </div>
-            </div>
-        </div>
-    ))}
-</div>
                 )}
             </div>
 

@@ -46,6 +46,8 @@ const TutorDashboard = () => {
         { path: '/dashboard/tutor/availability',icon: '⏰', label: 'Availability',       count: null,            color: '#ea580c' },
         { path: '/dashboard/tutor/ratings',     icon: '⭐', label: 'Ratings & Feedback', count: null,            color: '#f59e0b' },
         { path: '/dashboard/tutor/analytics',   icon: '📊', label: 'Analytics',          count: null,            color: '#10b981' },
+        { path: '/dashboard/tutor/resources/discovery',  icon: '🔍', label: 'Discover Resources', count: null, color: '#6366f1' },
+        { path: '/dashboard/tutor/resources/bookmarked', icon: '🔖', label: 'Bookmarked',          count: null, color: '#8b5cf6' },
     ];
 
     return (

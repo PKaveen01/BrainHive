@@ -39,6 +39,8 @@ import UploadResource    from './pages/resources/UploadResource';
 import MyUploads         from './pages/resources/MyUploads';
 import BookMarked        from './pages/resources/BookMarked';
 import ResourceDiscovery from './pages/resources/ResourceDiscovery';
+import TutorResourceDiscovery from './pages/resources/TutorResourceDiscovery';
+import TutorBookmarked   from './pages/resources/TutorBookmarked';
 
 // Peer Help module
 import RequestHelp from './pages/peerhelp/RequestHelp';
@@ -76,6 +78,8 @@ function App() {
           <Route path="/dashboard/tutor/lectures"     element={<TutorLecturesPage />} />
           <Route path="/dashboard/tutor/ratings"      element={<TutorRatingsPage />} />
           <Route path="/dashboard/tutor/analytics"    element={<TutorAnalyticsPage />} />
+          <Route path="/dashboard/tutor/resources/discovery"  element={<TutorResourceDiscovery />} />
+          <Route path="/dashboard/tutor/resources/bookmarked" element={<TutorBookmarked />} />
 
           {/* Admin — legacy URL redirects to new overview */}
           <Route path="/dashboard/admin" element={<Navigate to="/admin/overview" replace />} />

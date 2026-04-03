@@ -11,6 +11,13 @@ const NAV_ITEMS = [
     { path: '/dashboard/tutor/analytics',  icon: '📊', label: 'Analytics'         },
 ];
 
+const RESOURCE_NAV_ITEMS = [
+    { path: '/dashboard/tutor/resources/discovery',  icon: '🔍', label: 'Discover Resources' },
+    { path: '/dashboard/tutor/resources/bookmarked', icon: '🔖', label: 'Bookmarked'          },
+    { path: '/upload',                               icon: '⬆️', label: 'Upload Resource'     },
+    { path: '/resources/my-uploads',                 icon: '📁', label: 'My Uploads'          },
+];
+
 const TutorSidebar = ({ user }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -51,6 +58,21 @@ const TutorSidebar = ({ user }) => {
                     <h3>Teaching & Schedule</h3>
                     <ul>
                         {NAV_ITEMS.map(({ path, icon, label }) => (
+                            <li
+                                key={path}
+                                className={isActive(path) ? 'active' : ''}
+                                onClick={() => navigate(path)}
+                            >
+                                <span>{icon}</span> {label}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <div className="nav-section">
+                    <h3>📚 Resources</h3>
+                    <ul>
+                        {RESOURCE_NAV_ITEMS.map(({ path, icon, label }) => (
                             <li
                                 key={path}
                                 className={isActive(path) ? 'active' : ''}
