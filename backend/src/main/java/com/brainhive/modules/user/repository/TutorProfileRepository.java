@@ -20,6 +20,20 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
     default Optional<TutorProfile> findByTutor(User tutor) { return findByUser(tutor); }
     default Optional<TutorProfile> findByTutorId(Long tutorId) { return findByUserId(tutorId); }
 
+    /**
+     * Eagerly fetches expertSubjects via JOIN FETCH to avoid LazyInitializationException.
+     * A separate query is used for availabilitySlots (see below) because fetching two
+     * bag-typed collections in one query causes a MultipleBagFetchException.
+     */
+    @Query("SELECT DISTINCT tp FROM TutorProfile tp LEFT JOIN FETCH tp.expertSubjects WHERE tp.user.id = :userId")
+    Optional<TutorProfile> findByUserIdWithSubjects(@Param("userId") Long userId);
+
+    /**
+     * Eagerly fetches availabilitySlots via JOIN FETCH to avoid LazyInitializationException.
+     */
+    @Query("SELECT DISTINCT tp FROM TutorProfile tp LEFT JOIN FETCH tp.availabilitySlots WHERE tp.user.id = :userId")
+    Optional<TutorProfile> findByUserIdWithSlots(@Param("userId") Long userId);
+
     List<TutorProfile> findBySubject(Subject subject);
     List<TutorProfile> findBySubjectId(Long subjectId);
     List<TutorProfile> findByIsAvailableTrue();

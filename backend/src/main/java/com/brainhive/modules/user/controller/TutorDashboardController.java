@@ -13,6 +13,7 @@ import com.brainhive.modules.user.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -31,6 +32,7 @@ public class TutorDashboardController {
     @Autowired private HelpRequestRepository helpRequestRepository;
 
     @GetMapping("/info")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getTutorInfo(HttpSession session) {
         if (!userService.isAuthenticated(session))
             return ResponseEntity.status(401).body("Not authenticated");
@@ -43,7 +45,8 @@ public class TutorDashboardController {
         data.put("fullName", user.getFullName());
         data.put("email", user.getEmail());
 
-        tutorProfileRepository.findByUserId(user.getId()).ifPresent(profile -> {
+        // Use eager-fetch query for expertSubjects to avoid LazyInitializationException
+        tutorProfileRepository.findByUserIdWithSubjects(user.getId()).ifPresent(profile -> {
             data.put("qualification", profile.getQualification());
             data.put("bio", profile.getBio());
             data.put("verificationStatus", profile.getVerificationStatus());
@@ -74,8 +77,16 @@ public class TutorDashboardController {
 
     /**
      * GET full tutor profile for the profile view/edit pages.
+     *
+     * Root cause fix: expertSubjects and availabilitySlots are LAZY collections.
+     * Accessing them outside a Hibernate session causes LazyInitializationException.
+     * We use two dedicated JOIN FETCH queries (one per collection) and annotate the
+     * method @Transactional so the session stays open for the duration of the call.
+     * Two separate queries are required because fetching two bag-typed collections
+     * in a single JOIN FETCH causes a MultipleBagFetchException / cartesian product.
      */
     @GetMapping("/profile")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getTutorProfile(HttpSession session) {
         if (!userService.isAuthenticated(session))
             return ResponseEntity.status(401).body("Not authenticated");
@@ -88,7 +99,15 @@ public class TutorDashboardController {
         data.put("fullName", user.getFullName());
         data.put("email", user.getEmail());
 
-        tutorProfileRepository.findByUserId(user.getId()).ifPresent(profile -> {
+        // Fetch profile with expertSubjects eagerly loaded
+        Optional<TutorProfile> profileWithSubjects =
+                tutorProfileRepository.findByUserIdWithSubjects(user.getId());
+
+        // Fetch profile again with availabilitySlots eagerly loaded (second query)
+        Optional<TutorProfile> profileWithSlots =
+                tutorProfileRepository.findByUserIdWithSlots(user.getId());
+
+        profileWithSubjects.ifPresent(profile -> {
             data.put("qualification", profile.getQualification());
             data.put("bio", profile.getBio());
             data.put("yearsOfExperience", profile.getYearsOfExperience());
@@ -99,20 +118,24 @@ public class TutorDashboardController {
             data.put("averageRating", profile.getAverageRating() != null ? profile.getAverageRating() : 0.0);
             data.put("credibilityScore", profile.getCredibilityScore() != null ? profile.getCredibilityScore() : 0.0);
 
-            if (profile.getExpertSubjects() != null) {
-                data.put("expertSubjects", profile.getExpertSubjects().stream()
-                        .map(s -> s.getName())
-                        .collect(Collectors.toList()));
-            } else {
-                data.put("expertSubjects", new ArrayList<>());
-            }
-
-            if (profile.getAvailabilitySlots() != null) {
-                data.put("availabilitySlots", new ArrayList<>(profile.getAvailabilitySlots()));
-            } else {
-                data.put("availabilitySlots", new ArrayList<>());
-            }
+            List<String> subjectNames = (profile.getExpertSubjects() != null)
+                    ? profile.getExpertSubjects().stream()
+                        .map(Subject::getName)
+                        .collect(Collectors.toList())
+                    : new ArrayList<>();
+            data.put("expertSubjects", subjectNames);
         });
+
+        profileWithSlots.ifPresent(profile -> {
+            List<String> slots = (profile.getAvailabilitySlots() != null)
+                    ? new ArrayList<>(profile.getAvailabilitySlots())
+                    : new ArrayList<>();
+            data.put("availabilitySlots", slots);
+        });
+
+        // Guard: ensure keys are always present even when no TutorProfile exists yet
+        data.putIfAbsent("expertSubjects", new ArrayList<>());
+        data.putIfAbsent("availabilitySlots", new ArrayList<>());
 
         return ResponseEntity.ok(data);
     }
@@ -121,6 +144,7 @@ public class TutorDashboardController {
      * PUT update tutor profile fields from the edit page.
      */
     @PutMapping("/profile")
+    @Transactional
     public ResponseEntity<?> updateTutorProfile(@RequestBody Map<String, Object> updates, HttpSession session) {
         if (!userService.isAuthenticated(session))
             return ResponseEntity.status(401).body("Not authenticated");
@@ -129,7 +153,8 @@ public class TutorDashboardController {
         if (user == null || user.getRole() != UserRole.TUTOR)
             return ResponseEntity.status(403).body("Access denied");
 
-        TutorProfile profile = tutorProfileRepository.findByUserId(user.getId())
+        // Use findByUserIdWithSubjects so the collection is in-session before mutation
+        TutorProfile profile = tutorProfileRepository.findByUserIdWithSubjects(user.getId())
                 .orElse(new TutorProfile(user));
 
         if (updates.containsKey("qualification"))

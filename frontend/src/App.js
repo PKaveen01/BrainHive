@@ -8,13 +8,21 @@ import StudentSignup from './pages/user/StudentSignup';
 import TutorSignup from './pages/user/TutorSignup';
 import CompleteProfile from './pages/user/CompleteProfile';
 import StudentDashboard from './pages/user/StudentDashboard';
-import TutorDashboard from './pages/user/TutorDashboard';
 import LectureDetails from './pages/user/LectureDetails';
 import StudentProfileView from './pages/user/StudentProfileView';
 import StudentProfileEdit from './pages/user/StudentProfileEdit';
 import TutorProfileView from './pages/user/TutorProfileView';
 import TutorProfileEdit from './pages/user/TutorProfileEdit';
 import ForgotPassword from './pages/auth/ForgotPassword';
+
+// Tutor dashboard pages
+import TutorDashboard        from './pages/user/TutorDashboard';
+import TutorHelpRequestsPage from './pages/user/TutorHelpRequestsPage';
+import TutorSessionsPage     from './pages/user/TutorSessionsPage';
+import TutorAvailabilityPage from './pages/user/TutorAvailabilityPage';
+import TutorLecturesPage     from './pages/user/TutorLecturesPage';
+import TutorRatingsPage      from './pages/user/TutorRatingsPage';
+import TutorAnalyticsPage    from './pages/user/TutorAnalyticsPage';
 
 // Admin module (split pages)
 import AdminDashboard        from './pages/admin/AdminDashboard';
@@ -60,8 +68,14 @@ function App() {
           <Route path="/dashboard/student"                     element={<StudentDashboard />} />
           <Route path="/dashboard/student/lectures/:lectureId" element={<LectureDetails />} />
 
-          {/* Tutor */}
-          <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+          {/* Tutor dashboard — each section is its own page */}
+          <Route path="/dashboard/tutor"              element={<TutorDashboard />} />
+          <Route path="/dashboard/tutor/requests"     element={<TutorHelpRequestsPage />} />
+          <Route path="/dashboard/tutor/sessions"     element={<TutorSessionsPage />} />
+          <Route path="/dashboard/tutor/availability" element={<TutorAvailabilityPage />} />
+          <Route path="/dashboard/tutor/lectures"     element={<TutorLecturesPage />} />
+          <Route path="/dashboard/tutor/ratings"      element={<TutorRatingsPage />} />
+          <Route path="/dashboard/tutor/analytics"    element={<TutorAnalyticsPage />} />
 
           {/* Admin — legacy URL redirects to new overview */}
           <Route path="/dashboard/admin" element={<Navigate to="/admin/overview" replace />} />
