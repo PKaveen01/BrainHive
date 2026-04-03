@@ -15,6 +15,7 @@ const Home = () => {
     const [formErrors, setFormErrors] = useState({});
     const [formSuccess, setFormSuccess] = useState('');
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const recentReviews = reviews.slice(0, 3);
 
     const isLoggedIn = authService.isAuthenticated();
     const currentUser = authService.getCurrentUser();
@@ -23,10 +24,32 @@ const Home = () => {
         try {
             setReviewsLoading(true);
             setReviewsError('');
-            const response = await api.get('/peerhelp/reviews/public', { params: { limit: 12 } });
-            const reviewData = response?.data?.data || [];
-            setReviews(reviewData);
-            setActiveReviewIndex((prev) => (prev >= reviewData.length ? 0 : prev));
+
+            const reviewEndpoints = ['/peerhelp/reviews', '/peerhelp/reviews/public'];
+            let loaded = false;
+            let lastError = null;
+
+            for (const endpoint of reviewEndpoints) {
+                try {
+                    const response = await api.get(endpoint, { params: { limit: 12 } });
+                    const reviewData = response?.data?.data || [];
+                    setReviews(reviewData);
+                    setActiveReviewIndex((prev) => (prev >= reviewData.length ? 0 : prev));
+                    loaded = true;
+                    break;
+                } catch (endpointError) {
+                    lastError = endpointError;
+                    const status = endpointError?.response?.status;
+                    if (status === 404 || status === 405) {
+                        continue;
+                    }
+                    throw endpointError;
+                }
+            }
+
+            if (!loaded && lastError) {
+                throw lastError;
+            }
         } catch (error) {
             console.error('Failed to fetch reviews', error);
             setReviewsError('Unable to load reviews right now. Please try again soon.');
@@ -113,11 +136,20 @@ const Home = () => {
 
         try {
             setIsSubmittingReview(true);
-            await api.post('/peerhelp/reviews', {
+            const response = await api.post('/peerhelp/reviews', {
                 rating: Number(reviewForm.rating),
                 title: reviewForm.title.trim(),
                 reviewText: reviewForm.reviewText.trim()
             });
+
+            const createdReview = response?.data?.data;
+            if (createdReview) {
+                setReviews((prev) => {
+                    const withoutDuplicate = prev.filter((item) => item.id !== createdReview.id);
+                    return [createdReview, ...withoutDuplicate].slice(0, 12);
+                });
+                setActiveReviewIndex(0);
+            }
 
             setReviewForm({ rating: 5, title: '', reviewText: '' });
             setFormErrors({});
@@ -126,7 +158,14 @@ const Home = () => {
             setActiveReviewIndex(0);
         } catch (error) {
             console.error('Failed to submit review', error);
-            const message = error?.response?.data?.message || 'Could not submit review right now. Please try again.';
+            const responseData = error?.response?.data;
+            const validationErrors = responseData?.data;
+            const firstValidationMessage = validationErrors && typeof validationErrors === 'object'
+                ? Object.values(validationErrors).find((value) => typeof value === 'string')
+                : '';
+            const message = firstValidationMessage
+                || responseData?.message
+                || 'Could not submit review right now. Please try again.';
             setFormErrors({ submit: message });
         } finally {
             setIsSubmittingReview(false);
@@ -141,6 +180,28 @@ const Home = () => {
     const handleStarSelect = (value) => {
         setReviewForm((prev) => ({ ...prev, rating: value }));
         setFormErrors((prev) => ({ ...prev, rating: undefined }));
+    };
+
+    const formatRole = (role) => {
+        if (!role) return 'Member';
+        return role
+            .toLowerCase()
+            .split('_')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+    };
+
+    const formatReviewDate = (isoDate) => {
+        if (!isoDate) return '';
+        try {
+            return new Date(isoDate).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        } catch (error) {
+            return '';
+        }
     };
 
     return (
@@ -334,7 +395,10 @@ const Home = () => {
                                     <div className="author-avatar">{(reviews[activeReviewIndex]?.reviewerName || 'U').charAt(0).toUpperCase()}</div>
                                     <div className="author-info">
                                         <strong>{reviews[activeReviewIndex]?.reviewerName}</strong>
-                                        <span>{reviews[activeReviewIndex]?.reviewerRole}</span>
+                                        <span>
+                                            {formatRole(reviews[activeReviewIndex]?.reviewerRole)}
+                                            {reviews[activeReviewIndex]?.createdAt ? ` • ${formatReviewDate(reviews[activeReviewIndex]?.createdAt)}` : ''}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -355,12 +419,31 @@ const Home = () => {
                     </div>
                 )}
 
+                {!reviewsLoading && !reviewsError && recentReviews.length > 0 && (
+                    <div className="review-recent-grid">
+                        {recentReviews.map((review, index) => (
+                            <article key={review.id || `recent-${index}`} className="review-recent-card">
+                                <div className="stars">{renderStars(review.rating)}</div>
+                                <h4>{review.title}</h4>
+                                <p>{review.reviewText}</p>
+                                <div className="review-recent-meta">
+                                    <strong>{review.reviewerName || 'User'}</strong>
+                                    <span>
+                                        {formatRole(review.reviewerRole)}
+                                        {review.createdAt ? ` • ${formatReviewDate(review.createdAt)}` : ''}
+                                    </span>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
+
                 <div className="review-form-wrap">
                     <div className="review-form-header">
                         <h3>Share Your Review</h3>
                         <p>
                             {isLoggedIn
-                                ? `Logged in as ${currentUser?.name || 'User'}. Your review helps other learners decide faster.`
+                                ? `Logged in as ${currentUser?.name || currentUser?.email || 'User'}. Your review helps other learners decide faster.`
                                 : 'Login first to submit your review.'}
                         </p>
                     </div>

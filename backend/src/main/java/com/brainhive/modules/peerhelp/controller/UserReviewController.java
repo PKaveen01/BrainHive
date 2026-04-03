@@ -50,10 +50,16 @@ public class UserReviewController {
                 .body(ApiResponse.success("Review added successfully", created));
     }
 
-    @GetMapping("/public")
-    public ResponseEntity<ApiResponse<List<UserReviewResponseDTO>>> getPublicReviews(
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UserReviewResponseDTO>>> getReviews(
             @RequestParam(defaultValue = "10") int limit) {
         List<UserReviewResponseDTO> reviews = userReviewService.getPublicReviews(limit);
         return ResponseEntity.ok(ApiResponse.success("Reviews fetched successfully", reviews));
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<ApiResponse<List<UserReviewResponseDTO>>> getPublicReviews(
+            @RequestParam(defaultValue = "10") int limit) {
+        return getReviews(limit);
     }
 }

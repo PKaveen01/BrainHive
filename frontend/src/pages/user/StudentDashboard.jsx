@@ -37,9 +37,13 @@ const StudentDashboard = () => {
     const [myRequests, setMyRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
     const [requestsError, setRequestsError] = useState('');
+    const [tutors, setTutors] = useState([]);
+    const [tutorsLoading, setTutorsLoading] = useState(false);
+    const [tutorsError, setTutorsError] = useState('');
 
     useEffect(() => {
         fetchDashboardData();
+        fetchTutors();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -64,9 +68,32 @@ const StudentDashboard = () => {
         }
     };
 
+    const fetchTutors = async () => {
+        try {
+            setTutorsLoading(true);
+            setTutorsError('');
+            const response = await api.get('/peerhelp/tutor-profiles');
+            setTutors(response.data?.data || []);
+        } catch (error) {
+            console.error('Error fetching tutors:', error);
+            setTutorsError(error.response?.data?.message || 'Unable to load tutors right now.');
+        } finally {
+            setTutorsLoading(false);
+        }
+    };
+
     const handleLogout = async () => {
         await authService.logout();
         navigate('/');
+    };
+
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0
+        }).format(Number(value));
     };
 
     const studyTrendData = [
@@ -367,6 +394,58 @@ const StudentDashboard = () => {
                                 <div className="stat-trend positive">↑ from 4.6</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="content-card">
+                        <div className="card-header">
+                            <h2>👨‍🏫 All Tutors</h2>
+                            <button type="button" className="card-link" onClick={() => navigate('/find-tutors')}>See Tutor Page →</button>
+                        </div>
+
+                        {tutorsLoading && <p className="header-subtitle">Loading tutors...</p>}
+                        {!tutorsLoading && tutorsError && <p className="header-subtitle">{tutorsError}</p>}
+                        {!tutorsLoading && !tutorsError && tutors.length === 0 && (
+                            <p className="header-subtitle">No tutors available yet.</p>
+                        )}
+
+                        {!tutorsLoading && !tutorsError && tutors.length > 0 && (
+                            <div className="student-tutor-grid">
+                                {tutors.map((tutor) => (
+                                    <div key={tutor.id || tutor.tutorId} className="student-tutor-card">
+                                        <div className="student-tutor-top">
+                                            <div className="student-tutor-avatar">
+                                                {(tutor.tutorName || tutor.tutorEmail || 'T').charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3>{tutor.tutorName || tutor.tutorEmail}</h3>
+                                                <p>{tutor.subjectName || 'General Help'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="student-tutor-meta">
+                                            <span>⭐ {Number(tutor.averageRating || 0).toFixed(1)}</span>
+                                            <span>🎯 Level {tutor.proficiencyLevel || 0}</span>
+                                            <span>📚 {tutor.totalSessions || 0} sessions</span>
+                                        </div>
+
+                                        <p className="student-tutor-bio">{tutor.bio || 'No tutor bio provided yet.'}</p>
+
+                                        <div className="student-tutor-footer">
+                                            <span className={`student-tutor-status ${tutor.isAvailable ? 'available' : 'busy'}`}>
+                                                {tutor.isAvailable ? 'Available' : 'Unavailable'}
+                                            </span>
+                                            <span className="student-tutor-rate">{formatCurrency(tutor.hourlyRate)}/hr</span>
+                                        </div>
+
+                                        <div className="student-tutor-actions">
+                                            <button type="button" className="btn-accept" onClick={() => navigate('/request-help')}>
+                                                Request Help
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Study Trend Chart */}
