@@ -8,20 +8,13 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM',
                     '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'];
 
-const AVAILABLE_SUBJECTS = [
-    'Data Structures', 'Algorithms', 'Database Systems', 'Operating Systems',
-    'Computer Networks', 'Web Development', 'Software Engineering',
-    'Artificial Intelligence', 'Machine Learning', 'Cybersecurity',
-    'Cloud Computing', 'Mobile Development', 'Programming Fundamentals',
-    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Statistics', 'Economics',
-];
-
 const TutorProfileEdit = () => {
     const navigate = useNavigate();
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState('');
+    const [availableSubjects, setAvailableSubjects] = useState([]);
 
     const [profileData, setProfileData] = useState({
         fullName: '',
@@ -36,25 +29,26 @@ const TutorProfileEdit = () => {
     });
 
     useEffect(() => {
-        fetchProfile();
+        fetchProfileAndSubjects();
     }, []);
 
-    const fetchProfile = async () => {
+    const fetchProfileAndSubjects = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const response = await fetch(`${API_BASE}/dashboard/tutor/profile`, {
-                credentials: 'include',
-            });
+            const [profileRes, subjectsRes] = await Promise.all([
+                fetch(`${API_BASE}/dashboard/tutor/profile`, { credentials: 'include' }),
+                fetch(`${API_BASE}/auth/subjects`, { credentials: 'include' }),
+            ]);
 
-            if (response.status === 401) {
+            if (profileRes.status === 401) {
                 navigate('/login');
                 return;
             }
-            if (!response.ok) throw new Error('Failed to load profile');
+            if (!profileRes.ok) throw new Error('Failed to load profile');
 
-            const data = await response.json();
+            const data = await profileRes.json();
 
             setProfileData({
                 fullName: data.fullName || '',
@@ -67,6 +61,11 @@ const TutorProfileEdit = () => {
                 maxConcurrentStudents: data.maxConcurrentStudents != null ? String(data.maxConcurrentStudents) : '5',
                 isAvailable: data.isAvailable != null ? data.isAvailable : true,
             });
+
+            if (subjectsRes.ok) {
+                const subjectList = await subjectsRes.json();
+                setAvailableSubjects(subjectList.map(s => s.name));
+            }
         } catch (err) {
             setError(err.message || 'Failed to load profile');
         } finally {
@@ -154,6 +153,9 @@ const TutorProfileEdit = () => {
         );
     }
 
+    // Fall back to showing currently-selected subjects if the API returned none
+    const subjectsToShow = availableSubjects.length > 0 ? availableSubjects : profileData.expertSubjects;
+
     return (
         <div className="profile-container">
             <div className="profile-header">
@@ -231,18 +233,22 @@ const TutorProfileEdit = () => {
 
                     <div className="form-group">
                         <label>Expert Subjects *</label>
-                        <div className="subjects-grid">
-                            {AVAILABLE_SUBJECTS.map(subject => (
-                                <label key={subject} className="subject-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        checked={profileData.expertSubjects.includes(subject)}
-                                        onChange={() => handleExpertSubjectToggle(subject)}
-                                    />
-                                    {subject}
-                                </label>
-                            ))}
-                        </div>
+                        {subjectsToShow.length === 0 ? (
+                            <p className="field-hint">No subjects available. Please contact an administrator.</p>
+                        ) : (
+                            <div className="subjects-grid">
+                                {subjectsToShow.map(subject => (
+                                    <label key={subject} className="subject-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            checked={profileData.expertSubjects.includes(subject)}
+                                            onChange={() => handleExpertSubjectToggle(subject)}
+                                        />
+                                        {subject}
+                                    </label>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-group">

@@ -45,6 +45,7 @@ const StudentProfileView = () => {
                 weakAreas: weakSubjects,
                 studyStyle: data.studyStyle || '',
                 availabilityHours: data.availabilityHours ? `${data.availabilityHours} hours` : '',
+                preferredTime: data.preferredTime || '',
                 profileCompletion: data.profileCompletion || 0,
             });
         } catch (err) {
@@ -181,6 +182,13 @@ const StudentProfileView = () => {
                             <div>
                                 <label>Study Style</label>
                                 <p>{studentData.studyStyle || <span className="not-set">Not set</span>}</p>
+                            </div>
+                        </div>
+                        <div className="preference-item">
+                            <span className="preference-icon">🌅</span>
+                            <div>
+                                <label>Preferred Study Time</label>
+                                <p>{studentData.preferredTime || <span className="not-set">Not set</span>}</p>
                             </div>
                         </div>
                         <div className="preference-item">

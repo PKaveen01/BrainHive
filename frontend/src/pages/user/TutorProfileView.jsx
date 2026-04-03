@@ -62,7 +62,9 @@ const TutorProfileView = () => {
 
     if (!tutorData) return null;
 
-    const isVerified = tutorData.verificationStatus === 'APPROVED';
+    // Null-safe: verificationStatus may be absent if no TutorProfile record exists yet
+    const verificationStatus = tutorData.verificationStatus || 'PENDING';
+    const isVerified = verificationStatus === 'APPROVED';
 
     return (
         <div className="profile-container">
@@ -90,7 +92,7 @@ const TutorProfileView = () => {
                         <p className="tutor-title">{tutorData.qualification || 'Qualification not set'}</p>
                         <p className="student-email">{tutorData.email}</p>
                         <div className={`verification-badge ${isVerified ? 'verified' : 'pending'}`}>
-                            {isVerified ? '✓ Verified' : `⏳ ${tutorData.verificationStatus || 'Pending'}`}
+                            {isVerified ? '✓ Verified' : `⏳ ${verificationStatus}`}
                         </div>
                     </div>
                     <div className="tutor-stats-mini-card">
@@ -123,7 +125,7 @@ const TutorProfileView = () => {
                     {tutorData.bio ? (
                         <p className="bio-text">{tutorData.bio}</p>
                     ) : (
-                        <p className="not-set">No bio added yet. Edit your profile to add one.</p>
+                        <p className="not-set">No bio added yet. <button className="link-button" onClick={() => navigate('/tutor/profile/edit')}>Edit your profile</button> to add one.</p>
                     )}
                     <div className="info-grid" style={{ marginTop: '1rem' }}>
                         <div className="info-item">
@@ -169,7 +171,20 @@ const TutorProfileView = () => {
                     </div>
                 )}
 
-                {/* Additional Info */}
+                {/* No profile data yet */}
+                {!tutorData.qualification && !tutorData.bio && (
+                    <div className="profile-info-card profile-incomplete-notice">
+                        <p>
+                            Your tutor profile is incomplete.{' '}
+                            <button className="link-button" onClick={() => navigate('/tutor/profile/edit')}>
+                                Complete your profile
+                            </button>{' '}
+                            so students can find you.
+                        </p>
+                    </div>
+                )}
+
+                {/* Account Information */}
                 <div className="profile-info-card">
                     <h3>ℹ️ Account Information</h3>
                     <div className="info-grid">
@@ -179,7 +194,7 @@ const TutorProfileView = () => {
                         </div>
                         <div className="info-item">
                             <label>Verification Status</label>
-                            <p>{tutorData.verificationStatus || 'Pending'}</p>
+                            <p>{verificationStatus}</p>
                         </div>
                     </div>
                 </div>

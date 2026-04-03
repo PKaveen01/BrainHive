@@ -23,6 +23,7 @@ const StudentProfileEdit = () => {
         weakAreas: [],
         studyStyle: '',
         availabilityHours: '3',
+        preferredTime: '',
     });
 
     useEffect(() => {
@@ -61,6 +62,7 @@ const StudentProfileEdit = () => {
                 weakAreas: weakSubjects,
                 studyStyle: data.studyStyle || 'Solo',
                 availabilityHours: data.availabilityHours ? String(data.availabilityHours) : '3',
+                preferredTime: data.preferredTime || '',
             });
 
             if (subjectsRes.ok) {
@@ -86,7 +88,6 @@ const StudentProfileEdit = () => {
                 const newFollowing = isFollowing
                     ? prev.subjectsFollowing.filter(s => s !== subject)
                     : [...prev.subjectsFollowing, subject];
-                // Remove from strength/weak if unfollowed
                 return {
                     ...prev,
                     subjectsFollowing: newFollowing,
@@ -100,7 +101,6 @@ const StudentProfileEdit = () => {
                 strengthAreas: prev.strengthAreas.includes(subject)
                     ? prev.strengthAreas.filter(s => s !== subject)
                     : [...prev.strengthAreas, subject],
-                // If marked as strength, remove from weak
                 weakAreas: prev.weakAreas.filter(s => s !== subject),
             }));
         } else if (type === 'weak') {
@@ -109,7 +109,6 @@ const StudentProfileEdit = () => {
                 weakAreas: prev.weakAreas.includes(subject)
                     ? prev.weakAreas.filter(s => s !== subject)
                     : [...prev.weakAreas, subject],
-                // If marked as weak, remove from strength
                 strengthAreas: prev.strengthAreas.filter(s => s !== subject),
             }));
         }
@@ -117,13 +116,12 @@ const StudentProfileEdit = () => {
 
     const calculateProfileCompletion = () => {
         const fields = [
-            profileData.fullName,
             profileData.degree,
             profileData.year,
             profileData.semester,
             profileData.subjectsFollowing.length > 0,
             profileData.studyStyle,
-            profileData.availabilityHours,
+            profileData.preferredTime,
         ];
         const completed = fields.filter(f => f && f !== '' && f !== false).length;
         return Math.round((completed / fields.length) * 100);
@@ -142,6 +140,8 @@ const StudentProfileEdit = () => {
                 currentSemester: profileData.semester,
                 studyStyle: profileData.studyStyle,
                 availabilityHours: parseInt(profileData.availabilityHours, 10) || 0,
+                preferredTime: profileData.preferredTime,
+                subjectsFollowing: profileData.subjectsFollowing,   // ← now included
                 weakSubjects: profileData.weakAreas,
             };
 
@@ -351,8 +351,26 @@ const StudentProfileEdit = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Daily Study Hours *</label>
-                            <select name="availabilityHours" value={profileData.availabilityHours} onChange={handleInputChange} required>
+                            <label>Preferred Study Time *</label>
+                            <div className="radio-group">
+                                {['Morning', 'Afternoon', 'Evening', 'Night'].map(time => (
+                                    <label key={time}>
+                                        <input
+                                            type="radio"
+                                            name="preferredTime"
+                                            value={time}
+                                            checked={profileData.preferredTime === time}
+                                            onChange={handleInputChange}
+                                        />
+                                        {time}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Daily Study Hours</label>
+                            <select name="availabilityHours" value={profileData.availabilityHours} onChange={handleInputChange}>
                                 <option value="1">1 hour</option>
                                 <option value="2">2 hours</option>
                                 <option value="3">3 hours</option>
