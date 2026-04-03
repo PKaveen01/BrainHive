@@ -94,8 +94,8 @@ const StudentDashboard = () => {
         id: r.id,
         title: r.title || 'Untitled Resource',
         type: r.resourceType || r.type || 'Document',
-        courseCode: r.courseCode || 'GENERAL',
-        courseName: r.subject || r.courseName || 'General',
+        courseCode: r.courseCode || r.subject || '',
+        courseName: r.subject || r.courseName || '',
         semester: r.semester || 'N/A',
         uploader: { name: r.uploadedBy?.name || r.uploader?.name || 'Unknown' },
         saves: r.downloadCount || r.saves || 0,
@@ -158,13 +158,13 @@ const StudentDashboard = () => {
 
             const groupedCourses = {};
             formattedResources.forEach((resource) => {
-                const code = resource.courseCode || 'GENERAL';
+                const code = resource.courseCode || resource.courseName || resource.title || '';
 
                 if (!groupedCourses[code]) {
                     groupedCourses[code] = {
                         id: code,
-                        code: code,
-                        name: resource.courseName || code,
+                        code: resource.courseCode || resource.courseName || '',
+                        name: resource.courseName || resource.courseCode || '',
                         semester: resource.semester || 'N/A',
                         resourceCount: 0,
                         hotTopic: resource.tags?.[0] || null
