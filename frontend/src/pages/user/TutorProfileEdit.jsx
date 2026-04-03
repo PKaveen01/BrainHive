@@ -1,44 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
+
+const API_BASE = 'http://localhost:8080/api';
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM',
+                    '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'];
+
+const AVAILABLE_SUBJECTS = [
+    'Data Structures', 'Algorithms', 'Database Systems', 'Operating Systems',
+    'Computer Networks', 'Web Development', 'Software Engineering',
+    'Artificial Intelligence', 'Machine Learning', 'Cybersecurity',
+    'Cloud Computing', 'Mobile Development', 'Programming Fundamentals',
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Statistics', 'Economics',
+];
 
 const TutorProfileEdit = () => {
     const navigate = useNavigate();
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState('');
 
-    // Dummy data for edit form
     const [profileData, setProfileData] = useState({
-        fullName: 'Dr. Sarah Mitchell',
-        email: 'sarah.mitchell@university.edu',
-        qualification: 'Ph.D. in Computer Science',
-        expertSubjects: [
-            'Data Structures', 'Algorithms', 'Database Systems',
-            'Operating Systems', 'Computer Networks', 'Software Engineering'
-        ],
-        yearsExperience: '8',
-        bio: 'Experienced computer science educator with a passion for helping students understand complex concepts. I believe in making learning interactive and enjoyable. My teaching approach focuses on practical examples and real-world applications.',
-        availabilitySlots: [
-            'Monday 2:00 PM', 'Monday 4:00 PM', 'Tuesday 10:00 AM',
-            'Wednesday 3:00 PM', 'Thursday 1:00 PM', 'Friday 11:00 AM',
-            'Saturday 10:00 AM', 'Saturday 2:00 PM'
-        ],
+        fullName: '',
+        email: '',
+        qualification: '',
+        yearsOfExperience: '',
+        bio: '',
+        expertSubjects: [],
+        availabilitySlots: [],
         maxConcurrentStudents: '5',
+        isAvailable: true,
     });
 
-    const [availableSubjects] = useState([
-        'Data Structures', 'Algorithms', 'Database Systems', 'Operating Systems',
-        'Computer Networks', 'Web Development', 'Software Engineering',
-        'Artificial Intelligence', 'Machine Learning', 'Cybersecurity',
-        'Cloud Computing', 'Mobile Development', 'Programming Fundamentals'
-    ]);
+    useEffect(() => {
+        fetchProfile();
+    }, []);
 
-    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', 
-                       '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'];
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await fetch(`${API_BASE}/dashboard/tutor/profile`, {
+                credentials: 'include',
+            });
+
+            if (response.status === 401) {
+                navigate('/login');
+                return;
+            }
+            if (!response.ok) throw new Error('Failed to load profile');
+
+            const data = await response.json();
+
+            setProfileData({
+                fullName: data.fullName || '',
+                email: data.email || '',
+                qualification: data.qualification || '',
+                yearsOfExperience: data.yearsOfExperience != null ? String(data.yearsOfExperience) : '',
+                bio: data.bio || '',
+                expertSubjects: data.expertSubjects || [],
+                availabilitySlots: data.availabilitySlots || [],
+                maxConcurrentStudents: data.maxConcurrentStudents != null ? String(data.maxConcurrentStudents) : '5',
+                isAvailable: data.isAvailable != null ? data.isAvailable : true,
+            });
+        } catch (err) {
+            setError(err.message || 'Failed to load profile');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setProfileData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setProfileData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
     };
 
     const handleExpertSubjectToggle = (subject) => {
@@ -46,7 +87,7 @@ const TutorProfileEdit = () => {
             ...prev,
             expertSubjects: prev.expertSubjects.includes(subject)
                 ? prev.expertSubjects.filter(s => s !== subject)
-                : [...prev.expertSubjects, subject]
+                : [...prev.expertSubjects, subject],
         }));
     };
 
@@ -56,21 +97,62 @@ const TutorProfileEdit = () => {
             ...prev,
             availabilitySlots: prev.availabilitySlots.includes(slot)
                 ? prev.availabilitySlots.filter(s => s !== slot)
-                : [...prev.availabilitySlots, slot]
+                : [...prev.availabilitySlots, slot],
         }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        
-        // Simulate API call
-        setTimeout(() => {
-            alert('Profile updated successfully! (Demo)');
+        setError(null);
+        setSuccessMsg('');
+
+        try {
+            const payload = {
+                qualification: profileData.qualification,
+                bio: profileData.bio,
+                yearsOfExperience: parseInt(profileData.yearsOfExperience, 10) || 0,
+                maxConcurrentStudents: parseInt(profileData.maxConcurrentStudents, 10) || 5,
+                isAvailable: profileData.isAvailable,
+                expertSubjects: profileData.expertSubjects,
+                availabilitySlots: profileData.availabilitySlots,
+            };
+
+            const response = await fetch(`${API_BASE}/dashboard/tutor/profile`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401) {
+                navigate('/login');
+                return;
+            }
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || 'Failed to save profile');
+            }
+
+            setSuccessMsg('Profile updated successfully!');
+            setTimeout(() => navigate('/tutor/profile'), 1200);
+        } catch (err) {
+            setError(err.message || 'Failed to save profile');
+        } finally {
             setSaving(false);
-            navigate('/tutor/profile');
-        }, 1000);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="profile-container">
+                <div className="profile-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="profile-container">
@@ -81,39 +163,45 @@ const TutorProfileEdit = () => {
                 <h1>Edit Tutor Profile</h1>
             </div>
 
+            {error && (
+                <div className="profile-alert profile-alert-error">⚠️ {error}</div>
+            )}
+            {successMsg && (
+                <div className="profile-alert profile-alert-success">✓ {successMsg}</div>
+            )}
+
             <form onSubmit={handleSubmit} className="profile-form">
                 {/* Account Information */}
                 <div className="form-section">
                     <h2>Account Information</h2>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Full Name *</label>
+                            <label>Full Name</label>
                             <input
                                 type="text"
-                                name="fullName"
                                 value={profileData.fullName}
-                                onChange={handleInputChange}
-                                required
+                                disabled
+                                className="input-disabled"
                             />
+                            <small className="field-hint">Contact support to change your name.</small>
                         </div>
-
                         <div className="form-group">
-                            <label>Email Address *</label>
+                            <label>Email Address</label>
                             <input
                                 type="email"
-                                name="email"
                                 value={profileData.email}
-                                onChange={handleInputChange}
-                                required
+                                disabled
+                                className="input-disabled"
                             />
+                            <small className="field-hint">Contact support to change your email.</small>
                         </div>
                     </div>
                 </div>
 
-                {/* Expertise & Verification */}
+                {/* Expertise */}
                 <div className="form-section">
-                    <h2>Expertise & Verification</h2>
-                    
+                    <h2>Expertise & Background</h2>
+
                     <div className="form-row">
                         <div className="form-group">
                             <label>Qualification / Degree *</label>
@@ -131,10 +219,10 @@ const TutorProfileEdit = () => {
                             <label>Years of Experience</label>
                             <input
                                 type="number"
-                                name="yearsExperience"
-                                value={profileData.yearsExperience}
+                                name="yearsOfExperience"
+                                value={profileData.yearsOfExperience}
                                 onChange={handleInputChange}
-                                placeholder="Number of years"
+                                placeholder="e.g., 3"
                                 min="0"
                                 step="1"
                             />
@@ -144,7 +232,7 @@ const TutorProfileEdit = () => {
                     <div className="form-group">
                         <label>Expert Subjects *</label>
                         <div className="subjects-grid">
-                            {availableSubjects.map(subject => (
+                            {AVAILABLE_SUBJECTS.map(subject => (
                                 <label key={subject} className="subject-checkbox">
                                     <input
                                         type="checkbox"
@@ -163,33 +251,52 @@ const TutorProfileEdit = () => {
                             name="bio"
                             value={profileData.bio}
                             onChange={handleInputChange}
-                            rows="4"
+                            rows="5"
                             required
+                            placeholder="Tell students about your teaching approach, experience, and what makes you a great tutor..."
+                            maxLength={1000}
                         ></textarea>
+                        <small className="field-hint">{profileData.bio.length}/1000 characters</small>
                     </div>
                 </div>
 
                 {/* Availability & Settings */}
                 <div className="form-section">
                     <h2>Availability & Settings</h2>
-                    
+
                     <div className="form-group">
-                        <label>Availability Slots *</label>
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="isAvailable"
+                                checked={profileData.isAvailable}
+                                onChange={handleInputChange}
+                                style={{ marginRight: '8px' }}
+                            />
+                            I am currently available to take new students
+                        </label>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Availability Slots</label>
+                        <p className="field-hint" style={{ marginBottom: '0.5rem' }}>
+                            Select the time slots when you're available for tutoring sessions.
+                        </p>
                         <div className="availability-table">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Day</th>
-                                        {timeSlots.slice(0, 6).map(time => (
+                                        <th>Day / Time</th>
+                                        {TIME_SLOTS.slice(0, 6).map(time => (
                                             <th key={time}>{time}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {daysOfWeek.map(day => (
+                                    {DAYS.map(day => (
                                         <tr key={day}>
                                             <td className="availability-day">{day}</td>
-                                            {timeSlots.slice(0, 6).map(time => (
+                                            {TIME_SLOTS.slice(0, 6).map(time => (
                                                 <td key={`${day}-${time}`} className="availability-cell">
                                                     <input
                                                         type="checkbox"

@@ -104,8 +104,8 @@ public class AdminController {
     /** Reject tutor by TutorProfile ID */
     @PostMapping("/tutors/{id}/reject")
     public ResponseEntity<?> rejectTutor(@PathVariable Long id,
-                                          @RequestBody(required = false) Map<String, String> body,
-                                          HttpSession session) {
+                                         @RequestBody(required = false) Map<String, String> body,
+                                         HttpSession session) {
         ResponseEntity<?> check = checkAdmin(session);
         if (check != null) return check;
         try {
@@ -165,6 +165,20 @@ public class AdminController {
 
     // ─── Resources ───────────────────────────────────────────────────────────
 
+    @GetMapping("/resources/pending")
+    public ResponseEntity<?> getPendingResources(HttpSession session) {
+        ResponseEntity<?> check = checkAdmin(session);
+        if (check != null) return check;
+        return ResponseEntity.ok(adminService.getPendingResources());
+    }
+
+    @GetMapping("/resources/approved")
+    public ResponseEntity<?> getApprovedResources(HttpSession session) {
+        ResponseEntity<?> check = checkAdmin(session);
+        if (check != null) return check;
+        return ResponseEntity.ok(adminService.getApprovedResources());
+    }
+
     @GetMapping("/resources/reported")
     public ResponseEntity<?> getReportedResources(HttpSession session) {
         ResponseEntity<?> check = checkAdmin(session);
@@ -201,6 +215,17 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/resources/{id}/resolve-reports")
+    public ResponseEntity<?> resolveReports(@PathVariable Long id, HttpSession session) {
+        ResponseEntity<?> check = checkAdmin(session);
+        if (check != null) return check;
+        try {
+            return ResponseEntity.ok(adminService.resolveReport(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     // ─── Lectures ─────────────────────────────────────────────────────────────
 
     @GetMapping("/lectures")
@@ -216,4 +241,25 @@ public class AdminController {
         if (check != null) return check;
         return ResponseEntity.ok(adminService.deleteLecture(lectureId));
     }
+
+    // ─── Groups ───────────────────────────────────────────────────────────────
+
+    @GetMapping("/groups")
+    public ResponseEntity<?> getAllGroups(HttpSession session) {
+        ResponseEntity<?> check = checkAdmin(session);
+        if (check != null) return check;
+        return ResponseEntity.ok(adminService.getAllGroupsForAdmin());
+    }
+
+    @DeleteMapping("/groups/{groupId}")
+    public ResponseEntity<?> deleteGroup(@PathVariable Long groupId, HttpSession session) {
+        ResponseEntity<?> check = checkAdmin(session);
+        if (check != null) return check;
+        try {
+            return ResponseEntity.ok(adminService.deleteGroupAsAdmin(groupId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
 }

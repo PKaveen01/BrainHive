@@ -15,21 +15,30 @@ import StudentProfileEdit from './pages/user/StudentProfileEdit';
 import TutorProfileView from './pages/user/TutorProfileView';
 import TutorProfileEdit from './pages/user/TutorProfileEdit';
 import ForgotPassword from './pages/auth/ForgotPassword';
-import AdminDashboard from './pages/user/AdminDashboard';
+
+// Admin module (split pages)
+import AdminDashboard        from './pages/admin/AdminDashboard';
+import AdminUserManagement   from './pages/admin/AdminUserManagement';
+import AdminTutorApprovals   from './pages/admin/AdminTutorApprovals';
+import AdminPendingResources from './pages/admin/AdminPendingResources';
+import AdminActiveResources  from './pages/admin/AdminActiveResources';
+import AdminReportResources  from './pages/admin/AdminReportResources';
+import AdminAnalytics        from './pages/admin/AdminAnalytics';
+import AdminGroup            from './pages/admin/AdminGroup';
 
 // Resources module
-import UploadResource from './pages/resources/UploadResource';
-import MyUploads from './pages/resources/MyUploads';
-import BookMarked from './pages/resources/BookMarked';
+import UploadResource    from './pages/resources/UploadResource';
+import MyUploads         from './pages/resources/MyUploads';
+import BookMarked        from './pages/resources/BookMarked';
 import ResourceDiscovery from './pages/resources/ResourceDiscovery';
 
 // Peer Help module
 import RequestHelp from './pages/peerhelp/RequestHelp';
-import FindTutors from './pages/peerhelp/FindTutors';
-import MyRequests from './pages/peerhelp/MyRequests';
+import FindTutors  from './pages/peerhelp/FindTutors';
+import MyRequests  from './pages/peerhelp/MyRequests';
 
 // Collaboration module
-import GroupsPage from './pages/collaboration/GroupsPage';
+import GroupsPage      from './pages/collaboration/GroupsPage';
 import GroupDetailPage from './pages/collaboration/GroupDetailPage';
 
 function App() {
@@ -38,44 +47,54 @@ function App() {
       <div className="App">
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/"                 element={<Home />} />
+          <Route path="/login"            element={<Login />} />
           <Route path="/register/student" element={<StudentSignup />} />
-          <Route path="/register/tutor" element={<TutorSignup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/register/tutor"   element={<TutorSignup />} />
+          <Route path="/forgot-password"  element={<ForgotPassword />} />
 
           {/* Profile setup */}
           <Route path="/complete-profile/student" element={<CompleteProfile />} />
 
-          {/* Student dashboards */}
-          <Route path="/dashboard/student" element={<StudentDashboard />} />
+          {/* Student */}
+          <Route path="/dashboard/student"                     element={<StudentDashboard />} />
           <Route path="/dashboard/student/lectures/:lectureId" element={<LectureDetails />} />
 
-          {/* Tutor dashboard */}
+          {/* Tutor */}
           <Route path="/dashboard/tutor" element={<TutorDashboard />} />
 
-          {/* Admin */}
-          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+          {/* Admin — legacy URL redirects to new overview */}
+          <Route path="/dashboard/admin" element={<Navigate to="/admin/overview" replace />} />
+
+          {/* Admin split pages */}
+          <Route path="/admin/overview"           element={<AdminDashboard />} />
+          <Route path="/admin/users"              element={<AdminUserManagement />} />
+          <Route path="/admin/tutors"             element={<AdminTutorApprovals />} />
+          <Route path="/admin/resources/pending"  element={<AdminPendingResources />} />
+          <Route path="/admin/resources/active"   element={<AdminActiveResources />} />
+          <Route path="/admin/resources/reported" element={<AdminReportResources />} />
+          <Route path="/admin/groups"             element={<AdminGroup />} />
+          <Route path="/admin/analytics"          element={<AdminAnalytics />} />
 
           {/* Profile routes */}
-          <Route path="/profile" element={<StudentProfileView />} />
-          <Route path="/profile/edit" element={<StudentProfileEdit />} />
-          <Route path="/tutor/profile" element={<TutorProfileView />} />
+          <Route path="/profile"            element={<StudentProfileView />} />
+          <Route path="/profile/edit"       element={<StudentProfileEdit />} />
+          <Route path="/tutor/profile"      element={<TutorProfileView />} />
           <Route path="/tutor/profile/edit" element={<TutorProfileEdit />} />
 
-          {/* Resources module */}
-          <Route path="/upload" element={<UploadResource />} />
+          {/* Resources */}
+          <Route path="/upload"               element={<UploadResource />} />
           <Route path="/resources/my-uploads" element={<MyUploads />} />
           <Route path="/resources/bookmarked" element={<BookMarked />} />
-          <Route path="/resources/discovery" element={<ResourceDiscovery />} />
+          <Route path="/resources/discovery"  element={<ResourceDiscovery />} />
 
-          {/* Peer Help module */}
+          {/* Peer Help */}
           <Route path="/request-help" element={<RequestHelp />} />
-          <Route path="/find-tutors" element={<FindTutors />} />
-          <Route path="/my-requests" element={<MyRequests />} />
+          <Route path="/find-tutors"  element={<FindTutors />} />
+          <Route path="/my-requests"  element={<MyRequests />} />
 
-          {/* Collaboration module */}
-          <Route path="/collaboration/groups" element={<GroupsPage />} />
+          {/* Collaboration */}
+          <Route path="/collaboration/groups"          element={<GroupsPage />} />
           <Route path="/collaboration/groups/:groupId" element={<GroupDetailPage />} />
 
           {/* Catch-all */}

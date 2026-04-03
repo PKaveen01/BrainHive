@@ -1,10 +1,15 @@
 package com.brainhive.modules.admin.service;
 
 import com.brainhive.modules.admin.dto.*;
+import com.brainhive.modules.collaboration.model.GroupMember;
+import com.brainhive.modules.collaboration.model.StudyGroup;
+import com.brainhive.modules.collaboration.repository.GroupMemberRepository;
+import com.brainhive.modules.collaboration.repository.StudyGroupRepository;
 import com.brainhive.modules.peerhelp.dto.LectureResponseDTO;
 import com.brainhive.modules.peerhelp.model.Lecture;
 import com.brainhive.modules.peerhelp.repository.LectureRepository;
 import com.brainhive.modules.resources.model.Resource;
+import com.brainhive.modules.resources.model.ResourceReport;
 import com.brainhive.modules.resources.repository.ResourceRepository;
 import com.brainhive.modules.resources.repository.ResourceReportRepository;
 import com.brainhive.modules.user.dto.AddUserRequest;
@@ -35,6 +40,8 @@ public class AdminService {
     @Autowired private ResourceRepository resourceRepository;
     @Autowired private ResourceReportRepository resourceReportRepository;
     @Autowired private LectureRepository lectureRepository;
+    @Autowired private StudyGroupRepository studyGroupRepository;
+    @Autowired private GroupMemberRepository groupMemberRepository;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -253,11 +260,54 @@ public class AdminService {
     // ─── Resources ───────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
+    public List<ResourceModDTO> getPendingResources() {
+        return resourceRepository.findByStatus("pending").stream()
+                .map(this::toResourceModDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResourceModDTO> getApprovedResources() {
+        return resourceRepository.findByStatus("active").stream()
+                .map(this::toResourceModDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<ResourceModDTO> getReportedResources() {
-        Set<Resource> combined = new LinkedHashSet<>();
-        combined.addAll(resourceRepository.findByStatus("flagged"));
-        combined.addAll(resourceRepository.findByStatus("pending"));
-        return combined.stream().map(this::toResourceModDTO).collect(Collectors.toList());
+        // Return resources that have pending reports against them
+        List<ResourceReport> pendingReports = resourceReportRepository.findByStatus("pending");
+        Set<Resource> reportedResources = pendingReports.stream()
+                .map(ResourceReport::getResource)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        // Also include resources explicitly flagged
+        reportedResources.addAll(resourceRepository.findByStatus("flagged"));
+        return reportedResources.stream().map(r -> {
+            ResourceModDTO dto = toResourceModDTO(r);
+            // Attach most recent pending report reason
+            pendingReports.stream()
+                    .filter(rep -> rep.getResource().getId().equals(r.getId()))
+                    .findFirst()
+                    .ifPresent(rep -> dto.setModerationNotes(rep.getReason() + (rep.getDescription() != null ? ": " + rep.getDescription() : "")));
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> resolveReport(Long resourceId) {
+        List<ResourceReport> reports = resourceReportRepository.findByResourceId(resourceId).stream()
+                .filter(r -> "pending".equals(r.getStatus()))
+                .collect(Collectors.toList());
+        reports.forEach(ResourceReport::markAsResolved);
+        resourceReportRepository.saveAll(reports);
+        // Unflag the resource if it was flagged
+        resourceRepository.findById(resourceId).ifPresent(r -> {
+            if ("flagged".equals(r.getStatus())) {
+                r.setStatus("active");
+                resourceRepository.save(r);
+            }
+        });
+        return Map.of("message", "Reports resolved", "count", reports.size());
     }
 
     @Transactional(readOnly = true)
@@ -364,7 +414,9 @@ public class AdminService {
         ResourceModDTO dto = new ResourceModDTO();
         dto.setId(r.getId());
         dto.setTitle(r.getTitle());
+        dto.setDescription(r.getDescription());
         dto.setSubject(r.getSubject());
+        dto.setSemester(r.getSemester());
         dto.setType(r.getType());
         dto.setStatus(r.getStatus());
         dto.setUploadedAt(r.getUploadedAt());
@@ -373,6 +425,80 @@ public class AdminService {
             dto.setUploadedByEmail(r.getUploadedBy().getEmail());
         }
         dto.setModerationNotes(r.getModerationNotes());
+        dto.setFilePath(r.getFilePath());
+        dto.setFileName(r.getFileName());
+        dto.setFileType(r.getFileType());
+        dto.setFileSize(r.getFileSize());
+        dto.setLink(r.getLink());
         return dto;
     }
+    // ─── Groups (Admin) ───────────────────────────────────────────────────────
+
+    public static class AdminGroupDTO {
+        public Long id;
+        public String name;
+        public String description;
+        public String subject;
+        public String goal;
+        public String inviteCode;
+        public Boolean isActive;
+        public String createdByName;
+        public String createdByEmail;
+        public int memberCount;
+        public java.time.LocalDateTime createdAt;
+        public java.util.List<AdminMemberDTO> members;
+    }
+
+    public static class AdminMemberDTO {
+        public Long userId;
+        public String fullName;
+        public String email;
+        public String role; // ADMIN or MEMBER
+        public java.time.LocalDateTime joinedAt;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminGroupDTO> getAllGroupsForAdmin() {
+        return studyGroupRepository.findAll().stream()
+                .map(this::toAdminGroupDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> deleteGroupAsAdmin(Long groupId) {
+        StudyGroup g = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found: " + groupId));
+        groupMemberRepository.findByGroup(g).forEach(groupMemberRepository::delete);
+        studyGroupRepository.delete(g);
+        return Map.of("message", "Group deleted by admin", "groupId", groupId);
+    }
+
+    private AdminGroupDTO toAdminGroupDTO(StudyGroup g) {
+        AdminGroupDTO dto = new AdminGroupDTO();
+        dto.id          = g.getId();
+        dto.name        = g.getName();
+        dto.description = g.getDescription();
+        dto.subject     = g.getSubject();
+        dto.goal        = g.getGoal();
+        dto.inviteCode  = g.getInviteCode();
+        dto.isActive    = g.getIsActive();
+        dto.createdAt   = g.getCreatedAt();
+        if (g.getCreatedBy() != null) {
+            dto.createdByName  = g.getCreatedBy().getFullName();
+            dto.createdByEmail = g.getCreatedBy().getEmail();
+        }
+        List<GroupMember> members = groupMemberRepository.findByGroup(g);
+        dto.memberCount = members.size();
+        dto.members = members.stream().map(m -> {
+            AdminMemberDTO md = new AdminMemberDTO();
+            md.userId   = m.getUser().getId();
+            md.fullName = m.getUser().getFullName();
+            md.email    = m.getUser().getEmail();
+            md.role     = m.getRole();
+            md.joinedAt = m.getJoinedAt();
+            return md;
+        }).collect(Collectors.toList());
+        return dto;
+    }
+
 }
