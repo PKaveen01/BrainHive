@@ -1,19 +1,32 @@
 package com.brainhive.modules.user.service;
 
-import com.brainhive.modules.user.dto.*;
-import com.brainhive.modules.user.model.*;
-import com.brainhive.modules.user.repository.*;
-import jakarta.servlet.http.HttpSession;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.brainhive.modules.user.dto.RegistrationResponseDTO;
+import com.brainhive.modules.user.dto.StudentProfileCompletionRequest;
+import com.brainhive.modules.user.dto.StudentRegistrationRequest;
+import com.brainhive.modules.user.dto.SubjectDTO;
+import com.brainhive.modules.user.dto.TutorRegistrationRequest;
+import com.brainhive.modules.user.model.StudentProfile;
+import com.brainhive.modules.user.model.Subject;
+import com.brainhive.modules.user.model.TutorProfile;
+import com.brainhive.modules.user.model.User;
+import com.brainhive.modules.user.model.UserRole;
+import com.brainhive.modules.user.repository.StudentProfileRepository;
+import com.brainhive.modules.user.repository.SubjectRepository;
+import com.brainhive.modules.user.repository.TutorProfileRepository;
+import com.brainhive.modules.user.repository.UserRepository;
+
+import jakarta.servlet.http.HttpSession;
 
 @Service
 public class ProfileService {
@@ -101,55 +114,80 @@ public class ProfileService {
 
     @Transactional
     public RegistrationResponseDTO registerTutor(TutorRegistrationRequest request, HttpSession session) {
-        try {
-            System.out.println("=== Starting Tutor Registration ===");
+        System.out.println("=== Starting Tutor Registration ===");
 
-            // Validate passwords match
-            if (!request.getPassword().equals(request.getConfirmPassword())) {
-                return new RegistrationResponseDTO(false, "Passwords do not match", null, false, null);
-            }
-
-            // Check if email already exists
-            if (userRepository.existsByEmail(request.getEmail())) {
-                return new RegistrationResponseDTO(false, "Email already registered", null, false, null);
-            }
-
-            // Create user
-            User user = new User();
-            user.setEmail(request.getEmail());
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-            user.setFullName(request.getFullName());
-            user.setRole(UserRole.TUTOR);
-            user = userRepository.save(user);
-
-            // Create tutor profile
-            TutorProfile profile = new TutorProfile(user);
-            profile.setQualification(request.getQualification());
-            profile.setYearsOfExperience(request.getYearsOfExperience());
-            profile.setBio(request.getBio());
-            profile.setMaxConcurrentStudents(request.getMaxConcurrentStudents() != null ?
-                    request.getMaxConcurrentStudents() : 5);
-            profile.setProfileCompleted(true);
-            tutorProfileRepository.save(profile);
-
-            // AUTO-LOGIN: Create session for the user
-            session.setAttribute("userId", user.getId());
-            session.setAttribute("userEmail", user.getEmail());
-            session.setAttribute("userName", user.getFullName());
-            session.setAttribute("userRole", user.getRole().toString());
-
-            return new RegistrationResponseDTO(
-                    true,
-                    "Tutor registered successfully. Your account will be reviewed by an admin.",
-                    user.getId(),
-                    true,
-                    "/dashboard/tutor"
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new RegistrationResponseDTO(false, "Registration failed: " + e.getMessage(), null, false, null);
+        // Validate passwords match
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            return new RegistrationResponseDTO(false, "Passwords do not match", null, false, null);
         }
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return new RegistrationResponseDTO(false, "Email already registered", null, false, null);
+        }
+
+        // Create user
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        user.setRole(UserRole.TUTOR);
+        user = userRepository.save(user);
+
+        // Create tutor profile
+        TutorProfile profile = new TutorProfile(user);
+        profile.setQualification(request.getQualification());
+        profile.setYearsOfExperience(request.getYearsOfExperience());
+        profile.setBio(request.getBio());
+        profile.setMaxConcurrentStudents(request.getMaxConcurrentStudents() != null ?
+                request.getMaxConcurrentStudents() : 5);
+        profile.setProfileCompleted(true);
+        profile.setVerificationStatus("PENDING");
+        profile.setExpertSubjects(resolveTutorSubjects(request.getExpertSubjects()));
+        profile.setAvailabilitySlots(request.getAvailabilitySlots() != null ?
+                new HashSet<>(request.getAvailabilitySlots()) : new HashSet<>());
+        tutorProfileRepository.save(profile);
+
+        // AUTO-LOGIN: Create session for the user
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("userEmail", user.getEmail());
+        session.setAttribute("userName", user.getFullName());
+        session.setAttribute("userRole", user.getRole().toString());
+
+        return new RegistrationResponseDTO(
+                true,
+                "Tutor registered successfully. Your account will be reviewed by an admin.",
+                user.getId(),
+                true,
+                "/dashboard/tutor"
+        );
+    }
+
+    private Set<Subject> resolveTutorSubjects(Set<String> expertSubjects) {
+        Set<Subject> subjects = new HashSet<>();
+        if (expertSubjects == null || expertSubjects.isEmpty()) {
+            return subjects;
+        }
+
+        for (String rawSubject : expertSubjects) {
+            if (rawSubject == null || rawSubject.isBlank()) {
+                continue;
+            }
+
+            Subject subject;
+            if (rawSubject.matches("\\d+")) {
+                Long subjectId = Long.parseLong(rawSubject);
+                subject = subjectRepository.findById(subjectId)
+                        .orElseGet(() -> subjectRepository.save(new Subject(rawSubject, "General")));
+            } else {
+                subject = subjectRepository.findByName(rawSubject)
+                        .orElseGet(() -> subjectRepository.save(new Subject(rawSubject, "General")));
+            }
+
+            subjects.add(subject);
+        }
+
+        return subjects;
     }
 
     // NEW METHOD - For profile completion using the new DTO

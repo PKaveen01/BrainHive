@@ -1,12 +1,26 @@
 package com.brainhive.modules.user.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "tutor_profiles")
+@Table(name = "user_tutor_profiles")
 public class TutorProfile {
 
     @Id
@@ -14,7 +28,7 @@ public class TutorProfile {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
     @Column(name = "qualification")
@@ -47,14 +61,14 @@ public class TutorProfile {
     // Relationships
     @ManyToMany
     @JoinTable(
-            name = "tutor_subjects",
+            name = "user_tutor_subjects",
             joinColumns = @JoinColumn(name = "tutor_id"),
             inverseJoinColumns = @JoinColumn(name = "subject_id")
     )
     private Set<Subject> expertSubjects = new HashSet<>();
 
     @ElementCollection
-    @CollectionTable(name = "tutor_availability_slots", joinColumns = @JoinColumn(name = "tutor_id"))
+    @CollectionTable(name = "user_tutor_availability_slots", joinColumns = @JoinColumn(name = "tutor_id"))
     private Set<String> availabilitySlots = new HashSet<>();
 
     public TutorProfile() {}
