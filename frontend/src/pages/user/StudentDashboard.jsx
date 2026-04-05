@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
@@ -28,10 +28,11 @@ import {
 
 const StudentDashboard = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'dashboard');
     const [lectures, setLectures] = useState([]);
     const [lectureLoading, setLectureLoading] = useState(false);
     const [lectureError, setLectureError] = useState('');
@@ -46,6 +47,10 @@ const StudentDashboard = () => {
 
     useEffect(() => {
         fetchDashboardData();
+        // If navigated here with lectures tab active, load lectures immediately
+        if (location.state?.activeTab === 'lectures') {
+            fetchLectures();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -317,14 +322,7 @@ const StudentDashboard = () => {
                                 <div className="stat-trend">↗ 85% attendance</div>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon orange"><span className="icon">⭐</span></div>
-                            <div>
-                                <div className="stat-value">4.8</div>
-                                <div className="stat-label">Rating</div>
-                                <div className="stat-trend positive">↑ from 4.6</div>
-                            </div>
-                        </div>
+
                     </div>
 
                     {/* Study Trend Chart */}

@@ -151,11 +151,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Full Name</label>
                         <div className="input-icon">
-                            <span className="icon">👤</span>
+                            <span className="icon"></span>
                             <input
                                 type="text"
                                 name="fullName"
-                                placeholder="Pasindu Kaveen"
+                                placeholder="👤 Enter Full Name"
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 className={errors.fullName ? 'error' : ''}
@@ -168,11 +168,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>University Email</label>
                         <div className="input-icon">
-                            <span className="icon">📧</span>
+                            <span className="icon"></span>
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="student@university.edu"
+                                placeholder="📧 Enter email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 className={errors.email ? 'error' : ''}
@@ -185,11 +185,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Password</label>
                         <div className="input-icon">
-                            <span className="icon">🔒</span>
+                            <span className="icon"></span>
                             <input
                                 type="password"
                                 name="password"
-                                placeholder="Create a strong password"
+                                placeholder="🔒 Create a strong password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={errors.password ? 'error' : ''}
@@ -234,11 +234,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Confirm Password</label>
                         <div className="input-icon">
-                            <span className="icon">✓</span>
+                            <span className="icon"></span>
                             <input
                                 type="password"
                                 name="confirmPassword"
-                                placeholder="Confirm your password"
+                                placeholder="✓ Confirm your password"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 className={errors.confirmPassword ? 'error' : ''}

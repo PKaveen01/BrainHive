@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
-import TutorLayout from '../user/TutorLayout';
+import TutorSidebar from '../peerhelp/TutorSidebar';
 import './MyUploads.css';
 
 const statusColor = { active:'#16a34a', pending:'#d97706', flagged:'#dc2626', removed:'#6b7280' };
@@ -146,10 +146,10 @@ export default function MyUploads() {
         if (!user) return null;
         
         // Check if user has tutor role
-        const isTutor = user.role === 'tutor' || user.userType === 'tutor';
+        const isTutor = user.role === 'TUTOR' || user.role === 'tutor' || user.userType === 'TUTOR' || user.userType === 'tutor';
         
         if (isTutor) {
-            return <TutorLayout user={user} />;
+            return <TutorSidebar user={user} />;
         } else {
             return <StudentSidebar user={user} />;
         }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import TutorSidebar from '../peerhelp/TutorSidebar';
 import './UploadResource.css';
 
 const UploadResource = () => {
@@ -486,9 +487,11 @@ const UploadResource = () => {
         </select>
     );
     
+    const isTutor = user?.role === 'TUTOR' || user?.role === 'tutor' || user?.userType === 'TUTOR' || user?.userType === 'tutor';
+
     return (
         <div className="dashboard">
-            <StudentSidebar user={user} />
+            {isTutor ? <TutorSidebar user={user} /> : <StudentSidebar user={user} />}
             <div className="main-content">
                 <div className="ur-page-header">
                     <div>

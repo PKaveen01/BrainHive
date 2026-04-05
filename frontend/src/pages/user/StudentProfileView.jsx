@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import StudentSidebar from '../../components/common/StudentSidebar';
 import './Profile.css';
 
 const API_BASE = 'http://localhost:8080/api';
 
 const StudentProfileView = () => {
     const navigate = useNavigate();
+    const [user] = useState(() => authService.getCurrentUser());
     const [studentData, setStudentData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,10 +60,15 @@ const StudentProfileView = () => {
 
     if (loading) {
         return (
-            <div className="profile-container">
-                <div className="profile-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading profile...</p>
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -68,10 +76,15 @@ const StudentProfileView = () => {
 
     if (error) {
         return (
-            <div className="profile-container">
-                <div className="profile-error">
-                    <p>⚠️ {error}</p>
-                    <button onClick={fetchStudentProfile} className="btn-save">Retry</button>
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-error">
+                            <p>⚠️ {error}</p>
+                            <button onClick={fetchStudentProfile} className="btn-save">Retry</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -80,7 +93,10 @@ const StudentProfileView = () => {
     if (!studentData) return null;
 
     return (
-        <div className="profile-container">
+        <div className="dashboard">
+            <StudentSidebar user={user} />
+            <div className="main-content">
+            <div className="profile-container">
             <div className="profile-header">
                 <button className="back-button" onClick={() => navigate('/dashboard/student')}>
                     ← Back to Dashboard
@@ -212,6 +228,8 @@ const StudentProfileView = () => {
                         </p>
                     </div>
                 )}
+            </div>
+        </div>
             </div>
         </div>
     );

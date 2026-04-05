@@ -107,7 +107,7 @@ const StudentSidebar = ({ user, activeTab, onTabChange }) => {
                             className={activeTab === 'lectures' ? 'active' : ''}
                             onClick={() => {
                                 if (onTabChange) onTabChange('lectures');
-                                else navigate('/dashboard/student');
+                                else navigate('/dashboard/student', { state: { activeTab: 'lectures' } });
                             }}
                         >
                             <span>🎓</span> Lectures

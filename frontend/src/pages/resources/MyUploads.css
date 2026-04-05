@@ -580,6 +580,8 @@
     overflow: hidden;
     animation: mu-slideUp 0.3s ease;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .mu-modal-large {
@@ -592,6 +594,7 @@
     align-items: center;
     padding: 1.5rem 1.5rem 0.5rem 1.5rem;
     border-bottom: 2px solid #f1f5f9;
+    flex-shrink: 0;
 }
 
 .mu-modal-header h3 {
@@ -625,6 +628,7 @@
 .mu-modal-body {
     padding: 1.5rem;
     overflow-y: auto;
+    flex: 1;
 }
 
 .mu-modal-subtitle {
@@ -646,6 +650,7 @@
     gap: 0.75rem;
     padding: 1rem 1.5rem 1.5rem 1.5rem;
     border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
 }
 
 /* Form Styles */

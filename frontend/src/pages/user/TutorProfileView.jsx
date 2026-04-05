@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import TutorSidebar from '../peerhelp/TutorSidebar';
 import './Profile.css';
 
 const API_BASE = 'http://localhost:8080/api';
 
 const TutorProfileView = () => {
     const navigate = useNavigate();
+    const [user] = useState(() => authService.getCurrentUser());
     const [tutorData, setTutorData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -40,10 +43,15 @@ const TutorProfileView = () => {
 
     if (loading) {
         return (
-            <div className="profile-container">
-                <div className="profile-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading profile...</p>
+            <div className="dashboard">
+                <TutorSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -51,10 +59,15 @@ const TutorProfileView = () => {
 
     if (error) {
         return (
-            <div className="profile-container">
-                <div className="profile-error">
-                    <p>⚠️ {error}</p>
-                    <button onClick={fetchTutorProfile} className="btn-save">Retry</button>
+            <div className="dashboard">
+                <TutorSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-error">
+                            <p>⚠️ {error}</p>
+                            <button onClick={fetchTutorProfile} className="btn-save">Retry</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -67,7 +80,10 @@ const TutorProfileView = () => {
     const isVerified = verificationStatus === 'APPROVED';
 
     return (
-        <div className="profile-container">
+        <div className="dashboard">
+            <TutorSidebar user={user} />
+            <div className="main-content">
+            <div className="profile-container">
             <div className="profile-header">
                 <button className="back-button" onClick={() => navigate('/dashboard/tutor')}>
                     ← Back to Dashboard
@@ -198,6 +214,8 @@ const TutorProfileView = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
             </div>
         </div>
     );
