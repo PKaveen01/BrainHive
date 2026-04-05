@@ -13,6 +13,7 @@ import com.brainhive.modules.user.dto.StudentRegistrationRequest;
 import com.brainhive.modules.user.dto.TutorRegistrationRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -50,6 +51,23 @@ public class UserService {
             // Block SUSPENDED accounts
             if ("SUSPENDED".equals(user.getAccountStatus())) {
                 return new LoginResponseDTO(false, "Your account has been suspended. Please contact an administrator.", null, null, null, null);
+            }
+
+            // Block TERMINATED accounts (check if termination period has expired first)
+            if ("TERMINATED".equals(user.getAccountStatus())) {
+                if (user.getTerminatedUntil() != null && LocalDateTime.now().isAfter(user.getTerminatedUntil())) {
+                    // Termination period has expired — auto-reactivate the account
+                    user.setAccountStatus("ACTIVE");
+                    user.setTerminatedUntil(null);
+                    userRepository.save(user);
+                } else {
+                    String until = user.getTerminatedUntil() != null
+                            ? " until " + user.getTerminatedUntil().toLocalDate()
+                            : "";
+                    return new LoginResponseDTO(false,
+                            "Your account has been terminated" + until + ". Please contact an administrator.",
+                            null, null, null, null);
+                }
             }
 
             // Store user in session
