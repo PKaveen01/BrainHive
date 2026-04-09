@@ -60,6 +60,11 @@ public class HelpRequest {
     @JoinColumn(name = "assigned_tutor_id")
     private User assignedTutor;
 
+    /** When set, this help request is tied to a specific lecture (conversation with that lecture's tutor). */
+    @ManyToOne
+    @JoinColumn(name = "lecture_id")
+    private Lecture lecture;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -107,6 +112,9 @@ public class HelpRequest {
 
     public User getAssignedTutor() { return assignedTutor; }
     public void setAssignedTutor(User assignedTutor) { this.assignedTutor = assignedTutor; }
+
+    public Lecture getLecture() { return lecture; }
+    public void setLecture(Lecture lecture) { this.lecture = lecture; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

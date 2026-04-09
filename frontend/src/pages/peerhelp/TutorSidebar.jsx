@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import './TutorSidebar.css';
 
 const NAV_ITEMS = [
     { path: '/dashboard/tutor',            icon: '🏠', label: 'Overview'          },
@@ -40,7 +41,7 @@ const TutorSidebar = ({ user }) => {
     const displayName = user?.name || user?.email?.split('@')[0] || 'Tutor';
 
     return (
-        <div className="sidebar">
+        <aside className="sidebar tutor-sidebar">
             <div className="sidebar-logo">🧠 BrainHive</div>
 
             <div className="sidebar-user">
@@ -70,7 +71,7 @@ const TutorSidebar = ({ user }) => {
                 </div>
 
                 <div className="nav-section">
-                    <h3>📚 Resources</h3>
+                    <h3>Resources</h3>
                     <ul>
                         {RESOURCE_NAV_ITEMS.map(({ path, icon, label }) => (
                             <li
@@ -85,7 +86,7 @@ const TutorSidebar = ({ user }) => {
                 </div>
 
                 <div className="nav-section">
-                    <h3>⚙️ Settings</h3>
+                    <h3>Settings</h3>
                     <ul>
                         <li
                             className={
@@ -103,7 +104,7 @@ const TutorSidebar = ({ user }) => {
                     </ul>
                 </div>
             </nav>
-        </div>
+        </aside>
     );
 };
 

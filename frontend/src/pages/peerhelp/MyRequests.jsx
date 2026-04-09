@@ -23,6 +23,10 @@ const statusIcons = {
     REJECTED: '🚫'
 };
 
+const canConversation = (req) => (
+    !!req.assignedTutorId && ['APPROVED', 'COMPLETED', 'RATED'].includes(req.status)
+);
+
 const MyRequests = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -30,12 +34,17 @@ const MyRequests = () => {
     const [sessions, setSessions] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [requestView, setRequestView] = useState('requests'); // requests | conversations
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [cancellingId, setCancellingId] = useState(null);
     const [ratingModal, setRatingModal] = useState({ show: false, requestId: null, sessionId: null });
     const [rating, setRating] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
     const [ratingLoading, setRatingLoading] = useState(false);
+    const [convOpenId, setConvOpenId] = useState(null);
+    const [convMessages, setConvMessages] = useState({});
+    const [convDraft, setConvDraft] = useState({});
+    const [convSending, setConvSending] = useState(null);
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -102,6 +111,8 @@ const MyRequests = () => {
     };
 
     const filtered = filterStatus === 'ALL' ? requests : requests.filter(r => r.status === filterStatus);
+    const conversationRequests = requests.filter(canConversation);
+    const visibleRequests = requestView === 'conversations' ? conversationRequests : filtered;
     const statuses = ['ALL', 'PENDING', 'APPROVED', 'COMPLETED', 'RATED', 'CANCELLED'];
 
     const fmt = (dt) => {
@@ -109,13 +120,47 @@ const MyRequests = () => {
         return new Date(dt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
     };
 
+    const loadConv = async (requestId) => {
+        try {
+            const res = await api.get(`/peerhelp/requests/${requestId}/messages`);
+            setConvMessages((prev) => ({ ...prev, [requestId]: res.data?.data || [] }));
+        } catch {
+            setConvMessages((prev) => ({ ...prev, [requestId]: [] }));
+        }
+    };
+
+    const toggleConv = (req) => {
+        if (!canConversation(req)) return;
+        if (convOpenId === req.id) {
+            setConvOpenId(null);
+            return;
+        }
+        setConvOpenId(req.id);
+        loadConv(req.id);
+    };
+
+    const sendConvStudent = async (requestId) => {
+        const body = (convDraft[requestId] || '').trim();
+        if (!body) return;
+        try {
+            setConvSending(requestId);
+            await api.post(`/peerhelp/requests/${requestId}/messages`, { body });
+            setConvDraft((p) => ({ ...p, [requestId]: '' }));
+            await loadConv(requestId);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to send');
+        } finally {
+            setConvSending(null);
+        }
+    };
+
     return (
         <div className="dashboard">
             <StudentSidebar user={user} />
-            <div className="main-content">
+            <div className="main-content peerhelp-main">
                 <div className="page-header">
                     <div>
-                        <h1>📋 My Help Requests</h1>
+                        <h1>My Help Requests</h1>
                         <p className="page-subtitle">Track your submitted help requests and session details</p>
                     </div>
                     <button className="btn-primary" onClick={() => navigate('/request-help')}>
@@ -123,33 +168,61 @@ const MyRequests = () => {
                     </button>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="filter-tabs">
-                    {statuses.map(s => (
-                        <button
-                            key={s}
-                            className={`filter-tab ${filterStatus === s ? 'active' : ''}`}
-                            onClick={() => setFilterStatus(s)}
-                        >
-                            {s === 'ALL' ? `All (${requests.length})` : `${statusIcons[s] || ''} ${s} (${requests.filter(r => r.status === s).length})`}
-                        </button>
-                    ))}
+                <div className="request-view-tabs">
+                    <button
+                        type="button"
+                        className={`request-view-tab ${requestView === 'requests' ? 'active' : ''}`}
+                        onClick={() => setRequestView('requests')}
+                    >
+                        Requests
+                    </button>
+                    <button
+                        type="button"
+                        className={`request-view-tab ${requestView === 'conversations' ? 'active' : ''}`}
+                        onClick={() => setRequestView('conversations')}
+                    >
+                        Conversations ({conversationRequests.length})
+                    </button>
                 </div>
 
-                {loading && <div className="loading-state"><div className="spinner"></div><p>Loading your requests...</p></div>}
-                {error && <div className="alert alert-error">⚠️ {error} <button onClick={fetchRequests} className="retry-btn">Retry</button></div>}
+                {requestView === 'requests' && (
+                    <div className="filter-tabs">
+                        {statuses.map(s => (
+                            <button
+                                key={s}
+                                className={`filter-tab ${filterStatus === s ? 'active' : ''}`}
+                                onClick={() => setFilterStatus(s)}
+                            >
+                                {s === 'ALL' ? `All (${requests.length})` : `${statusIcons[s] || ''} ${s} (${requests.filter(r => r.status === s).length})`}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-                {!loading && !error && filtered.length === 0 && (
+                {loading && <div className="loading-state"><div className="spinner"></div><p>Loading your requests...</p></div>}
+                {error && <div className="alert alert-error">{error} <button onClick={fetchRequests} className="retry-btn">Retry</button></div>}
+
+                {!loading && !error && visibleRequests.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-icon">🙋</div>
-                        <h3>{filterStatus === 'ALL' ? "No help requests yet" : `No ${filterStatus.toLowerCase()} requests`}</h3>
-                        <p>Need help with a subject? Submit your first request!</p>
-                        <button className="btn-primary" onClick={() => navigate('/request-help')}>Request Help</button>
+                        <h3>
+                            {requestView === 'conversations'
+                                ? 'No conversation threads yet'
+                                : (filterStatus === 'ALL' ? 'No help requests yet' : `No ${filterStatus.toLowerCase()} requests`)}
+                        </h3>
+                        <p>
+                            {requestView === 'conversations'
+                                ? 'Accept a tutor response first, then continue the discussion here.'
+                                : 'Need help with a subject? Submit your first request!'}
+                        </p>
+                        {requestView !== 'conversations' && (
+                            <button className="btn-primary" onClick={() => navigate('/request-help')}>Request Help</button>
+                        )}
                     </div>
                 )}
 
                 <div className="requests-list">
-                    {filtered.map(req => {
+                    {visibleRequests.map(req => {
                         const session = sessions[req.id];
                         return (
                             <div key={req.id} className="request-card">
@@ -166,31 +239,63 @@ const MyRequests = () => {
                                 <p className="request-desc">{req.description}</p>
 
                                 <div className="request-meta">
-                                    <span>🔥 Urgency: {req.urgencyLevel}/5</span>
-                                    <span>⏱ Duration: {req.estimatedDuration} min</span>
-                                    <span>📅 Preferred: {fmt(req.preferredDateTime)}</span>
-                                    <span>🕐 Submitted: {fmt(req.createdAt)}</span>
+                                    <span>Urgency: {req.urgencyLevel}/5</span>
+                                    <span>Duration: {req.estimatedDuration} min</span>
+                                    <span>Preferred: {fmt(req.preferredDateTime)}</span>
+                                    <span>Submitted: {fmt(req.createdAt)}</span>
                                 </div>
 
                                 {req.assignedTutorName && (
                                     <div className="tutor-assigned">
-                                        <span>👨‍🏫 Tutor: <strong>{req.assignedTutorName}</strong></span>
+                                        <span>Tutor: <strong>{req.assignedTutorName}</strong></span>
+                                    </div>
+                                )}
+
+                                {canConversation(req) && (
+                                    <div className="lecture-req-conv-wrap">
+                                        <button type="button" className="lecture-req-conv-toggle" onClick={() => toggleConv(req)}>
+                                            {convOpenId === req.id ? 'Hide' : 'View'} conversation with tutor
+                                            {req.lectureTitle ? ` · ${req.lectureTitle}` : ''}
+                                        </button>
+                                        {convOpenId === req.id && (
+                                            <div className="lecture-req-conv-panel">
+                                                <div className="lecture-convo-messages">
+                                                    {(convMessages[req.id] || []).map((m) => (
+                                                        <div key={m.id} className={`lecture-convo-bubble ${m.senderRole === 'STUDENT' ? 'is-mine' : 'is-theirs'}`}>
+                                                            <span className="lecture-convo-who">{m.senderName}</span>
+                                                            <p>{m.body}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="lecture-req-conv-compose">
+                                                    <textarea
+                                                        rows={2}
+                                                        placeholder="Message your tutor..."
+                                                        value={convDraft[req.id] || ''}
+                                                        onChange={(e) => setConvDraft((p) => ({ ...p, [req.id]: e.target.value }))}
+                                                    />
+                                                    <button type="button" className="btn-primary" onClick={() => sendConvStudent(req.id)} disabled={convSending === req.id}>
+                                                        {convSending === req.id ? 'Sending…' : 'Send'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 {session && (
                                     <div className="session-details">
-                                        <h4>📅 Session Details</h4>
+                                        <h4>Session Details</h4>
                                         <div className="session-meta">
-                                            <span>📅 Start: {fmt(session.scheduledStartTime)}</span>
-                                            <span>📅 End: {fmt(session.scheduledEndTime)}</span>
+                                            <span>Start: {fmt(session.scheduledStartTime)}</span>
+                                            <span>End: {fmt(session.scheduledEndTime)}</span>
                                             {session.meetingLink && (
                                                 <a href={session.meetingLink} target="_blank" rel="noreferrer" className="join-link">
-                                                    🔗 Join Session
+                                                    Join Session
                                                 </a>
                                             )}
                                         </div>
-                                        {session.notes && <p className="session-notes">📝 {session.notes}</p>}
+                                        {session.notes && <p className="session-notes">{session.notes}</p>}
                                     </div>
                                 )}
 
@@ -201,12 +306,12 @@ const MyRequests = () => {
                                             onClick={() => handleCancel(req.id)}
                                             disabled={cancellingId === req.id}
                                         >
-                                            {cancellingId === req.id ? 'Cancelling...' : '❌ Cancel'}
+                                            {cancellingId === req.id ? 'Cancelling...' : 'Cancel'}
                                         </button>
                                     )}
                                     {req.status === 'COMPLETED' && (
                                         <button className="btn-rate" onClick={() => setRatingModal({ show: true, requestId: req.id, sessionId: sessions[req.id]?.id || null })}>
-                                            ⭐ Rate Session
+                                            Rate Session
                                         </button>
                                     )}
                                 </div>
@@ -219,7 +324,7 @@ const MyRequests = () => {
                 {ratingModal.show && (
                     <div className="modal-overlay" onClick={() => setRatingModal({ show: false, requestId: null, sessionId: null })}>
                         <div className="modal" onClick={e => e.stopPropagation()}>
-                            <h3>⭐ Rate Your Session</h3>
+                            <h3>Rate Your Session</h3>
                             <div className="star-rating">
                                 {[1,2,3,4,5].map(s => (
                                     <button key={s} className={`star ${s <= rating ? 'filled' : ''}`} onClick={() => setRating(s)}>★</button>

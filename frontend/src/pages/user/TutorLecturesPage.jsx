@@ -99,54 +99,101 @@ const TutorLecturesPage = () => {
                 </div>
             )}
 
-            <div className="dashboard-grid">
+            <div className="dashboard-grid lecture-layout-grid">
                 {/* Create form */}
-                <div className="dashboard-card">
+                <div className="dashboard-card lecture-create-card">
                     <div className="card-header"><h2>Create New Lecture</h2></div>
-                    <form className="lecture-form" onSubmit={handleSubmit}>
-                        <label className="lecture-label">Subject *</label>
-                        <select value={form.subjectId} onChange={set('subjectId')}>
-                            <option value="">Select subject</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        {errors.subjectId && <p className="form-error">{errors.subjectId}</p>}
+                    <form className="lecture-form lecture-form-updated" onSubmit={handleSubmit}>
+                        <div className="lecture-field">
+                            <label className="lecture-label">Subject *</label>
+                            <select
+                                value={form.subjectId}
+                                onChange={set('subjectId')}
+                                style={{ fontSize: '0.92rem', minHeight: '40px' }}
+                            >
+                                <option value="">Select subject</option>
+                                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                            {errors.subjectId && <p className="form-error">{errors.subjectId}</p>}
+                        </div>
 
-                        <label className="lecture-label">Title *</label>
-                        <input type="text" value={form.title} onChange={set('title')}
-                            placeholder="e.g. Introduction to Binary Trees" />
-                        {errors.title && <p className="form-error">{errors.title}</p>}
+                        <div className="lecture-field">
+                            <label className="lecture-label">Title *</label>
+                            <input
+                                type="text"
+                                value={form.title}
+                                onChange={set('title')}
+                                placeholder="Enter lecture title (e.g. Introduction to Binary Trees)"
+                                style={{ fontSize: '0.92rem', minHeight: '40px' }}
+                            />
+                            {errors.title && <p className="form-error">{errors.title}</p>}
+                        </div>
 
-                        <label className="lecture-label">Description *</label>
-                        <textarea rows={4} value={form.description} onChange={set('description')}
-                            placeholder="What students will learn in this lecture" />
-                        {errors.description && <p className="form-error">{errors.description}</p>}
+                        <div className="lecture-field">
+                            <label className="lecture-label">Description *</label>
+                            <textarea
+                                rows={4}
+                                value={form.description}
+                                onChange={set('description')}
+                                placeholder="Write what students will learn, key topics, and outcomes"
+                                style={{ fontSize: '0.92rem', minHeight: '92px' }}
+                            />
+                            {errors.description && <p className="form-error">{errors.description}</p>}
+                        </div>
 
-                        <label className="lecture-label">Date & Time *</label>
-                        <input type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')} />
-                        {errors.scheduledAt && <p className="form-error">{errors.scheduledAt}</p>}
+                        <div className="lecture-field">
+                            <label className="lecture-label">Date & Time *</label>
+                            <input
+                                type="datetime-local"
+                                value={form.scheduledAt}
+                                onChange={set('scheduledAt')}
+                                style={{ fontSize: '0.92rem', minHeight: '40px' }}
+                            />
+                            {errors.scheduledAt && <p className="form-error">{errors.scheduledAt}</p>}
+                        </div>
 
-                        <label className="lecture-label">Duration (minutes) *</label>
-                        <input type="number" min="15" max="240" value={form.durationMinutes} onChange={set('durationMinutes')} />
-                        {errors.durationMinutes && <p className="form-error">{errors.durationMinutes}</p>}
+                        <div className="lecture-field">
+                            <label className="lecture-label">Duration (minutes) *</label>
+                            <input
+                                type="number"
+                                min="15"
+                                max="240"
+                                value={form.durationMinutes}
+                                onChange={set('durationMinutes')}
+                                placeholder="60"
+                                style={{ fontSize: '0.92rem', minHeight: '40px' }}
+                            />
+                            <small className="header-subtitle" style={{ marginTop: '-2px' }}>
+                                Recommended: 45 to 90 minutes
+                            </small>
+                            {errors.durationMinutes && <p className="form-error">{errors.durationMinutes}</p>}
+                        </div>
 
-                        <label className="lecture-label">Meeting Link (optional)</label>
-                        <input type="url" value={form.meetingLink} onChange={set('meetingLink')}
-                            placeholder="https://meet.google.com/..." />
-                        {errors.meetingLink && <p className="form-error">{errors.meetingLink}</p>}
+                        <div className="lecture-field">
+                            <label className="lecture-label">Meeting Link (optional)</label>
+                            <input
+                                type="url"
+                                value={form.meetingLink}
+                                onChange={set('meetingLink')}
+                                placeholder="Paste Google Meet / Zoom link"
+                                style={{ fontSize: '0.92rem', minHeight: '40px' }}
+                            />
+                            {errors.meetingLink && <p className="form-error">{errors.meetingLink}</p>}
+                        </div>
 
-                        <button type="submit" className="btn-save" disabled={submitting} style={{ marginTop: '0.5rem', width: '100%' }}>
+                        <button type="submit" className="btn-save lecture-submit-btn" disabled={submitting}>
                             {submitting ? 'Creating...' : '+ Create Lecture'}
                         </button>
                     </form>
                 </div>
 
                 {/* My lectures list */}
-                <div className="dashboard-card">
+                <div className="dashboard-card lecture-list-card">
                     <div className="card-header">
-                        <h2>My Lectures ({lectures.length})</h2>
+                        <h2>All Lectures ({lectures.length})</h2>
                         <button className="view-all" onClick={fetchData} disabled={loading}>↻ Refresh</button>
                     </div>
-                    <div className="card-content">
+                    <div className="card-content lecture-list-content">
                         {loading && <p className="header-subtitle">Loading lectures...</p>}
                         {!loading && lectures.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -155,23 +202,23 @@ const TutorLecturesPage = () => {
                             </div>
                         )}
                         {lectures.map((lec) => (
-                            <div key={lec.id} className="session-item">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <h3 style={{ margin: '0 0 4px' }}>{lec.title}</h3>
-                                        <p style={{ margin: '0 0 4px', color: '#2563eb', fontWeight: 500 }}>{lec.subjectName}</p>
-                                        <p style={{ margin: '0 0 6px', color: '#64748b', fontSize: '0.9rem' }}>{lec.description}</p>
-                                        <span className="session-time">📅 {lec.scheduledAt} · {lec.durationMinutes} min</span>
-                                    </div>
+                            <article key={lec.id} className="session-item lecture-item-updated">
+                                <div className="lecture-item-top">
+                                    <h3>{lec.title}</h3>
+                                    <span className="lecture-subject-chip">{lec.subjectName || 'General'}</span>
+                                </div>
+                                <p className="lecture-description-text">{lec.description || 'No description provided.'}</p>
+                                <div className="lecture-meta-row">
+                                    <span className="session-time">{lec.scheduledAt}</span>
+                                    <span className="lecture-duration-chip">{lec.durationMinutes} min</span>
                                 </div>
                                 {lec.meetingLink && (
                                     <a href={lec.meetingLink} target="_blank" rel="noreferrer"
-                                        className="btn-accept"
-                                        style={{ display: 'inline-block', marginTop: '0.5rem', textDecoration: 'none', padding: '6px 14px', fontSize: '0.85rem' }}>
-                                        🔗 Join
+                                        className="join-link lecture-join-link">
+                                        Join meeting
                                     </a>
                                 )}
-                            </div>
+                            </article>
                         ))}
                     </div>
                 </div>

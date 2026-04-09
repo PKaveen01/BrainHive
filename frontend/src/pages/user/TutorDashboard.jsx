@@ -9,6 +9,7 @@ const TutorDashboard = () => {
     const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState(null);
     const [stats, setStats] = useState({ sessions: 0, requests: 0, lectures: 0 });
+    const [receivedRatings, setReceivedRatings] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,8 +21,14 @@ const TutorDashboard = () => {
             api.get('/peerhelp/requests/available'),
             api.get('/peerhelp/sessions/upcoming'),
             api.get('/peerhelp/lectures/my'),
-        ]).then(([infoRes, reqRes, sessRes, lectRes]) => {
+            api.get('/peerhelp/ratings/received'),
+        ]).then(([infoRes, reqRes, sessRes, lectRes, ratingsRes]) => {
             if (infoRes.status === 'fulfilled') setDashboardData(infoRes.value.data);
+            if (ratingsRes.status === 'fulfilled') {
+                const ratingData = ratingsRes.value?.data?.data || [];
+                const sorted = [...ratingData].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                setReceivedRatings(sorted);
+            }
             setStats({
                 requests: (infoRes.status === 'fulfilled' ? reqRes.value?.data?.data?.length : 0) || 0,
                 sessions: (sessRes.status === 'fulfilled' ? sessRes.value?.data?.data?.length : 0) || 0,
@@ -38,6 +45,14 @@ const TutorDashboard = () => {
 
     const verificationStatus = dashboardData?.verificationStatus || 'PENDING';
     const isAvailable = dashboardData?.isAvailable !== false;
+
+    const renderStars = (rating) => {
+        const value = Number(rating);
+        const rounded = Number.isFinite(value) ? Math.max(0, Math.min(5, Math.round(value))) : 0;
+        return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
+    };
+
+    const recentRatings = receivedRatings.slice(0, 5);
 
     const quickLinks = [
         { path: '/dashboard/tutor/requests',    icon: '🙋', label: 'Help Requests',      count: stats.requests,  color: '#2563eb' },
@@ -110,6 +125,28 @@ const TutorDashboard = () => {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            <div className="dashboard-card tutor-rating-card" style={{ marginTop: '1.5rem' }}>
+                <div className="card-header" style={{ marginBottom: '0.75rem' }}>
+                    <h2>Latest Student Ratings</h2>
+                    <button className="view-all" onClick={() => navigate('/dashboard/tutor/ratings')}>View all</button>
+                </div>
+                {recentRatings.length === 0 ? (
+                    <p className="header-subtitle" style={{ margin: 0 }}>No ratings yet. Complete sessions to receive student feedback.</p>
+                ) : (
+                    <div className="tutor-rating-list">
+                        {recentRatings.map((item) => (
+                            <div key={item.id} className="tutor-rating-item">
+                                <div className="tutor-rating-top">
+                                    <strong>{item.studentName || 'Student'}</strong>
+                                    <span className="tutor-rating-earned">{renderStars(item.rating)} ({item.rating}/5)</span>
+                                </div>
+                                <p className="tutor-rating-message">{item.feedback || 'No message provided.'}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Profile shortcut */}

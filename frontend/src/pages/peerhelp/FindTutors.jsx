@@ -15,16 +15,20 @@ const FindTutors = () => {
     const [selectedSubject, setSelectedSubject] = useState('');
     const [selectedSubjectName, setSelectedSubjectName] = useState('');
     const [searched, setSearched] = useState(false);
+    const [showingAllTutors, setShowingAllTutors] = useState(false);
     const [requestModal, setRequestModal] = useState({ show: false, tutor: null });
     const [requestForm, setRequestForm] = useState({ topic: '', description: '', urgencyLevel: 3, estimatedDuration: 60, preferredDateTime: '' });
     const [requestLoading, setRequestLoading] = useState(false);
     const [requestSuccess, setRequestSuccess] = useState('');
+    const [ratingsModal, setRatingsModal] = useState({ show: false, tutor: null, ratings: [], loading: false });
+    const [rateModal, setRateModal] = useState({ show: false, tutor: null, rating: 5, message: '', loading: false });
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
         if (!currentUser) { navigate('/login'); return; }
         setUser(currentUser);
         fetchSubjects();
+        fetchAllTutors();
     }, [navigate]);
 
     const fetchSubjects = async () => {
@@ -34,14 +38,14 @@ const FindTutors = () => {
         } catch (e) { console.error(e); }
     };
 
-    const handleSearch = async () => {
-        if (!selectedSubject) { setError('Please select a subject first.'); return; }
+    const fetchAllTutors = async () => {
         setLoading(true);
         setError('');
         setSearched(true);
         try {
-            const res = await api.get(`/peerhelp/requests/match/subject/${selectedSubject}?limit=20`);
+            const res = await api.get('/peerhelp/requests/match/all?limit=200');
             setTutors(res.data?.data || res.data || []);
+            setShowingAllTutors(true);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load tutors. Please try again.');
             setTutors([]);
@@ -50,13 +54,90 @@ const FindTutors = () => {
         }
     };
 
+    const fetchTutorsBySubject = async (subjectId, subjectName = '') => {
+        if (!subjectId) {
+            fetchAllTutors();
+            return;
+        }
+        setLoading(true);
+        setError('');
+        setSearched(true);
+        try {
+            const res = await api.get(`/peerhelp/requests/match/subject/${subjectId}?limit=50`);
+            const matched = res.data?.data || res.data || [];
+            if (matched.length > 0) {
+                setTutors(matched);
+                setShowingAllTutors(false);
+            } else {
+                const allRes = await api.get('/peerhelp/requests/match/all?limit=200');
+                setTutors(allRes.data?.data || allRes.data || []);
+                setShowingAllTutors(true);
+                setError(`No tutors found for ${subjectName || 'this subject'}. Showing all tutors in database.`);
+            }
+            if (subjectName) setSelectedSubjectName(subjectName);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to load tutors. Please try again.');
+            setTutors([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!selectedSubject) { setError('Please select a subject first.'); return; }
+        await fetchTutorsBySubject(selectedSubject, selectedSubjectName);
+    };
+
     const handleSubjectChange = (e) => {
-        setSelectedSubject(e.target.value);
-        const found = subjects.find(s => String(s.id) === e.target.value);
+        const value = e.target.value;
+        setSelectedSubject(value);
+        const found = subjects.find(s => String(s.id) === value);
         setSelectedSubjectName(found?.name || '');
         setError('');
-        setSearched(false);
-        setTutors([]);
+        fetchTutorsBySubject(value, found?.name || '');
+    };
+
+    const openRatingsModal = async (tutor) => {
+        setRatingsModal({ show: true, tutor, ratings: [], loading: true });
+        try {
+            const tid = tutor.tutorId || tutor.id;
+            const res = await api.get(`/peerhelp/ratings/tutor/${tid}`);
+            setRatingsModal({ show: true, tutor, ratings: res.data?.data || [], loading: false });
+        } catch {
+            setRatingsModal({ show: true, tutor, ratings: [], loading: false });
+        }
+    };
+
+    const openRateModal = (tutor) => {
+        setRateModal({ show: true, tutor, rating: 5, message: '', loading: false });
+    };
+
+    const submitTutorRating = async () => {
+        if (!rateModal.tutor) return;
+        try {
+            setRateModal((prev) => ({ ...prev, loading: true }));
+            const tid = rateModal.tutor.tutorId || rateModal.tutor.id;
+            await api.post(`/peerhelp/ratings/tutor/${tid}/quick`, {
+                rating: rateModal.rating,
+                message: rateModal.message,
+                wouldRecommend: true
+            });
+            if (selectedSubject) {
+                await fetchTutorsBySubject(selectedSubject, selectedSubjectName);
+            } else {
+                await fetchAllTutors();
+            }
+            setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false });
+            await openRatingsModal(rateModal.tutor);
+        } catch (err) {
+            const apiMessage = err.response?.data?.message;
+            const validationData = err.response?.data?.data;
+            const detailedMessage = validationData && typeof validationData === 'object'
+                ? Object.values(validationData)[0]
+                : null;
+            alert(detailedMessage || apiMessage || 'Unable to submit tutor rating.');
+            setRateModal((prev) => ({ ...prev, loading: false }));
+        }
     };
 
     const openRequestModal = (tutor) => {
@@ -89,21 +170,39 @@ const FindTutors = () => {
     };
 
     const renderStars = (rating) => {
-        const r = rating || 0;
-        return '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r));
+        const numeric = Number(rating);
+        const rounded = Number.isFinite(numeric) ? Math.max(0, Math.min(5, Math.round(numeric))) : 0;
+        return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
     };
+
+    const renderInteractiveStars = (value, onSelect, label) => (
+        <div className="star-input" role="radiogroup" aria-label={label}>
+            {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                    key={n}
+                    type="button"
+                    className={`star-btn ${n <= value ? 'filled' : ''}`}
+                    onClick={() => onSelect(n)}
+                    aria-label={`${label} ${n} out of 5`}
+                    aria-pressed={n <= value}
+                >
+                    ★
+                </button>
+            ))}
+        </div>
+    );
 
     return (
         <div className="dashboard">
             <StudentSidebar user={user} />
-            <div className="main-content">
+            <div className="main-content peerhelp-main">
                 <div className="page-header">
                     <div>
-                        <h1>👨‍🏫 Find Tutors</h1>
-                        <p className="page-subtitle">Browse approved tutors matched to your subject</p>
+                        <h1>Find Tutors</h1>
+                        <p className="page-subtitle">Browse approved tutors matched to your selected subject</p>
                     </div>
                     <button className="btn-secondary" onClick={() => navigate('/request-help')}>
-                        🙋 Submit a Help Request
+                        Submit a Help Request
                     </button>
                 </div>
 
@@ -121,10 +220,10 @@ const FindTutors = () => {
                             ))}
                         </select>
                         <button className="btn-primary search-btn" onClick={handleSearch} disabled={loading || !selectedSubject}>
-                            {loading ? 'Searching...' : '🔍 Find Tutors'}
+                            {loading ? 'Searching...' : 'Find Tutors'}
                         </button>
                     </div>
-                    {error && <div className="alert alert-error">⚠️ {error}</div>}
+                    {error && <div className="alert alert-error">{error}</div>}
                 </div>
 
                 {/* Results */}
@@ -141,7 +240,10 @@ const FindTutors = () => {
 
                 {!loading && tutors.length > 0 && (
                     <>
-                        <p className="results-count">Found <strong>{tutors.length}</strong> tutor{tutors.length !== 1 ? 's' : ''} for <strong>{selectedSubjectName}</strong></p>
+                        <p className="results-count">
+                            Found <strong>{tutors.length}</strong> tutor{tutors.length !== 1 ? 's' : ''}
+                            {showingAllTutors ? ' in database' : <> for <strong>{selectedSubjectName}</strong></>}
+                        </p>
                         <div className="tutors-grid">
                             {tutors.map(tutor => (
                                 <div key={tutor.id} className="tutor-card">
@@ -151,8 +253,8 @@ const FindTutors = () => {
                                             <h3>{tutor.tutorName || tutor.name}</h3>
                                             <span className="tutor-subject">{tutor.subjectName || selectedSubjectName}</span>
                                         </div>
-                                        <div className="tutor-availability" style={{ background: tutor.isAvailable ? '#dcfce7' : '#fee2e2', color: tutor.isAvailable ? '#16a34a' : '#dc2626' }}>
-                                            {tutor.isAvailable ? '🟢 Available' : '🔴 Busy'}
+                                        <div className={`tutor-availability ${tutor.isAvailable ? 'available' : 'unavailable'}`}>
+                                            {tutor.isAvailable ? 'Available' : 'Unavailable'}
                                         </div>
                                     </div>
 
@@ -173,15 +275,23 @@ const FindTutors = () => {
                                         </div>
                                     </div>
 
-                                    {tutor.qualification && <p className="tutor-qual">🎓 {tutor.qualification}</p>}
+                                    {tutor.qualification && <p className="tutor-qual">{tutor.qualification}</p>}
 
                                     <button
                                         className="btn-primary w-full"
                                         onClick={() => openRequestModal(tutor)}
                                         disabled={!tutor.isAvailable}
                                     >
-                                        {tutor.isAvailable ? '📩 Request This Tutor' : 'Currently Unavailable'}
+                                        {tutor.isAvailable ? 'Request This Tutor' : 'Currently Unavailable'}
                                     </button>
+                                    <div className="tutor-card-actions">
+                                        <button className="btn-secondary w-full" onClick={() => openRatingsModal(tutor)}>
+                                            View Ratings
+                                        </button>
+                                        <button className="btn-secondary w-full" onClick={() => openRateModal(tutor)}>
+                                            Rate Tutor
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -189,7 +299,7 @@ const FindTutors = () => {
                 )}
 
                 {/* Not-yet-searched state */}
-                {!searched && !loading && (
+                {!selectedSubject && !loading && (
                     <div className="empty-state">
                         <div className="empty-icon">🔍</div>
                         <h3>Select a subject to find tutors</h3>
@@ -202,7 +312,7 @@ const FindTutors = () => {
                     <div className="modal-overlay" onClick={() => setRequestModal({ show: false, tutor: null })}>
                         <div className="modal modal-large" onClick={e => e.stopPropagation()}>
                             <div className="modal-header">
-                                <h3>📩 Request Help from {requestModal.tutor?.tutorName || requestModal.tutor?.name}</h3>
+                                <h3>Request Help from {requestModal.tutor?.tutorName || requestModal.tutor?.name}</h3>
                                 <button className="modal-close" onClick={() => setRequestModal({ show: false, tutor: null })}>×</button>
                             </div>
 
@@ -239,11 +349,85 @@ const FindTutors = () => {
                                     <div className="modal-actions">
                                         <button className="btn-secondary" onClick={() => setRequestModal({ show: false, tutor: null })}>Cancel</button>
                                         <button className="btn-primary" onClick={handleDirectRequest} disabled={requestLoading}>
-                                            {requestLoading ? 'Submitting...' : '🚀 Submit Request'}
+                                            {requestLoading ? 'Submitting...' : 'Submit Request'}
                                         </button>
                                     </div>
                                 </>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {ratingsModal.show && (
+                    <div className="modal-overlay" onClick={() => setRatingsModal({ show: false, tutor: null, ratings: [], loading: false })}>
+                        <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>{ratingsModal.tutor?.tutorName || ratingsModal.tutor?.name} Ratings</h3>
+                                <button className="modal-close" onClick={() => setRatingsModal({ show: false, tutor: null, ratings: [], loading: false })}>×</button>
+                            </div>
+                            {!ratingsModal.loading && ratingsModal.ratings.length > 0 && (
+                                <div className="rating-summary">
+                                    <span className="rating-summary-stars">
+                                        {renderStars(
+                                            ratingsModal.ratings.reduce((sum, item) => sum + (item.rating || 0), 0) / ratingsModal.ratings.length
+                                        )}
+                                    </span>
+                                    <span className="rating-summary-text">
+                                        {(
+                                            ratingsModal.ratings.reduce((sum, item) => sum + (item.rating || 0), 0) / ratingsModal.ratings.length
+                                        ).toFixed(1)} / 5 from {ratingsModal.ratings.length} review{ratingsModal.ratings.length !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                            )}
+                            {ratingsModal.loading && <p>Loading ratings...</p>}
+                            {!ratingsModal.loading && ratingsModal.ratings.length === 0 && (
+                                <p>No ratings yet for this tutor.</p>
+                            )}
+                            {!ratingsModal.loading && ratingsModal.ratings.length > 0 && (
+                                <div className="ratings-list">
+                                    {ratingsModal.ratings.map((r) => (
+                                        <div key={r.id} className="rating-item">
+                                            <div className="rating-item-top">
+                                                <strong>{r.studentName || 'Student'}</strong>
+                                                <span>{renderStars(r.rating)} ({r.rating}/5)</span>
+                                            </div>
+                                            {r.feedback && <p>{r.feedback}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {rateModal.show && (
+                    <div className="modal-overlay" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>
+                        <div className="modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>Rate {rateModal.tutor?.tutorName || rateModal.tutor?.name}</h3>
+                                <button className="modal-close" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>×</button>
+                            </div>
+                            <div className="form-group">
+                                <label>Rating</label>
+                                {renderInteractiveStars(rateModal.rating, (n) => setRateModal((prev) => ({ ...prev, rating: n })), 'Overall rating')}
+                                <div className="rating-inline-value">{rateModal.rating} / 5</div>
+                            </div>
+                            <div className="form-group">
+                                <label>Rating Message</label>
+                                <textarea
+                                    rows={4}
+                                    value={rateModal.message}
+                                    onChange={(e) => setRateModal((prev) => ({ ...prev, message: e.target.value }))}
+                                    placeholder="Write your feedback for this tutor..."
+                                    maxLength={1000}
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button className="btn-secondary" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>Cancel</button>
+                                <button className="btn-primary" onClick={submitTutorRating} disabled={rateModal.loading}>
+                                    {rateModal.loading ? 'Submitting...' : 'Submit Rating'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

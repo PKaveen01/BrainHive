@@ -23,6 +23,9 @@ public class HelpRequestResponseDTO {
     private Integer estimatedDuration;
     private Long assignedTutorId;
     private String assignedTutorName;
+    /** Present when this request is tied to a lecture (student–tutor conversation about that lecture). */
+    private Long lectureId;
+    private String lectureTitle;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +49,10 @@ public class HelpRequestResponseDTO {
         if (helpRequest.getAssignedTutor() != null) {
             dto.setAssignedTutorId(helpRequest.getAssignedTutor().getId());
             dto.setAssignedTutorName(helpRequest.getAssignedTutor().getFullName());
+        }
+        if (helpRequest.getLecture() != null) {
+            dto.setLectureId(helpRequest.getLecture().getId());
+            dto.setLectureTitle(helpRequest.getLecture().getTitle());
         }
         dto.setCreatedAt(helpRequest.getCreatedAt());
         dto.setUpdatedAt(helpRequest.getUpdatedAt());
@@ -91,6 +98,12 @@ public class HelpRequestResponseDTO {
 
     public String getAssignedTutorName() { return assignedTutorName; }
     public void setAssignedTutorName(String assignedTutorName) { this.assignedTutorName = assignedTutorName; }
+
+    public Long getLectureId() { return lectureId; }
+    public void setLectureId(Long lectureId) { this.lectureId = lectureId; }
+
+    public String getLectureTitle() { return lectureTitle; }
+    public void setLectureTitle(String lectureTitle) { this.lectureTitle = lectureTitle; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
