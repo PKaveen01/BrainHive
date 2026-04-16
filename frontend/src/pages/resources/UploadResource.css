@@ -1,5 +1,4 @@
 /* ====================== UploadResource.css ====================== */
-/* Unique namespace: ur (UploadResource) */
 
 .ur-container {
     display: flex;
@@ -9,7 +8,7 @@
 
 .ur-main-content {
     flex: 1;
-    padding: 2rem;
+    padding: 1.5rem;
     overflow-y: auto;
 }
 
@@ -18,56 +17,53 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #f1f5f9;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .ur-page-header h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 0.25rem;
 }
 
 .ur-page-subtitle {
-    color: #64748b;
-    font-size: 0.95rem;
+    color: #6b7280;
+    font-size: 0.875rem;
     margin: 0;
 }
 
 .ur-btn-secondary {
     background: white;
     color: #374151;
-    border: 1px solid #e2e8f0;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
-    font-size: 0.925rem;
+    border: 1px solid #d1d5db;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .ur-btn-secondary:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: #f9fafb;
+    border-color: #9ca3af;
 }
 
 /* Type Selector */
 .ur-type-selector {
     background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
+    border-radius: 0.5rem;
+    padding: 1rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
 }
 
 .ur-section-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #1e293b;
+    color: #111827;
     margin: 0 0 1rem;
 }
 
@@ -83,34 +79,38 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem;
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 0.75rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    color: #374151;
 }
 
 .ur-type-btn:hover {
-    transform: translateY(-2px);
-    border-color: #3b82f6;
+    border-color: #2563eb;
+    color: #2563eb;
+    background: #f9fafb;
 }
 
 .ur-type-btn.ur-active {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border-color: #3b82f6;
+    background: #eff6ff;
+    border-color: #2563eb;
     color: #2563eb;
 }
 
 .ur-type-icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    line-height: 1;
 }
 
 .ur-type-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
+    text-align: center;
 }
 
-/* Form Cards */
+/* Form */
 .ur-form {
     display: flex;
     flex-direction: column;
@@ -119,19 +119,18 @@
 
 .ur-form-card {
     background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    border: 1px solid #f1f5f9;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
 }
 
 .ur-card-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin: 0 0 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f1f5f9;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .ur-form-row {
@@ -144,33 +143,35 @@
 .ur-form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
     margin-bottom: 1rem;
 }
 
 .ur-form-label {
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     color: #374151;
 }
 
 .ur-form-input,
 .ur-form-select,
 .ur-form-textarea {
-    padding: 0.75rem 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
     font-size: 0.875rem;
     transition: all 0.2s ease;
     font-family: inherit;
+    background: white;
+    color: #111827;
 }
 
 .ur-form-input:focus,
 .ur-form-select:focus,
 .ur-form-textarea:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .ur-form-input.ur-error,
@@ -182,28 +183,35 @@
 .ur-error-text {
     color: #dc2626;
     font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: block;
 }
 
 .ur-input-hint {
     font-size: 0.7rem;
-    color: #94a3b8;
+    color: #6b7280;
     margin-top: 0.25rem;
+}
+
+.ur-form-textarea {
+    resize: vertical;
+    min-height: 100px;
 }
 
 /* File Dropzone */
 .ur-file-dropzone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 1rem;
-    padding: 2rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 2rem 1rem;
     text-align: center;
     transition: all 0.2s ease;
-    background: #f8fafc;
+    background: #f9fafb;
     cursor: pointer;
 }
 
 .ur-file-dropzone:hover {
-    border-color: #3b82f6;
-    background: #f1f5f9;
+    border-color: #2563eb;
+    background: #f8fafc;
 }
 
 .ur-file-dropzone.ur-error {
@@ -224,25 +232,47 @@
 
 .ur-upload-icon {
     font-size: 2rem;
+    line-height: 1;
+    display: inline-block;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #2563eb;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+}
+
+.ur-upload-icon::before,
+.ur-upload-icon::after {
+    display: none;
+    background: transparent !important;
 }
 
 .ur-dropzone-text {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: #374151;
     font-weight: 500;
+    margin: 0;
 }
 
 .ur-dropzone-hint {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #6b7280;
+    margin: 0;
 }
 
 .ur-selected-file {
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    background: #e2e8f0;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .ur-preview-section {
@@ -251,15 +281,17 @@
 }
 
 .ur-preview-title {
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
     margin-bottom: 0.5rem;
 }
 
 .ur-image-preview {
     max-width: 100%;
     max-height: 200px;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
 }
 
 /* Checkbox Group */
@@ -267,6 +299,7 @@
     display: flex;
     gap: 1rem;
     margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .ur-checkbox-label {
@@ -275,6 +308,7 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     cursor: pointer;
+    color: #374151;
 }
 
 .ur-checkbox-input {
@@ -285,13 +319,14 @@
 
 /* Validation Message */
 .ur-validation-message {
-    padding: 1rem;
-    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
     margin: 0.5rem 0;
+    font-size: 0.875rem;
 }
 
 .ur-validation-message.validating {
-    background: #fef3c7;
+    background: #fffbeb;
     color: #d97706;
     border: 1px solid #fde68a;
 }
@@ -317,8 +352,8 @@
 .ur-spinner-small {
     width: 1rem;
     height: 1rem;
-    border: 2px solid #e2e8f0;
-    border-top-color: #f59e0b;
+    border: 2px solid #e5e7eb;
+    border-top-color: #d97706;
     border-radius: 50%;
     animation: ur-spin 0.6s linear infinite;
 }
@@ -334,8 +369,9 @@
 /* Progress Bar */
 .ur-progress-card {
     background: white;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     padding: 1rem;
+    border: 1px solid #e5e7eb;
 }
 
 .ur-progress-header {
@@ -343,33 +379,36 @@
     justify-content: space-between;
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    color: #374151;
 }
 
 .ur-progress-track {
-    background: #e2e8f0;
-    border-radius: 1rem;
+    background: #e5e7eb;
+    border-radius: 999px;
     overflow: hidden;
     height: 0.5rem;
 }
 
 .ur-progress-fill {
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background: #2563eb;
     height: 100%;
     transition: width 0.3s ease;
-    border-radius: 1rem;
+    border-radius: 999px;
 }
 
 /* Guidelines */
 .ur-guidelines-section {
-    background: #f8fafc;
-    border-radius: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
 }
 
 .ur-guidelines-title {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
+    color: #111827;
     margin: 0 0 0.5rem;
 }
 
@@ -377,7 +416,7 @@
     margin: 0;
     padding-left: 1.25rem;
     font-size: 0.8rem;
-    color: #64748b;
+    color: #6b7280;
 }
 
 .ur-guidelines-list li {
@@ -387,40 +426,39 @@
 /* Form Actions */
 .ur-form-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     justify-content: flex-end;
 }
 
 .ur-cancel-btn,
 .ur-submit-btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: none;
 }
 
 .ur-cancel-btn {
     background: white;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
+    color: #374151;
+    border: 1px solid #d1d5db;
 }
 
 .ur-cancel-btn:hover {
-    background: #f8fafc;
+    background: #f9fafb;
+    border-color: #9ca3af;
 }
 
 .ur-submit-btn {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    background: #2563eb;
     color: white;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    border: none;
 }
 
 .ur-submit-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    background: #1d4ed8;
 }
 
 .ur-submit-btn:disabled {
@@ -433,199 +471,44 @@
     .ur-main-content {
         padding: 1rem;
     }
+
+    .ur-page-header {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .ur-page-header h1 {
+        font-size: 1.375rem;
+    }
+
     .ur-form-row {
         grid-template-columns: 1fr;
         gap: 0;
     }
+
     .ur-type-grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     }
+
     .ur-form-actions {
         flex-direction: column;
     }
+
     .ur-cancel-btn,
     .ur-submit-btn {
         width: 100%;
     }
 }
 
-
-/* Add to existing UploadResource.css */
-
-/* File Dropzone */
-.ur-file-dropzone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 1rem;
-    padding: 2rem;
-    text-align: center;
-    transition: all 0.2s ease;
-    background: #f8fafc;
-    cursor: pointer;
-}
-
-.ur-file-dropzone:hover {
-    border-color: #3b82f6;
-    background: #f1f5f9;
-    transform: translateY(-2px);
-}
-
-.ur-file-dropzone.ur-error {
-    border-color: #dc2626;
-    background: #fef2f2;
-}
-
-.ur-file-input {
-    display: none;
-}
-
-.ur-dropzone-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ur-upload-icon {
-    font-size: 3rem;
-    animation: ur-float 2s ease-in-out infinite;
-}
-
-@keyframes ur-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-.ur-dropzone-text {
-    font-size: 1rem;
-    color: #374151;
-    font-weight: 500;
-}
-
-.ur-dropzone-hint {
-    font-size: 0.8rem;
-    color: #94a3b8;
-}
-
-.ur-selected-file {
-    margin-top: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #dcfce7;
-    color: #166534;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ur-error-text {
-    color: #dc2626;
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-    display: block;
-}
-
-
-/* File Dropzone - Updated */
-.ur-file-dropzone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 1rem;
-    padding: 2rem;
-    text-align: center;
-    transition: all 0.2s ease;
-    background: #f8fafc;
-    cursor: pointer;
-}
-
-.ur-file-dropzone:hover {
-    border-color: #3b82f6;
-    background: #f1f5f9;
-    transform: translateY(-2px);
-}
-
-.ur-file-dropzone.ur-error {
-    border-color: #dc2626;
-    background: #fef2f2;
-}
-
-.ur-file-input {
-    display: none;
-}
-
-.ur-dropzone-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Fix for the upload icon - ensure no background */
-.ur-upload-icon {
-    font-size: 4rem;
-    line-height: 1;
-    display: inline-block;
-    background: transparent !important;
-    background-color: transparent !important;
-    color: #3b82f6;
-    filter: none;
-    text-shadow: none;
-    animation: ur-float 2s ease-in-out infinite;
-}
-
-/* Ensure no pseudo-elements add background */
-.ur-upload-icon::before,
-.ur-upload-icon::after {
-    background: transparent !important;
-    display: none;
-}
-
-@keyframes ur-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-.ur-dropzone-text {
-    font-size: 1rem;
-    color: #374151;
-    font-weight: 500;
-    margin: 0;
-}
-
-.ur-dropzone-hint {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin: 0;
-}
-
-.ur-selected-file {
-    margin-top: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #dcfce7;
-    color: #166534;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ur-error-text {
-    color: #dc2626;
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-    display: block;
-}
-
-/* Force remove any background from emoji icons */
-.ur-upload-icon,
-.ur-upload-icon *,
-.ur-upload-icon span,
-[class*="ur-upload-icon"] {
-    background: transparent !important;
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    border: none !important;
-    outline: none !important;
+/* Focus States */
+.ur-btn-secondary:focus-visible,
+.ur-type-btn:focus-visible,
+.ur-form-input:focus-visible,
+.ur-form-select:focus-visible,
+.ur-form-textarea:focus-visible,
+.ur-cancel-btn:focus-visible,
+.ur-submit-btn:focus-visible,
+.ur-checkbox-input:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
