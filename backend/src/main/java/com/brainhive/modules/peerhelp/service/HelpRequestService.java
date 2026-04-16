@@ -15,15 +15,15 @@ import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
 import com.brainhive.modules.peerhelp.dto.TutorSessionResponseDTO;
 import com.brainhive.modules.peerhelp.model.HelpRequest;
 import com.brainhive.modules.peerhelp.model.HelpRequestStatus;
-import com.brainhive.modules.user.model.Subject;
 import com.brainhive.modules.peerhelp.model.TutorSession;
 import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
-import com.brainhive.modules.user.repository.SubjectRepository;
-import com.brainhive.modules.user.repository.TutorProfileRepository;
 import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
+import com.brainhive.modules.user.model.Subject;
 import com.brainhive.modules.user.model.TutorProfile;
 import com.brainhive.modules.user.model.User;
 import com.brainhive.modules.user.model.UserRole;
+import com.brainhive.modules.user.repository.SubjectRepository;
+import com.brainhive.modules.user.repository.TutorProfileRepository;
 import com.brainhive.modules.user.repository.UserRepository;
 
 @Service
@@ -122,6 +122,28 @@ public class HelpRequestService {
      */
     public List<HelpRequestResponseDTO> getTutorAssignedRequests(Long tutorId) {
         return helpRequestRepository.findByAssignedTutorId(tutorId)
+                .stream()
+                .map(HelpRequestResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lecture-scoped help threads (student–tutor chat about a specific lecture).
+     */
+    public List<HelpRequestResponseDTO> getLectureConversationsForTutor(Long tutorId) {
+        return helpRequestRepository.findLectureThreadsForTutor(tutorId)
+                .stream()
+                .map(HelpRequestResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Conversation-capable requests for tutors (accepted and post-session states).
+     */
+    public List<HelpRequestResponseDTO> getTutorConversations(Long tutorId) {
+        return helpRequestRepository.findTutorConversationsByStatuses(
+                        tutorId,
+                        Arrays.asList(HelpRequestStatus.APPROVED, HelpRequestStatus.COMPLETED, HelpRequestStatus.RATED))
                 .stream()
                 .map(HelpRequestResponseDTO::fromEntity)
                 .collect(Collectors.toList());

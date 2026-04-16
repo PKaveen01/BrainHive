@@ -1,0 +1,86 @@
+/* Scoped tutor sidebar refresh */
+.tutor-sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
+    border-right: 1px solid #e3ecfb;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+}
+
+.tutor-sidebar .sidebar-logo {
+    font-size: 1.42rem;
+    font-weight: 800;
+    color: #1a56c5;
+    letter-spacing: -0.01em;
+    border-bottom-color: #e2e8f0;
+}
+
+.tutor-sidebar .sidebar-user {
+    background: linear-gradient(135deg, #edf4ff 0%, #f2f7ff 100%);
+    border: 1px solid #dce8fb;
+    border-radius: 0.85rem;
+    margin-bottom: 1.3rem;
+}
+
+.tutor-sidebar .user-avatar {
+    background: linear-gradient(135deg, #1e63d6 0%, #0f766e 100%);
+    box-shadow: 0 8px 18px rgba(30, 99, 214, 0.28);
+}
+
+.tutor-sidebar .user-info h4 {
+    font-size: 0.94rem;
+    color: #12233d;
+}
+
+.tutor-sidebar .user-info p {
+    font-size: 0.76rem;
+    color: #4f6583;
+    font-weight: 600;
+}
+
+.tutor-sidebar .sidebar-nav {
+    gap: 1rem;
+}
+
+.tutor-sidebar .nav-section h3 {
+    color: #7588a3;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+}
+
+.tutor-sidebar .nav-section li {
+    border: 1px solid transparent;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #344861;
+    border-radius: 0.62rem;
+}
+
+.tutor-sidebar .nav-section li:hover {
+    background: #edf4ff;
+    border-color: #d4e4fb;
+    color: #114bb8;
+}
+
+.tutor-sidebar .nav-section li.active {
+    background: linear-gradient(135deg, #2268dd 0%, #114bb8 100%);
+    border-color: #1c5ecf;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(30, 99, 214, 0.28);
+}
+
+.tutor-sidebar .logout-item {
+    color: #9a3412;
+}
+
+.tutor-sidebar .logout-item:hover {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+
+@media (max-width: 768px) {
+    .tutor-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e3ecfb;
+        box-shadow: none;
+    }
+}

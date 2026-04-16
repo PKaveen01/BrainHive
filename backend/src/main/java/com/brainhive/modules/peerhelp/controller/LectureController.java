@@ -18,6 +18,7 @@ import com.brainhive.modules.peerhelp.dto.CreateLectureDTO;
 import com.brainhive.modules.peerhelp.dto.CreateLectureHelpRequestDTO;
 import com.brainhive.modules.peerhelp.dto.HelpRequestResponseDTO;
 import com.brainhive.modules.peerhelp.dto.LectureDetailResponseDTO;
+import com.brainhive.modules.peerhelp.dto.LectureHelpThreadDTO;
 import com.brainhive.modules.peerhelp.dto.LectureResponseDTO;
 import com.brainhive.modules.peerhelp.service.LectureService;
 import com.brainhive.modules.user.model.User;
@@ -90,6 +91,31 @@ public class LectureController {
 
         List<LectureResponseDTO> lectures = lectureService.getAllLectures();
         return ResponseEntity.ok(ApiResponse.success("Lectures retrieved successfully", lectures));
+    }
+
+    /**
+     * Student: existing help conversation for this lecture (messages + request metadata).
+     */
+    @GetMapping("/{lectureId}/help-thread")
+    public ResponseEntity<ApiResponse<LectureHelpThreadDTO>> getLectureHelpThread(
+            @PathVariable Long lectureId,
+            HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+            if (currentUser.getRole() != UserRole.STUDENT) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Only students can view this lecture help thread"));
+            }
+            LectureHelpThreadDTO thread = lectureService.getStudentLectureHelpThread(lectureId, currentUser.getId());
+            return ResponseEntity.ok(ApiResponse.success("Lecture help thread retrieved successfully", thread));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     @GetMapping("/{lectureId}")

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
@@ -14,6 +14,9 @@ const LectureDetails = () => {
     const [error, setError] = useState('');
     const [attending, setAttending] = useState(false);
     const [submittingHelp, setSubmittingHelp] = useState(false);
+    const [helpThread, setHelpThread] = useState({ helpRequest: null, messages: [] });
+    const [chatInput, setChatInput] = useState('');
+    const [sendingChat, setSendingChat] = useState(false);
     const [helpForm, setHelpForm] = useState({
         topic: '',
         description: '',
@@ -22,16 +25,27 @@ const LectureDetails = () => {
         urgencyLevel: 3
     });
 
+    const currentUserId = authService.getCurrentUser()?.userId;
+
     const formatDateTime = (value) => {
-        if (!value) {
-            return 'Not scheduled';
-        }
+        if (!value) return 'Not scheduled';
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-            return value;
-        }
+        if (Number.isNaN(date.getTime())) return value;
         return date.toLocaleString();
     };
+
+    const loadHelpThread = useCallback(async () => {
+        try {
+            const res = await api.get(`/peerhelp/lectures/${lectureId}/help-thread`);
+            const data = res.data?.data;
+            setHelpThread({
+                helpRequest: data?.helpRequest || null,
+                messages: data?.messages || []
+            });
+        } catch {
+            setHelpThread({ helpRequest: null, messages: [] });
+        }
+    }, [lectureId]);
 
     const loadLecture = async () => {
         try {
@@ -47,9 +61,7 @@ const LectureDetails = () => {
         } catch (err) {
             console.error('Error loading lecture details:', err);
             setError(err.response?.data?.message || 'Unable to load lecture details.');
-            if (err.response?.status === 401) {
-                navigate('/login');
-            }
+            if (err.response?.status === 401) navigate('/login');
         } finally {
             setLoading(false);
         }
@@ -61,9 +73,11 @@ const LectureDetails = () => {
             navigate('/login');
             return;
         }
-        loadLecture();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lectureId]);
+        (async () => {
+            await loadLecture();
+            await loadHelpThread();
+        })();
+    }, [lectureId, navigate, loadHelpThread]);
 
     const handleAttendLecture = async () => {
         try {
@@ -73,7 +87,6 @@ const LectureDetails = () => {
             setMessage('Attendance marked successfully.');
             await loadLecture();
         } catch (err) {
-            console.error('Attend lecture error:', err);
             setError(err.response?.data?.message || 'Failed to mark attendance.');
         } finally {
             setAttending(false);
@@ -88,7 +101,6 @@ const LectureDetails = () => {
         event.preventDefault();
         setError('');
         setMessage('');
-
         try {
             setSubmittingHelp(true);
             await api.post(`/peerhelp/lectures/${lectureId}/help-request`, {
@@ -98,7 +110,7 @@ const LectureDetails = () => {
                 estimatedDuration: Number(helpForm.estimatedDuration),
                 urgencyLevel: Number(helpForm.urgencyLevel)
             });
-            setMessage('Help request sent to this lecture tutor. You can now wait for tutor scheduling.');
+            setMessage('Your question was sent. You can continue the conversation below.');
             setHelpForm((prev) => ({
                 ...prev,
                 description: '',
@@ -106,11 +118,29 @@ const LectureDetails = () => {
                 estimatedDuration: 60,
                 urgencyLevel: 3
             }));
+            await loadHelpThread();
         } catch (err) {
-            console.error('Create lecture help request error:', err);
-            setError(err.response?.data?.message || 'Failed to create help request.');
+            const msg = err.response?.data?.message || 'Failed to create help request.';
+            setError(msg);
+            if (msg.includes('already have')) await loadHelpThread();
         } finally {
             setSubmittingHelp(false);
+        }
+    };
+
+    const sendChat = async (e) => {
+        e.preventDefault();
+        const rid = helpThread.helpRequest?.id;
+        if (!rid || !chatInput.trim()) return;
+        try {
+            setSendingChat(true);
+            await api.post(`/peerhelp/requests/${rid}/messages`, { body: chatInput.trim() });
+            setChatInput('');
+            await loadHelpThread();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to send message.');
+        } finally {
+            setSendingChat(false);
         }
     };
 
@@ -118,103 +148,178 @@ const LectureDetails = () => {
         return <div className="loading">Loading lecture details...</div>;
     }
 
+    const hasThread = Boolean(helpThread.helpRequest);
+
     return (
         <div className="dashboard">
             <div className="main-content lecture-detail-page">
-                <button type="button" className="view-all" onClick={() => navigate('/dashboard/student')}>← Back to Student Dashboard</button>
+                <button type="button" className="view-all lecture-back-btn" onClick={() => navigate('/dashboard/student')}>
+                    ← Back to Student Dashboard
+                </button>
 
-                {error && <p className="header-subtitle">{error}</p>}
-                {message && <p className="lecture-message">{message}</p>}
+                <div className="lecture-detail-hero">
+                    <div className="lecture-detail-hero-inner">
+                        <span className="lecture-hero-kicker">Lecture</span>
+                        <h1 className="lecture-hero-title">{lecture?.title || 'Lecture'}</h1>
+                        <p className="lecture-hero-sub">{lecture?.subjectName} · with {lecture?.tutorName}</p>
+                    </div>
+                </div>
+
+                {error && <div className="lecture-alert lecture-alert-error">{error}</div>}
+                {message && <div className="lecture-alert lecture-alert-success">{message}</div>}
 
                 {lecture && (
-                    <div className="dashboard-grid">
-                        <div className="dashboard-card">
-                            <div className="card-header">
-                                <h2>{lecture.title}</h2>
+                    <div className="lecture-detail-layout">
+                        <div className="dashboard-card lecture-detail-card">
+                            <div className="card-header lecture-card-header-accent">
+                                <h2>About this session</h2>
                             </div>
-                            <div className="card-content">
-                                <p><strong>Subject:</strong> {lecture.subjectName}</p>
-                                <p><strong>Tutor:</strong> {lecture.tutorName}</p>
-                                <p><strong>Scheduled:</strong> {formatDateTime(lecture.scheduledAt)}</p>
-                                <p><strong>Duration:</strong> {lecture.durationMinutes} minutes</p>
-                                <p><strong>Attendees:</strong> {lecture.attendeeCount}</p>
-                                <p>{lecture.description}</p>
-
-                                {lecture.meetingLink && (
-                                    <p>
-                                        <a href={lecture.meetingLink} target="_blank" rel="noreferrer">Open lecture link</a>
-                                    </p>
-                                )}
-
-                                <button
-                                    type="button"
-                                    className="btn-accept"
-                                    onClick={handleAttendLecture}
-                                    disabled={attending || lecture.attendedByCurrentUser}
-                                >
-                                    {lecture.attendedByCurrentUser ? 'Attendance Marked' : (attending ? 'Marking...' : 'Attend Lecture')}
-                                </button>
+                            <div className="card-content lecture-detail-content">
+                                <div className="lecture-meta-badges">
+                                    <span className="lecture-meta-badge">{lecture.subjectName}</span>
+                                    <span className="lecture-meta-badge">{lecture.durationMinutes} min</span>
+                                    <span className="lecture-meta-badge">{lecture.attendeeCount} attendees</span>
+                                </div>
+                                <div className="lecture-detail-info-list">
+                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
+                                    <p><strong>Scheduled:</strong> {formatDateTime(lecture.scheduledAt)}</p>
+                                </div>
+                                <p className="lecture-detail-description">{lecture.description}</p>
+                                <div className="lecture-card-actions">
+                                    {lecture.meetingLink && (
+                                        <a href={lecture.meetingLink} target="_blank" rel="noreferrer" className="lecture-link-btn">
+                                            Open Lecture Link
+                                        </a>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="btn-accept lecture-attend-btn"
+                                        onClick={handleAttendLecture}
+                                        disabled={attending || lecture.attendedByCurrentUser}
+                                    >
+                                        {lecture.attendedByCurrentUser ? 'Attendance Marked' : (attending ? 'Marking...' : 'Attend Lecture')}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="dashboard-card">
-                            <div className="card-header">
-                                <h2>Request Help for This Lecture</h2>
+                        <div className="lecture-detail-right">
+                            <div className="dashboard-card lecture-convo-card">
+                                <div className="card-header lecture-card-header-accent">
+                                    <h2>Conversation with tutor</h2>
+                                    <span className="lecture-convo-badge">Live</span>
+                                </div>
+                                <div className="lecture-convo-body">
+                                    <p className="lecture-convo-hint">
+                                        Ask about difficult points from this lecture. Your tutor will reply here — you can also continue this thread from <strong>My Requests</strong>.
+                                    </p>
+                                    <div className="lecture-convo-messages">
+                                        {!hasThread && (
+                                            <div className="lecture-convo-empty">
+                                                No messages yet. Submit your first question using the form below.
+                                            </div>
+                                        )}
+                                        {helpThread.messages.map((m) => {
+                                            const mine = currentUserId && Number(currentUserId) === m.senderId;
+                                            return (
+                                                <div
+                                                    key={m.id}
+                                                    className={`lecture-convo-bubble ${mine ? 'is-mine' : 'is-theirs'}`}
+                                                >
+                                                    <span className="lecture-convo-who">{mine ? 'You' : m.senderName}</span>
+                                                    <p>{m.body}</p>
+                                                    <span className="lecture-convo-time">{formatDateTime(m.createdAt)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {hasThread && (
+                                        <form className="lecture-convo-compose" onSubmit={sendChat}>
+                                            <textarea
+                                                rows={2}
+                                                value={chatInput}
+                                                onChange={(e) => setChatInput(e.target.value)}
+                                                placeholder="Type a message to your tutor..."
+                                                disabled={sendingChat}
+                                            />
+                                            <button type="submit" className="lecture-convo-send" disabled={sendingChat || !chatInput.trim()}>
+                                                {sendingChat ? 'Sending…' : 'Send'}
+                                            </button>
+                                        </form>
+                                    )}
+                                </div>
                             </div>
-                            <form className="lecture-form" onSubmit={handleSubmitHelpRequest}>
-                                <label className="lecture-label" htmlFor="topic">Topic</label>
-                                <input
-                                    id="topic"
-                                    type="text"
-                                    value={helpForm.topic}
-                                    onChange={(e) => handleHelpInput('topic', e.target.value)}
-                                    required
-                                />
 
-                                <label className="lecture-label" htmlFor="description">Description</label>
-                                <textarea
-                                    id="description"
-                                    rows={4}
-                                    value={helpForm.description}
-                                    onChange={(e) => handleHelpInput('description', e.target.value)}
-                                    placeholder="Describe what you need help with"
-                                    required
-                                />
-
-                                <label className="lecture-label" htmlFor="preferredDateTime">Preferred Date & Time</label>
-                                <input
-                                    id="preferredDateTime"
-                                    type="datetime-local"
-                                    value={helpForm.preferredDateTime}
-                                    onChange={(e) => handleHelpInput('preferredDateTime', e.target.value)}
-                                />
-
-                                <label className="lecture-label" htmlFor="estimatedDuration">Duration (minutes)</label>
-                                <input
-                                    id="estimatedDuration"
-                                    type="number"
-                                    min="15"
-                                    max="180"
-                                    value={helpForm.estimatedDuration}
-                                    onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
-                                    required
-                                />
-
-                                <label className="lecture-label" htmlFor="urgencyLevel">Urgency (1-5)</label>
-                                <input
-                                    id="urgencyLevel"
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    value={helpForm.urgencyLevel}
-                                    onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
-                                    required
-                                />
-
-                                <button type="submit" className="btn-accept" disabled={submittingHelp}>
-                                    {submittingHelp ? 'Sending...' : 'Help Request'}
-                                </button>
-                            </form>
+                            {!hasThread && (
+                                <div className="dashboard-card lecture-help-card">
+                                    <div className="card-header">
+                                        <h2>Start: difficult points</h2>
+                                    </div>
+                                    <form className="lecture-form lecture-form-updated" onSubmit={handleSubmitHelpRequest}>
+                                        <div className="lecture-field">
+                                            <label className="lecture-label" htmlFor="topic">Topic</label>
+                                            <input
+                                                id="topic"
+                                                type="text"
+                                                value={helpForm.topic}
+                                                onChange={(e) => handleHelpInput('topic', e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="lecture-field">
+                                            <label className="lecture-label" htmlFor="description">What are your difficult points?</label>
+                                            <textarea
+                                                id="description"
+                                                rows={4}
+                                                value={helpForm.description}
+                                                onChange={(e) => handleHelpInput('description', e.target.value)}
+                                                placeholder="Describe concepts or problems you want help with from this lecture."
+                                                required
+                                            />
+                                        </div>
+                                        <div className="lecture-field">
+                                            <label className="lecture-label" htmlFor="preferredDateTime">Preferred Date & Time (optional)</label>
+                                            <input
+                                                id="preferredDateTime"
+                                                type="datetime-local"
+                                                value={helpForm.preferredDateTime}
+                                                onChange={(e) => handleHelpInput('preferredDateTime', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="lecture-detail-form-row">
+                                            <div className="lecture-field">
+                                                <label className="lecture-label" htmlFor="estimatedDuration">Duration (minutes)</label>
+                                                <input
+                                                    id="estimatedDuration"
+                                                    type="number"
+                                                    min="15"
+                                                    max="180"
+                                                    value={helpForm.estimatedDuration}
+                                                    onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="lecture-field">
+                                                <label className="lecture-label" htmlFor="urgencyLevel">Urgency (1-5)</label>
+                                                <input
+                                                    id="urgencyLevel"
+                                                    type="number"
+                                                    min="1"
+                                                    max="5"
+                                                    value={helpForm.urgencyLevel}
+                                                    onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="lecture-form-actions">
+                                            <button type="submit" className="btn-accept lecture-help-submit-btn" disabled={submittingHelp}>
+                                                {submittingHelp ? 'Sending...' : 'Send & open conversation'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

@@ -1,6 +1,7 @@
 package com.brainhive.modules.peerhelp.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -51,4 +52,12 @@ public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> 
     
     @Query("SELECT COUNT(hr) FROM HelpRequest hr WHERE hr.student.id = :studentId AND hr.status IN :statuses")
     Long countByStudentAndStatusIn(@Param("studentId") Long studentId, @Param("statuses") List<HelpRequestStatus> statuses);
+
+    Optional<HelpRequest> findByStudentIdAndLectureId(Long studentId, Long lectureId);
+
+    @Query("SELECT hr FROM HelpRequest hr WHERE hr.assignedTutor.id = :tutorId AND hr.lecture IS NOT NULL ORDER BY hr.updatedAt DESC")
+    List<HelpRequest> findLectureThreadsForTutor(@Param("tutorId") Long tutorId);
+
+    @Query("SELECT hr FROM HelpRequest hr WHERE hr.assignedTutor.id = :tutorId AND hr.status IN :statuses ORDER BY hr.updatedAt DESC")
+    List<HelpRequest> findTutorConversationsByStatuses(@Param("tutorId") Long tutorId, @Param("statuses") List<HelpRequestStatus> statuses);
 }

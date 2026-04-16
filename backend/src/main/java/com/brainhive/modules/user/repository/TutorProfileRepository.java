@@ -1,15 +1,16 @@
 package com.brainhive.modules.user.repository;
 
-import com.brainhive.modules.user.model.Subject;
-import com.brainhive.modules.user.model.TutorProfile;
-import com.brainhive.modules.user.model.User;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.brainhive.modules.user.model.Subject;
+import com.brainhive.modules.user.model.TutorProfile;
+import com.brainhive.modules.user.model.User;
 
 @Repository
 public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long> {
@@ -41,6 +42,9 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
     // Only APPROVED tutors, available, sorted by credibility
     @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true AND tp.verificationStatus = 'APPROVED' ORDER BY tp.credibilityScore DESC")
     List<TutorProfile> findAvailableTutorsBySubjectOrderByCredibility(@Param("subjectId") Long subjectId);
+
+    @Query("SELECT tp FROM TutorProfile tp WHERE tp.verificationStatus = 'APPROVED' ORDER BY tp.credibilityScore DESC")
+    List<TutorProfile> findAllApprovedTutorsOrderByCredibility();
 
     // APPROVED + minimum proficiency
     @Query("SELECT tp FROM TutorProfile tp WHERE tp.subject.id = :subjectId AND tp.isAvailable = true AND tp.verificationStatus = 'APPROVED' AND tp.proficiencyLevel >= :minProficiency ORDER BY tp.credibilityScore DESC")

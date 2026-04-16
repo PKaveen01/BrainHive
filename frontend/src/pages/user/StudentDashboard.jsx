@@ -525,30 +525,49 @@ const StudentDashboard = () => {
                             <h2>Available Lectures</h2>
                             <button type="button" className="view-all" onClick={fetchLectures}>Refresh</button>
                         </div>
-                        <div className="card-content">
+                        <div className="card-content lecture-cards-grid">
                             {lectureLoading && <p className="header-subtitle">Loading lectures...</p>}
                             {!lectureLoading && lectureError && <p className="header-subtitle">{lectureError}</p>}
                             {!lectureLoading && !lectureError && lectures.length === 0 && (
                                 <p className="header-subtitle">No lectures available right now.</p>
                             )}
                             {!lectureLoading && !lectureError && lectures.map((lecture) => (
-                                <div key={lecture.id} className="session-item lecture-item">
-                                    <h3>{lecture.title}</h3>
-                                    <p><strong>Subject:</strong> {lecture.subjectName}</p>
-                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
-                                    <p>{lecture.description}</p>
-                                    <span className="session-time">📅 {formatDateTime(lecture.scheduledAt)} • {lecture.durationMinutes} mins</span>
-                                    {lecture.meetingLink && (
-                                        <p><a href={lecture.meetingLink} target="_blank" rel="noreferrer">Join lecture</a></p>
-                                    )}
-                                    <button
-                                        type="button"
-                                        className="btn-accept lecture-details-btn"
-                                        onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
-                                    >
-                                        More Details
-                                    </button>
-                                </div>
+                                <article key={lecture.id} className="lecture-program-card">
+                                    <div className="lecture-program-title">
+                                        {lecture.title}
+                                    </div>
+
+                                    <div className="lecture-program-details">
+                                        <p><strong>Duration:</strong> {lecture.durationMinutes || 0} min</p>
+                                        <p><strong>Date:</strong> {formatDateTime(lecture.scheduledAt)}</p>
+                                        <p><strong>Tutor:</strong> {lecture.tutorName || 'N/A'}</p>
+                                        <p><strong>Subject:</strong> {lecture.subjectName || 'General'}</p>
+                                    </div>
+
+                                    <p className="lecture-program-desc">
+                                        {lecture.description || 'No description provided.'}
+                                    </p>
+
+                                    <div className="lecture-program-actions">
+                                        {lecture.meetingLink && (
+                                            <a
+                                                href={lecture.meetingLink}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="lecture-program-link"
+                                            >
+                                                Join Lecture
+                                            </a>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className="lecture-program-btn"
+                                            onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
+                                        >
+                                            More Details
+                                        </button>
+                                    </div>
+                                </article>
                             ))}
                         </div>
                     </div>
