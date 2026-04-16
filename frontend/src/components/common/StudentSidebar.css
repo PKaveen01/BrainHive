@@ -24,8 +24,12 @@
     border-bottom: 1px solid #e5e7eb;
 }
 
-.logo-icon {
-    font-size: 1.25rem;
+.logo-icon-image {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
 }
 
 .logo-text {
