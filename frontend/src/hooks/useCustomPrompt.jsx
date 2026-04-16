@@ -35,9 +35,10 @@ export const useCustomPrompt = () => {
     }, []);
 
     const PromptDialog = () => {
-        if (!isOpen) return null;
-
+        // ✅ Move useState BEFORE the conditional return
         const [value, setValue] = useState(config.defaultValue);
+        
+        if (!isOpen) return null;
 
         const handleConfirm = () => {
             if (config.onConfirm) {
