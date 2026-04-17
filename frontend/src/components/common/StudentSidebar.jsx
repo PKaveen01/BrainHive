@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import authService from '../../services/auth.service';
 import './StudentSidebar.css';
+import logoImage from '../../assets/images/logo.png';
 
 const StudentSidebar = ({ user, activeTab, onTabChange }) => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const StudentSidebar = ({ user, activeTab, onTabChange }) => {
     return (
         <div className="sidebar">
             <div className="sidebar-logo">
-                <span className="logo-icon">⚡</span>
+                <img src={logoImage} alt="BrainHive Logo" className="logo-icon-image" />
                 <span className="logo-text">BrainHive</span>
             </div>
 
