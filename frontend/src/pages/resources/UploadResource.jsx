@@ -626,7 +626,7 @@ const UploadResource = () => {
                             </div>
                         </div>
                     </div>
-                    <button className="ur-btn-secondary" onClick={() => navigate('/dashboard/student')}>
+                    <button className="ur-btn-primary" onClick={() => navigate('/dashboard/student')}>
                         <UrIcon name="arrowLeft" size={16} />
                         <span>Dashboard</span>
                     </button>

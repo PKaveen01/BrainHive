@@ -1096,3 +1096,30 @@
     outline: 2px solid #2563eb;
     outline-offset: 2px;
 }
+.ur-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+}
+
+.ur-btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.ur-btn-primary:active {
+    background: #1e40af;
+    transform: translateY(0);
+}
