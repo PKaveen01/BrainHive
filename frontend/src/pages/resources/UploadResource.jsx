@@ -6,6 +6,131 @@ import StudentSidebar from '../../components/common/StudentSidebar';
 import TutorSidebar from '../peerhelp/TutorSidebar';
 import './UploadResource.css';
 
+function UrIcon({ name, className = '', size = 18, filled = false }) {
+    const props = {
+        width: size,
+        height: size,
+        viewBox: '0 0 24 24',
+        fill: filled ? 'currentColor' : 'none',
+        stroke: 'currentColor',
+        strokeWidth: '2',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        className
+    };
+
+    switch (name) {
+        case 'upload':
+            return (
+                <svg {...props}>
+                    <path d="M12 16V4" />
+                    <path d="M7 9l5-5 5 5" />
+                    <path d="M4 20h16" />
+                </svg>
+            );
+        case 'arrowLeft':
+            return (
+                <svg {...props}>
+                    <path d="M19 12H5" />
+                    <path d="M12 19l-7-7 7-7" />
+                </svg>
+            );
+        case 'fileText':
+            return (
+                <svg {...props}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                </svg>
+            );
+        case 'fileEdit':
+            return (
+                <svg {...props}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M10 13l5-5 2 2-5 5-3 1z" />
+                </svg>
+            );
+        case 'presentation':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                    <path d="M8 20h8" />
+                    <path d="M12 16v4" />
+                    <path d="M8 10l2-2 2 2 3-3 2 2" />
+                </svg>
+            );
+        case 'image':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <circle cx="8.5" cy="10" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                </svg>
+            );
+        case 'video':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="6" width="15" height="12" rx="2" />
+                    <path d="M18 10l3-2v8l-3-2z" />
+                </svg>
+            );
+        case 'link':
+            return (
+                <svg {...props}>
+                    <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4" />
+                    <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L13 20" />
+                </svg>
+            );
+        case 'article':
+            return (
+                <svg {...props}>
+                    <path d="M4 5h16" />
+                    <path d="M4 10h16" />
+                    <path d="M4 15h10" />
+                    <path d="M4 20h7" />
+                </svg>
+            );
+        case 'archive':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="4" width="18" height="4" rx="1" />
+                    <path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+                    <path d="M10 12h4" />
+                </svg>
+            );
+        case 'check':
+            return (
+                <svg {...props}>
+                    <path d="M20 6L9 17l-5-5" />
+                </svg>
+            );
+        case 'x':
+            return (
+                <svg {...props}>
+                    <path d="M18 6L6 18" />
+                    <path d="M6 6l12 12" />
+                </svg>
+            );
+        case 'alertTriangle':
+            return (
+                <svg {...props}>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                </svg>
+            );
+        default:
+            return (
+                <svg {...props}>
+                    <circle cx="12" cy="12" r="9" />
+                </svg>
+            );
+    }
+}
+
 const UploadResource = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -183,7 +308,6 @@ const UploadResource = () => {
         
         errors.tags = validateField('tags', formData.tags);
         
-        // Remove null values
         Object.keys(errors).forEach(key => {
             if (errors[key] === null) delete errors[key];
         });
@@ -322,7 +446,7 @@ const UploadResource = () => {
                 reject(new Error('Upload timeout - please try again with a smaller file'));
             });
             
-            xhr.timeout = 300000; // 5 minutes
+            xhr.timeout = 300000;
             xhr.open('POST', `${API_URL}/api/resources/upload/file`);
             xhr.withCredentials = true;
             
@@ -349,7 +473,6 @@ const UploadResource = () => {
         e.preventDefault();
         setSubmitAttempted(true);
         
-        // Mark all fields as touched
         const allFields = ['title', 'subject', 'semester'];
         if (uploadType === 'link' || uploadType === 'video' || uploadType === 'article') {
             allFields.push('link');
@@ -363,7 +486,6 @@ const UploadResource = () => {
         setTouched(newTouched);
         
         if (!validateForm()) {
-            // Scroll to first error
             const firstError = document.querySelector('.ur-error-text');
             if (firstError) {
                 firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -387,7 +509,6 @@ const UploadResource = () => {
                 throw new Error('Unable to identify user. Please log in again.');
             }
             
-            // Simulate validation delay
             await new Promise(resolve => setTimeout(resolve, 500));
             setValidationStatus('valid');
             
@@ -494,12 +615,20 @@ const UploadResource = () => {
             {isTutor ? <TutorSidebar user={user} /> : <StudentSidebar user={user} />}
             <div className="main-content">
                 <div className="ur-page-header">
-                    <div>
-                        <h1>📤 Upload Resource</h1>
-                        <p className="ur-page-subtitle">Share your study materials with the BrainHive community</p>
+                    <div className="ur-page-header-left">
+                        <div className="ur-page-title-wrap">
+                            <div className="ur-page-title-icon">
+                                <UrIcon name="upload" size={22} />
+                            </div>
+                            <div>
+                                <h1>Upload Resource</h1>
+                                <p className="ur-page-subtitle">Share your study materials with the BrainHive community</p>
+                            </div>
+                        </div>
                     </div>
                     <button className="ur-btn-secondary" onClick={() => navigate('/dashboard/student')}>
-                        ← Dashboard
+                        <UrIcon name="arrowLeft" size={16} />
+                        <span>Dashboard</span>
                     </button>
                 </div>
                 
@@ -508,14 +637,14 @@ const UploadResource = () => {
                     <h3 className="ur-section-title">Select Resource Type</h3>
                     <div className="ur-type-grid">
                         {[
-                            { type: 'pdf', icon: '📄', label: 'PDF' },
-                            { type: 'document', icon: '📝', label: 'Document' },
-                            { type: 'presentation', icon: '📊', label: 'Presentation' },
-                            { type: 'image', icon: '🖼️', label: 'Image' },
-                            { type: 'video', icon: '🎥', label: 'Video' },
-                            { type: 'link', icon: '🔗', label: 'Link' },
-                            { type: 'article', icon: '📰', label: 'Article' },
-                            { type: 'other', icon: '📦', label: 'Other' }
+                            { type: 'pdf', icon: 'fileText', label: 'PDF' },
+                            { type: 'document', icon: 'fileEdit', label: 'Document' },
+                            { type: 'presentation', icon: 'presentation', label: 'Presentation' },
+                            { type: 'image', icon: 'image', label: 'Image' },
+                            { type: 'video', icon: 'video', label: 'Video' },
+                            { type: 'link', icon: 'link', label: 'Link' },
+                            { type: 'article', icon: 'article', label: 'Article' },
+                            { type: 'other', icon: 'archive', label: 'Other' }
                         ].map((item) => (
                             <button
                                 key={item.type}
@@ -523,7 +652,9 @@ const UploadResource = () => {
                                 onClick={() => handleTypeChange(item.type)}
                                 className={`ur-type-btn ${uploadType === item.type ? 'ur-active' : ''}`}
                             >
-                                <span className="ur-type-icon">{item.icon}</span>
+                                <span className="ur-type-icon">
+                                    <UrIcon name={item.icon} size={20} />
+                                </span>
                                 <span className="ur-type-label">{item.label}</span>
                             </button>
                         ))}
@@ -659,7 +790,9 @@ const UploadResource = () => {
                                     style={{ display: 'none' }}
                                 />
                                 <div className="ur-dropzone-content">
-                                    <span className="ur-upload-icon">📤</span>
+                                    <span className="ur-upload-icon">
+                                        <UrIcon name="upload" size={34} />
+                                    </span>
                                     <p className="ur-dropzone-text">Click to browse or drag and drop</p>
                                     <p className="ur-dropzone-hint">
                                         {uploadType === 'pdf' && 'PDF files only (Max 50MB)'}
@@ -669,7 +802,8 @@ const UploadResource = () => {
                                     </p>
                                     {formData.fileName && (
                                         <div className="ur-selected-file">
-                                            <span>✓</span> {formData.fileName} ({formData.fileSize} MB)
+                                            <span className="ur-selected-file-icon"><UrIcon name="check" size={14} /></span>
+                                            <span>{formData.fileName} ({formData.fileSize} MB)</span>
                                         </div>
                                     )}
                                 </div>
@@ -759,13 +893,13 @@ const UploadResource = () => {
                                 )}
                                 {validationStatus === 'valid' && (
                                     <>
-                                        <span className="ur-status-icon">✓</span>
+                                        <span className="ur-status-icon"><UrIcon name="check" size={16} /></span>
                                         <span>Resource validated! Ready for upload.</span>
                                     </>
                                 )}
                                 {validationStatus === 'failed' && (
                                     <>
-                                        <span className="ur-status-icon">✗</span>
+                                        <span className="ur-status-icon"><UrIcon name="x" size={16} /></span>
                                         <span>Validation failed. Please check your resource and try again.</span>
                                     </>
                                 )}
