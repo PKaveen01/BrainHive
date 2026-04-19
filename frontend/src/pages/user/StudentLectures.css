@@ -1,0 +1,141 @@
+/* ====================== StudentLectures.css ====================== */
+/* Extends PeerHelp.css patterns — uses the same --ph-* variables    */
+/* Import this after (or alongside) PeerHelp.css if shared,          */
+/* or keep standalone: variables are redeclared here for safety.      */
+
+/* ── Variable re-declarations (matches PeerHelp.css exactly) ──── */
+:root {
+    --ph-bg: #f3f7fc;
+    --ph-surface: #ffffff;
+    --ph-surface-soft: #f8fbff;
+    --ph-border: #dbe7f7;
+    --ph-text: #12233d;
+    --ph-muted: #5f718c;
+    --ph-primary: #1e63d6;
+    --ph-primary-strong: #114bb8;
+    --ph-success: #0f766e;
+    --ph-danger: #c2410c;
+    --ph-warning: #a16207;
+    --ph-shadow: 0 10px 30px rgba(17, 75, 184, 0.08);
+}
+
+/* ── Summary strip ──────────────────────────────────────────────── */
+.lec-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.875rem;
+    margin-bottom: 1.2rem;
+}
+
+.lec-summary-item {
+    background: var(--ph-surface);
+    border: 1px solid var(--ph-border);
+    border-radius: 0.85rem;
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    box-shadow: var(--ph-shadow);
+    border-left: 4px solid transparent;
+    transition: transform 0.15s ease;
+}
+
+.lec-summary-item:hover { transform: translateY(-2px); }
+
+.lec-summary--live     { border-left-color: #dc2626; }
+.lec-summary--upcoming { border-left-color: var(--ph-primary); }
+.lec-summary--past     { border-left-color: #94a3b8; }
+.lec-summary--total    { border-left-color: var(--ph-success); }
+
+.lec-summary-val {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--ph-text);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.lec-summary-lbl {
+    font-size: 0.75rem;
+    color: var(--ph-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ── Status badges on lecture cards ────────────────────────────── */
+.lec-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+}
+
+.lec-badge--upcoming {
+    background: #eef4ff;
+    color: #164cae;
+    border-color: #d2e3ff;
+}
+
+.lec-badge--ongoing {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.lec-badge--past {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+/* Animated live pulse dot */
+.lec-live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: #dc2626;
+    border-radius: 50%;
+    animation: lec-pulse 1.6s infinite;
+}
+
+@keyframes lec-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);    }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* ── Join Live button variant ───────────────────────────────────── */
+.lec-join-live {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25) !important;
+    animation: lec-join-glow 2s infinite;
+}
+
+.lec-join-live:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+}
+
+@keyframes lec-join-glow {
+    0%, 100% { box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25); }
+    50%       { box-shadow: 0 8px 28px rgba(220, 38, 38, 0.45); }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .lec-summary-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .lec-summary-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
