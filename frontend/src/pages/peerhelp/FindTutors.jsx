@@ -195,7 +195,7 @@ const FindTutors = () => {
     return (
         <div className="dashboard">
             <StudentSidebar user={user} />
-            <div className="main-content peerhelp-main">
+            <div className="main-content peerhelp-main find-tutors-page">
                 <div className="page-header">
                     <div>
                         <h1>Find Tutors</h1>
@@ -231,7 +231,7 @@ const FindTutors = () => {
 
                 {!loading && searched && tutors.length === 0 && (
                     <div className="empty-state">
-                        <div className="empty-icon">👨‍🏫</div>
+                        <div className="empty-icon">⌕</div>
                         <h3>No tutors found for {selectedSubjectName}</h3>
                         <p>Try a different subject, or submit a general help request instead.</p>
                         <button className="btn-primary" onClick={() => navigate('/request-help')}>Submit Help Request</button>
@@ -296,15 +296,6 @@ const FindTutors = () => {
                             ))}
                         </div>
                     </>
-                )}
-
-                {/* Not-yet-searched state */}
-                {!selectedSubject && !loading && (
-                    <div className="empty-state">
-                        <div className="empty-icon">🔍</div>
-                        <h3>Select a subject to find tutors</h3>
-                        <p>We'll match you with approved tutors who specialize in that subject.</p>
-                    </div>
                 )}
 
                 {/* Request Modal */}
