@@ -4,9 +4,10 @@ import api from '../../services/api';
 import authService from '../../services/auth.service';
 import './Dashboard.css';
 
-const LectureDetails = () => {
+const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToList = null }) => {
     const navigate = useNavigate();
-    const { lectureId } = useParams();
+    const { lectureId: routeLectureId } = useParams();
+    const lectureId = lectureIdOverride || routeLectureId;
 
     const [loading, setLoading] = useState(true);
     const [lecture, setLecture] = useState(null);
@@ -73,11 +74,24 @@ const LectureDetails = () => {
             navigate('/login');
             return;
         }
+        if (!lectureId) {
+            setError('Missing lecture id.');
+            setLoading(false);
+            return;
+        }
         (async () => {
             await loadLecture();
             await loadHelpThread();
         })();
     }, [lectureId, navigate, loadHelpThread]);
+
+    const handleBack = () => {
+        if (embedded && onBackToList) {
+            onBackToList();
+            return;
+        }
+        navigate('/dashboard/student');
+    };
 
     const handleAttendLecture = async () => {
         try {
@@ -150,18 +164,22 @@ const LectureDetails = () => {
 
     const hasThread = Boolean(helpThread.helpRequest);
 
-    return (
-        <div className="dashboard">
-            <div className="main-content lecture-detail-page">
-                <button type="button" className="view-all lecture-back-btn" onClick={() => navigate('/dashboard/student')}>
-                    ← Back to Student Dashboard
-                </button>
+    const detailsContent = (
+        <div className={`lecture-detail-page lecture-detail-page-pro${embedded ? ' lecture-detail-embedded' : ''}`}>
+            <button type="button" className="view-all lecture-back-btn" onClick={handleBack}>
+                {embedded ? '← Back to Lectures' : '← Back to Student Dashboard'}
+            </button>
 
                 <div className="lecture-detail-hero">
                     <div className="lecture-detail-hero-inner">
                         <span className="lecture-hero-kicker">Lecture</span>
                         <h1 className="lecture-hero-title">{lecture?.title || 'Lecture'}</h1>
                         <p className="lecture-hero-sub">{lecture?.subjectName} · with {lecture?.tutorName}</p>
+                        <div className="lecture-hero-meta">
+                            <span>{formatDateTime(lecture?.scheduledAt)}</span>
+                            <span>{lecture?.durationMinutes || 0} min</span>
+                            <span>{lecture?.attendeeCount || 0} attendees</span>
+                        </div>
                     </div>
                 </div>
 
@@ -181,8 +199,14 @@ const LectureDetails = () => {
                                     <span className="lecture-meta-badge">{lecture.attendeeCount} attendees</span>
                                 </div>
                                 <div className="lecture-detail-info-list">
-                                    <p><strong>Tutor:</strong> {lecture.tutorName}</p>
-                                    <p><strong>Scheduled:</strong> {formatDateTime(lecture.scheduledAt)}</p>
+                                    <div className="lecture-info-row">
+                                        <span className="lecture-info-label">Tutor</span>
+                                        <span className="lecture-info-value">{lecture.tutorName}</span>
+                                    </div>
+                                    <div className="lecture-info-row">
+                                        <span className="lecture-info-label">Scheduled</span>
+                                        <span className="lecture-info-value">{formatDateTime(lecture.scheduledAt)}</span>
+                                    </div>
                                 </div>
                                 <p className="lecture-detail-description">{lecture.description}</p>
                                 <div className="lecture-card-actions">
@@ -253,7 +277,7 @@ const LectureDetails = () => {
                             {!hasThread && (
                                 <div className="dashboard-card lecture-help-card">
                                     <div className="card-header">
-                                        <h2>Start: difficult points</h2>
+                                        <h2>Start A Help Conversation</h2>
                                     </div>
                                     <form className="lecture-form lecture-form-updated" onSubmit={handleSubmitHelpRequest}>
                                         <div className="lecture-field">
@@ -323,6 +347,17 @@ const LectureDetails = () => {
                         </div>
                     </div>
                 )}
+        </div>
+    );
+
+    if (embedded) {
+        return detailsContent;
+    }
+
+    return (
+        <div className="dashboard">
+            <div className="main-content">
+                {detailsContent}
             </div>
         </div>
     );

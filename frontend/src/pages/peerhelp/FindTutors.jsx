@@ -393,18 +393,18 @@ const FindTutors = () => {
 
                 {rateModal.show && (
                     <div className="modal-overlay" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>
-                        <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal rate-tutor-modal" onClick={(e) => e.stopPropagation()}>
                             <div className="modal-header">
                                 <h3>Rate {rateModal.tutor?.tutorName || rateModal.tutor?.name}</h3>
                                 <button className="modal-close" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>×</button>
                             </div>
-                            <div className="form-group">
-                                <label>Rating</label>
+                            <div className="form-group rating-group">
+                                <label>Your Rating</label>
                                 {renderInteractiveStars(rateModal.rating, (n) => setRateModal((prev) => ({ ...prev, rating: n })), 'Overall rating')}
                                 <div className="rating-inline-value">{rateModal.rating} / 5</div>
                             </div>
                             <div className="form-group">
-                                <label>Rating Message</label>
+                                <label>Feedback Message</label>
                                 <textarea
                                     rows={4}
                                     value={rateModal.message}
@@ -412,6 +412,7 @@ const FindTutors = () => {
                                     placeholder="Write your feedback for this tutor..."
                                     maxLength={1000}
                                 />
+                                <div className="char-count">{rateModal.message.length}/1000</div>
                             </div>
                             <div className="modal-actions">
                                 <button className="btn-secondary" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false })}>Cancel</button>

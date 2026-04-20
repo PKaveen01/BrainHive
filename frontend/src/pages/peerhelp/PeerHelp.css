@@ -738,6 +738,117 @@
 .modal-success .success-icon { font-size: 3rem; margin-bottom: 0.75rem; }
 .modal-success p { color: #374151; margin-bottom: 1.25rem; }
 
+/* ===== Find Tutors: Rate Tutor Modal ===== */
+.find-tutors-page .rate-tutor-modal {
+    max-width: 520px;
+    border: 1px solid #c9d8ef;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: 0 24px 46px rgba(15, 40, 90, 0.24);
+    padding: 1.2rem;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #e0e9f7;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-header h3 {
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: #15325a;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-close {
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 0.45rem;
+    color: #7a8faa;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-close:hover {
+    background: #eff5ff;
+    color: #375a89;
+}
+
+.find-tutors-page .rate-tutor-modal .form-group {
+    margin-bottom: 0.9rem;
+}
+
+.find-tutors-page .rate-tutor-modal .form-group label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #5b708f;
+    margin-bottom: 0.28rem;
+}
+
+.find-tutors-page .rate-tutor-modal .rating-group {
+    background: #f8fbff;
+    border: 1px solid #d7e5f8;
+    border-radius: 0.72rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.find-tutors-page .rate-tutor-modal .star-input {
+    gap: 0.2rem;
+}
+
+.find-tutors-page .rate-tutor-modal .star-btn {
+    font-size: 1.58rem;
+}
+
+.find-tutors-page .rate-tutor-modal .rating-inline-value {
+    margin-top: 0.35rem;
+    color: #4b6386;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.find-tutors-page .rate-tutor-modal textarea {
+    border: 1px solid #c5d4ea;
+    border-radius: 0.62rem;
+    min-height: 108px;
+}
+
+.find-tutors-page .rate-tutor-modal textarea:focus {
+    border-color: #2f6ed6;
+    box-shadow: 0 0 0 3px rgba(47, 110, 214, 0.18);
+    outline: none;
+}
+
+.find-tutors-page .rate-tutor-modal .char-count {
+    margin-top: 0.3rem;
+    color: #879ab5;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-actions {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 0.58rem;
+}
+
+.find-tutors-page .rate-tutor-modal .btn-secondary,
+.find-tutors-page .rate-tutor-modal .btn-primary {
+    min-height: 2.3rem;
+    border-radius: 0.58rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .find-tutors-page .rate-tutor-modal {
+        padding: 1rem;
+    }
+
+    .find-tutors-page .rate-tutor-modal .modal-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .peerhelp-form-container { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }

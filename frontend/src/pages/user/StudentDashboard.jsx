@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import LectureDetails from './LectureDetails';
 import './Dashboard.css';
 
 // Import recharts components
@@ -28,6 +29,7 @@ import {
 
 const StudentDashboard = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
@@ -35,6 +37,7 @@ const StudentDashboard = () => {
     const [lectures, setLectures] = useState([]);
     const [lectureLoading, setLectureLoading] = useState(false);
     const [lectureError, setLectureError] = useState('');
+    const [selectedLectureId, setSelectedLectureId] = useState(null);
     const [myRequests, setMyRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
     const [requestsError, setRequestsError] = useState('');
@@ -147,7 +150,19 @@ const StudentDashboard = () => {
 
     const handleOpenLectures = async () => {
         setActiveTab('lectures');
+        setSelectedLectureId(null);
         if (lectures.length === 0) await fetchLectures();
+    };
+
+    const handleOpenLectureDetails = (id) => {
+        setActiveTab('lectures');
+        setSelectedLectureId(String(id));
+        navigate(`/dashboard/student?tab=lectures&lectureId=${id}`);
+    };
+
+    const handleBackToLectureList = () => {
+        setSelectedLectureId(null);
+        navigate('/dashboard/student?tab=lectures');
     };
 
     const fetchMyRequests = async () => {
@@ -186,6 +201,28 @@ const StudentDashboard = () => {
         setActiveTab('my-requests');
         if (myRequests.length === 0) await fetchMyRequests();
     };
+
+    useEffect(() => {
+        const tab = new URLSearchParams(location.search).get('tab');
+        const lectureIdFromQuery = new URLSearchParams(location.search).get('lectureId');
+
+        const openRequestedTab = async () => {
+            if (tab === 'lectures') {
+                await handleOpenLectures();
+            } else if (tab === 'my-requests') {
+                await handleOpenMyRequests();
+            }
+
+            if (tab === 'lectures' && lectureIdFromQuery) {
+                setSelectedLectureId(lectureIdFromQuery);
+            } else {
+                setSelectedLectureId(null);
+            }
+        };
+
+        openRequestedTab();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.search]);
 
     const openRatingModal = (sessionId, tutorName) => {
         setRatingModal({ sessionId, tutorName });
@@ -522,57 +559,69 @@ const StudentDashboard = () => {
                 )}
 
                 {activeTab === 'lectures' && (
-                    <div className="dashboard-card">
-                        <div className="card-header">
-                            <h2>Available Lectures</h2>
-                            <button type="button" className="view-all" onClick={fetchLectures}>Refresh</button>
-                        </div>
-                        <div className="card-content lecture-cards-grid">
-                            {lectureLoading && <p className="header-subtitle">Loading lectures...</p>}
-                            {!lectureLoading && lectureError && <p className="header-subtitle">{lectureError}</p>}
-                            {!lectureLoading && !lectureError && lectures.length === 0 && (
-                                <p className="header-subtitle">No lectures available right now.</p>
-                            )}
-                            {!lectureLoading && !lectureError && lectures.map((lecture) => (
-                                <article key={lecture.id} className="lecture-program-card">
-                                    <div className="lecture-program-title">
-                                        {lecture.title}
-                                    </div>
+                    selectedLectureId ? (
+                        <LectureDetails
+                            embedded
+                            lectureIdOverride={selectedLectureId}
+                            onBackToList={handleBackToLectureList}
+                        />
+                    ) : (
+                        <div className="dashboard-card lectures-panel-card">
+                            <div className="card-header">
+                                <h2>Available Lectures</h2>
+                                <button type="button" className="view-all" onClick={fetchLectures}>Refresh</button>
+                            </div>
+                            <div className="card-content lecture-cards-grid">
+                                {lectureLoading && <p className="header-subtitle">Loading lectures...</p>}
+                                {!lectureLoading && lectureError && <p className="header-subtitle">{lectureError}</p>}
+                                {!lectureLoading && !lectureError && lectures.length === 0 && (
+                                    <p className="header-subtitle">No lectures available right now.</p>
+                                )}
+                                {!lectureLoading && !lectureError && lectures.map((lecture) => (
+                                    <article key={lecture.id} className="lecture-program-card">
+                                        <div className="lecture-program-header">
+                                            <span className="lecture-program-subject-chip">{lecture.subjectName || 'General'}</span>
+                                            <span className="lecture-program-duration-chip">{lecture.durationMinutes || 0} min</span>
+                                        </div>
 
-                                    <div className="lecture-program-details">
-                                        <p><strong>Duration:</strong> {lecture.durationMinutes || 0} min</p>
-                                        <p><strong>Date:</strong> {formatDateTime(lecture.scheduledAt)}</p>
-                                        <p><strong>Tutor:</strong> {lecture.tutorName || 'N/A'}</p>
-                                        <p><strong>Subject:</strong> {lecture.subjectName || 'General'}</p>
-                                    </div>
+                                        <h3 className="lecture-program-title">
+                                            {lecture.title || 'Untitled Lecture'}
+                                        </h3>
 
-                                    <p className="lecture-program-desc">
-                                        {lecture.description || 'No description provided.'}
-                                    </p>
+                                        <div className="lecture-program-details">
+                                            <p><strong>Date</strong><span>{formatDateTime(lecture.scheduledAt)}</span></p>
+                                            <p><strong>Tutor</strong><span>{lecture.tutorName || 'N/A'}</span></p>
+                                            <p><strong>Type</strong><span>{lecture.meetingLink ? 'Online' : 'Details only'}</span></p>
+                                        </div>
 
-                                    <div className="lecture-program-actions">
-                                        {lecture.meetingLink && (
-                                            <a
-                                                href={lecture.meetingLink}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="lecture-program-link"
+                                        <p className="lecture-program-desc">
+                                            {lecture.description || 'No description provided.'}
+                                        </p>
+
+                                        <div className="lecture-program-actions">
+                                            {lecture.meetingLink && (
+                                                <a
+                                                    href={lecture.meetingLink}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="lecture-program-link"
+                                                >
+                                                    Join Lecture
+                                                </a>
+                                            )}
+                                            <button
+                                                type="button"
+                                                className="lecture-program-btn"
+                                                onClick={() => handleOpenLectureDetails(lecture.id)}
                                             >
-                                                Join Lecture
-                                            </a>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className="lecture-program-btn"
-                                            onClick={() => navigate(`/dashboard/student/lectures/${lecture.id}`)}
-                                        >
-                                            More Details
-                                        </button>
-                                    </div>
-                                </article>
-                            ))}
+                                                More Details
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )
                 )}
 
                 {activeTab === 'my-requests' && (

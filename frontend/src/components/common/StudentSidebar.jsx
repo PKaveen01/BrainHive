@@ -6,6 +6,7 @@ import './StudentSidebar.css';
 const StudentSidebar = ({ user, activeTab, onTabChange }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const currentTab = new URLSearchParams(location.search).get('tab');
 
     const handleLogout = async () => {
         await authService.logout();
@@ -104,10 +105,12 @@ const StudentSidebar = ({ user, activeTab, onTabChange }) => {
                             <span>👨‍🏫</span> Find Tutors
                         </li>
                         <li
-                            className={activeTab === 'lectures' ? 'active' : ''}
+                            className={activeTab === 'lectures' || currentTab === 'lectures' ? 'active' : ''}
                             onClick={() => {
                                 if (onTabChange) onTabChange('lectures');
-                                else navigate('/dashboard/student');
+                                if (!isPath('/dashboard/student') || !onTabChange) {
+                                    navigate('/dashboard/student?tab=lectures');
+                                }
                             }}
                         >
                             <span>🎓</span> Lectures
