@@ -238,11 +238,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Full Name *</label>
                             <div className="input-icon">
-                                <span className="icon">👤</span>
+                                <span className="icon"></span>
                                 <input
                                     type="text"
                                     name="fullName"
-                                    placeholder="Dr. Sarah Mitchell"
+                                    placeholder="👤 Dr. Sarath Indika"
                                     value={formData.fullName}
                                     onChange={handleChange}
                                     className={errors.fullName ? 'error' : ''}
@@ -255,11 +255,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>University Email *</label>
                             <div className="input-icon">
-                                <span className="icon">📧</span>
+                                <span className="icon"></span>
                                 <input
                                     type="email"
                                     name="email"
-                                    placeholder="sarah.mitchell@university.edu"
+                                    placeholder="📧 sarath.indika@university.edu"
                                     value={formData.email}
                                     onChange={handleChange}
                                     className={errors.email ? 'error' : ''}
@@ -272,11 +272,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Password *</label>
                             <div className="input-icon">
-                                <span className="icon">🔒</span>
+                                <span className="icon"></span>
                                 <input
                                     type="password"
                                     name="password"
-                                    placeholder="Create a strong password"
+                                    placeholder="🔒 Create a strong password"
                                     value={formData.password}
                                     onChange={handleChange}
                                     className={errors.password ? 'error' : ''}
@@ -321,11 +321,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Confirm Password *</label>
                             <div className="input-icon">
-                                <span className="icon">✓</span>
+                                <span className="icon"></span>
                                 <input
                                     type="password"
                                     name="confirmPassword"
-                                    placeholder="Confirm your password"
+                                    placeholder="✓ Confirm your password"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                     className={errors.confirmPassword ? 'error' : ''}
@@ -343,11 +343,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Highest Qualification *</label>
                             <div className="input-icon">
-                                <span className="icon">🎓</span>
+                                <span className="icon"></span>
                                 <input
                                     type="text"
                                     name="qualification"
-                                    placeholder="e.g., M.Sc. in Computer Science, PhD Candidate"
+                                    placeholder="🎓 e.g., M.Sc. in Computer Science, PhD Candidate"
                                     value={formData.qualification}
                                     onChange={handleChange}
                                     className={errors.qualification ? 'error' : ''}
@@ -360,11 +360,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Years of Experience (Optional)</label>
                             <div className="input-icon">
-                                <span className="icon">📅</span>
+                                <span className="icon"></span>
                                 <input
                                     type="number"
                                     name="yearsOfExperience"
-                                    placeholder="e.g., 5"
+                                    placeholder="📅 e.g., 5"
                                     value={formData.yearsOfExperience}
                                     onChange={handleChange}
                                     disabled={loading}
@@ -416,7 +416,7 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Max Concurrent Students</label>
                             <div className="input-icon">
-                                <span className="icon">👥</span>
+                                <span className="icon"></span>
                                 <input
                                     type="number"
                                     name="maxConcurrentStudents"

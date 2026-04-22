@@ -1,0 +1,58 @@
+
+/* ═══════════════════════════════════════════════════════════════
+   NEW CHART ADDITIONS — append to end of DashboardV2.css
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 5-column stat row ───────────────────────────────────────── */
+.v2-stats-row {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+/* ── Study Groups list card ──────────────────────────────────── */
+.v2-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.25rem 0;
+}
+
+.v2-group-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.5rem;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.v2-group-item:hover { background: var(--bg); }
+
+.v2-group-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.v2-group-info { flex: 1; min-width: 0; }
+.v2-group-name { font-weight: 600; font-size: 0.87rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v2-group-meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+.v2-group-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.v2-group-status.active   { background: #d1fae5; color: #065f46; }
+.v2-group-status.inactive { background: #f1f5f9; color: var(--muted); }
+
+/* ── Recharts legend overrides ───────────────────────────────── */
+.recharts-legend-wrapper { padding-top: 8px !important; }
+.recharts-legend-item-text { color: var(--muted) !important; font-size: 0.8rem !important; }

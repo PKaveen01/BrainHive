@@ -30,14 +30,27 @@ const Login = () => {
             const response = await authService.login(formData.email.trim(), formData.password, role);
 
             if (response && response.success) {
-                // Persist role returned by server (may differ from selector for admins)
+                // Check if the selected role matches the server's role (for non-admin users)
+                const serverRole = response.role;
+                
+                if (serverRole !== 'ADMIN') {
+                    // For STUDENT or TUTOR, verify they selected the correct role
+                    if (role !== serverRole) {
+                        const errorMsg = `Wrong role selected! You are registered as a ${serverRole.toLowerCase()}. Please select the correct role or contact support.`;
+                        setError(errorMsg);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                // Persist role returned by server
                 const storedUser = authService.getCurrentUser();
                 if (storedUser) {
                     storedUser.role = response.role;
                     localStorage.setItem('user', JSON.stringify(storedUser));
                 }
 
-                const serverRole = response.role;
+                // Navigate based on server role
                 if (serverRole === 'ADMIN') {
                     navigate('/dashboard/admin');
                 } else if (serverRole === 'STUDENT') {
@@ -88,20 +101,18 @@ const Login = () => {
                             <span className="role-icon">👨‍🏫</span> Tutor
                         </button>
                     </div>
-                    <p className="role-hint">
-                        Admin? Use your email &amp; password — the system will recognise your role automatically.
-                    </p>
+                    {/* Removed the admin hint text */}
                 </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label>Email</label>
                         <div className="input-icon">
-                            <span className="icon">📧</span>
+                            <span className="iconx"></span>
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="your@email.com"
+                                placeholder="📧 your@email.com"
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 required
@@ -113,11 +124,11 @@ const Login = () => {
                     <div className="form-group">
                         <label>Password</label>
                         <div className="input-icon">
-                            <span className="icon">🔒</span>
+                            <span className="iconx"></span>
                             <input
                                 type="password"
                                 name="password"
-                                placeholder="Enter your password"
+                                placeholder="🔒 Enter your password"
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 required
@@ -136,9 +147,9 @@ const Login = () => {
                     </div>
 
                     {error && (
-                        <div className="alert alert-error">
-                            <span className="alert-icon">⚠️</span>
-                            {error}
+                        <div className={`alert ${error.includes('Wrong role') ? 'alert-warning' : 'alert-error'}`}>
+                            <span className="alert-icon">{error.includes('Wrong role') ? '⚠️' : '❌'}</span>
+                            <span className="alert-message">{error}</span>
                         </div>
                     )}
 

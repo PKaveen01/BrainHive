@@ -332,7 +332,16 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Resource not found: " + resourceId));
         r.setStatus("removed");
         r.setModeratedAt(LocalDateTime.now());
-        return toResourceModDTO(resourceRepository.save(r));
+        resourceRepository.save(r);
+
+        // Resolve all pending reports so the resource disappears from the reported page
+        List<ResourceReport> pendingReports = resourceReportRepository.findByResourceId(resourceId).stream()
+                .filter(rep -> "pending".equals(rep.getStatus()))
+                .collect(Collectors.toList());
+        pendingReports.forEach(ResourceReport::markAsResolved);
+        resourceReportRepository.saveAll(pendingReports);
+
+        return toResourceModDTO(r);
     }
 
     // ─── Lectures ────────────────────────────────────────────────────────────

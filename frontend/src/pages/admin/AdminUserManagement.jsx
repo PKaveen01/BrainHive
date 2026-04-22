@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { useActionMessage, ActionBanner, LoadingState, EmptyState, formatDate } from '../../components/admin/adminShared';
+import { useCustomPrompt } from '../../hooks/useCustomPrompt'; // Add this import
 import '../../components/admin/AdminLayout.css';
 import api from '../../services/api';
 
 const AdminUserManagement = () => {
-    const [users, setUsers]       = useState([]);
-    const [loading, setLoading]   = useState(true);
-    const [search, setSearch]     = useState('');
-    const [roleFilter, setRole]   = useState('ALL');
-    const [msg, showMsg]          = useActionMessage();
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [roleFilter, setRole] = useState('ALL');
+    const [msg, showMsg] = useActionMessage();
+    const { showPrompt, PromptDialog } = useCustomPrompt(); // Add this
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -26,15 +28,29 @@ const AdminUserManagement = () => {
     };
 
     const handleSuspend = async (userId) => {
-        const days = window.prompt('Suspend this user for how many days?', '30');
+        const days = await showPrompt({
+            title: 'Suspend User',
+            message: 'Enter suspension period',
+            defaultValue: '30',
+            placeholder: 'Number of days',
+            unit: 'days'
+        });
+        
         if (days === null) return;
+        
         const d = parseInt(days, 10);
-        if (isNaN(d) || d < 1) { showMsg('Enter a valid number of days (min 1).', true); return; }
+        if (isNaN(d) || d < 1) { 
+            showMsg('Enter a valid number of days (min 1).', true); 
+            return; 
+        }
+        
         try {
             await api.post(`/admin/users/${userId}/terminate`, { durationDays: d });
             showMsg(`User suspended for ${d} day(s).`);
             fetchUsers();
-        } catch { showMsg('Failed to suspend user.', true); }
+        } catch { 
+            showMsg('Failed to suspend user.', true); 
+        }
     };
 
     const handleActivate = async (userId) => {
@@ -42,20 +58,24 @@ const AdminUserManagement = () => {
             await api.post(`/admin/users/${userId}/reactivate`);
             showMsg('User reactivated successfully.');
             fetchUsers();
-        } catch { showMsg('Failed to reactivate user.', true); }
+        } catch { 
+            showMsg('Failed to reactivate user.', true); 
+        }
     };
 
     const filtered = users.filter(u => {
         const q = search.toLowerCase();
         const matchSearch = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
-        const matchRole   = roleFilter === 'ALL' || u.role === roleFilter;
+        const matchRole = roleFilter === 'ALL' || u.role === roleFilter;
         return matchSearch && matchRole;
     });
 
     return (
         <AdminLayout pageTitle="User Management">
             <ActionBanner msg={msg} />
+            <PromptDialog /> {/* Add this */}
 
+            {/* Rest of your component remains the same */}
             <div className="content-header">
                 <h2>All Users ({filtered.length})</h2>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -100,19 +120,19 @@ const AdminUserManagement = () => {
                         </thead>
                         <tbody>
                             {filtered.map(user => {
-                                const isSuspended = ['SUSPENDED','TERMINATED','REJECTED'].includes(user.accountStatus);
+                                const isSuspended = ['SUSPENDED', 'TERMINATED', 'REJECTED'].includes(user.accountStatus);
                                 return (
                                     <tr key={user.id}>
                                         <td><strong>{user.name}</strong></td>
                                         <td>{user.email}</td>
                                         <td>
-                                            <span className={`role-badge ${(user.role||'').toLowerCase()}`}>
+                                            <span className={`role-badge ${(user.role || '').toLowerCase()}`}>
                                                 {user.role}
                                             </span>
                                         </td>
                                         <td>{formatDate(user.createdAt)}</td>
                                         <td>
-                                            <span className={`status-badge ${(user.accountStatus||'active').toLowerCase()}`}>
+                                            <span className={`status-badge ${(user.accountStatus || 'active').toLowerCase()}`}>
                                                 {user.accountStatus || 'ACTIVE'}
                                             </span>
                                         </td>

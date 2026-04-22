@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import StudentSidebar from '../../components/common/StudentSidebar';
 import './Profile.css';
 
 const API_BASE = 'http://localhost:8080/api';
 
 const StudentProfileEdit = () => {
     const navigate = useNavigate();
+    const [user] = useState(() => authService.getCurrentUser());
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -174,17 +177,25 @@ const StudentProfileEdit = () => {
 
     if (loading) {
         return (
-            <div className="profile-container">
-                <div className="profile-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading profile...</p>
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="profile-container">
+        <div className="dashboard">
+            <StudentSidebar user={user} />
+            <div className="main-content">
+            <div className="profile-container">
             <div className="profile-header">
                 <button className="back-button" onClick={() => navigate('/profile')}>
                     ← Back to Profile
@@ -390,6 +401,8 @@ const StudentProfileEdit = () => {
                     </button>
                 </div>
             </form>
+        </div>
+            </div>
         </div>
     );
 };

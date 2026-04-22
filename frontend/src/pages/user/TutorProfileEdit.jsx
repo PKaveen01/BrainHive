@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import TutorSidebar from '../peerhelp/TutorSidebar';
 import './Profile.css';
 
 const API_BASE = 'http://localhost:8080/api';
@@ -10,6 +12,7 @@ const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2
 
 const TutorProfileEdit = () => {
     const navigate = useNavigate();
+    const [user] = useState(() => authService.getCurrentUser());
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -144,10 +147,15 @@ const TutorProfileEdit = () => {
 
     if (loading) {
         return (
-            <div className="profile-container">
-                <div className="profile-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading profile...</p>
+            <div className="dashboard">
+                <TutorSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -157,7 +165,10 @@ const TutorProfileEdit = () => {
     const subjectsToShow = availableSubjects.length > 0 ? availableSubjects : profileData.expertSubjects;
 
     return (
-        <div className="profile-container">
+        <div className="dashboard">
+            <TutorSidebar user={user} />
+            <div className="main-content">
+            <div className="profile-container">
             <div className="profile-header">
                 <button className="back-button" onClick={() => navigate('/tutor/profile')}>
                     ← Back to Profile
@@ -343,6 +354,8 @@ const TutorProfileEdit = () => {
                     </button>
                 </div>
             </form>
+        </div>
+            </div>
         </div>
     );
 };
