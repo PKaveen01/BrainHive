@@ -140,11 +140,8 @@ const StudentSidebar = ({ user, activeTab, onTabChange }) => {
                             <span>Find Tutors</span>
                         </li>
                         <li
-                            className={activeTab === 'lectures' ? 'active' : ''}
-                            onClick={() => {
-                                if (onTabChange) onTabChange('lectures');
-                                else navigate('/dashboard/student');
-                            }}
+                            className={isPath('/dashboard/student/lectures') ? 'active' : ''}
+                            onClick={() => navigate('/dashboard/student/lectures')}
                         >
                             <svg className="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 6V4M12 6C10.8954 6 10 6.89543 10 8C10 9.10457 10.8954 10 12 10M12 6C13.1046 6 14 6.89543 14 8C14 9.10457 13.1046 10 12 10M12 10V12M8 20H16M6 20H4V16L12 4L20 16V20H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

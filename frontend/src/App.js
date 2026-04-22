@@ -8,6 +8,7 @@ import StudentSignup from './pages/user/StudentSignup';
 import TutorSignup from './pages/user/TutorSignup';
 import CompleteProfile from './pages/user/CompleteProfile';
 import StudentDashboard from './pages/user/StudentDashboard';
+import StudentLectures from './pages/user/StudentLectures';
 import LectureDetails from './pages/user/LectureDetails';
 import StudentProfileView from './pages/user/StudentProfileView';
 import StudentProfileEdit from './pages/user/StudentProfileEdit';
@@ -68,6 +69,7 @@ function App() {
 
           {/* Student */}
           <Route path="/dashboard/student"                     element={<StudentDashboard />} />
+          <Route path="/dashboard/student/lectures"            element={<StudentLectures />} />
           <Route path="/dashboard/student/lectures/:lectureId" element={<LectureDetails />} />
 
           {/* Tutor dashboard — each section is its own page */}

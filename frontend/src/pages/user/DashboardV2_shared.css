@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════
+   DashboardV2_shared.css
+   Shared extension for Admin Dashboard, Admin Analytics,
+   Tutor Dashboard & Tutor Analytics.
+   Imports DashboardV2.css vars; never redefines :root.
+   Colour palette = exact Student Dashboard theme:
+     Primary   #4f46e5  (indigo)
+     Dark      #4338ca
+     Lite      #e0e7ff
+     Secondary #06b6d4  (cyan)
+     Success   #10b981
+     Warn      #f59e0b
+     Danger    #ef4444
+     Muted     #6b7280
+═══════════════════════════════════════════════════════════════ */
+
+/* ── KPI Grid ─────────────────────────────────────────────────── */
+.v2-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.v2-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--accent, #4f46e5);
+  transition: var(--transition);
+  cursor: default;
+}
+
+.v2-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.v2-kpi-val {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.v2-kpi-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Charts row layout ────────────────────────────────────────── */
+.v2-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  align-items: start;
+}
+
+/* ── Chart card (equivalent to v2-card but used in rows) ──────── */
+.v2-chart-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.v2-chart-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Reuse v2-card-head inside chart cards */
+.v2-chart-card .v2-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.v2-chart-card .v2-card-head h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Recharts: Student Dashboard exact colour overrides ────────── */
+
+/* Grid lines */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #e5e7eb;
+  stroke-dasharray: 3 3;
+}
+
+/* Axis ticks */
+.recharts-cartesian-axis-tick-value {
+  font-size: 10px;
+  fill: #9ca3af;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Gradient definition helper — same ids used across pages */
+/* Each page that uses bars should declare barGradient in a <defs> block */
+
+/* Tooltip */
+.v2-tooltip {
+  background: #111827;
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.72rem;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: none;
+}
+
+.v2-tooltip-label {
+  color: #9ca3af;
+  font-size: 0.65rem;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Pie stroke = white (matches Student Dashboard) */
+.recharts-pie-sector path {
+  stroke: #ffffff;
+  stroke-width: 2px;
+}
+
+/* Radial bar background track */
+.recharts-radial-bar-background-sector {
+  fill: #f3f4f6 !important;
+}
+
+/* Legend */
+.recharts-legend-item-text {
+  font-size: 0.78rem !important;
+  color: var(--muted) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── Verification banner ──────────────────────────────────────── */
+.v2-verify-banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.83rem;
+  color: #92400e;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Quick links grid ─────────────────────────────────────────── */
+.v2-quicklink-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.v2-quicklink-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.875rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.v2-quicklink-item:hover {
+  background: var(--primary-lite);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.v2-quicklink-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.v2-quicklink-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.v2-quicklink-count {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ── Tutor rating items ───────────────────────────────────────── */
+.v2-tutor-ratings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.v2-tutor-rating-item {
+  padding: 0.625rem 0.75rem;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.v2-tutor-rating-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  gap: 0.5rem;
+}
+
+.v2-tutor-rating-stars {
+  color: #f59e0b;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.v2-tutor-rating-msg {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Hero banner: stat blocks inside (admin variant) ─────────── */
+.v2-hero-stats {
+  display: flex;
+  gap: 2.5rem;
+  color: white;
+  align-items: center;
+}
+
+.v2-hero-stat {
+  text-align: center;
+}
+
+.v2-hero-stat-val {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.v2-hero-stat-lbl {
+  font-size: 0.72rem;
+  opacity: 0.75;
+  margin-top: 0.25rem;
+}
+
+/* ── Summary table (Admin Analytics) ────────────────────────── */
+.v2-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.v2-summary-table th {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border);
+}
+
+.v2-summary-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.v2-summary-table tr:hover td {
+  background: #f8faff;
+}
+
+.v2-table-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.v2-table-badge--good   { background: #d1fae5; color: #065f46; }
+.v2-table-badge--warn   { background: #fef9c3; color: #854d0e; }
+.v2-table-badge--bad    { background: #fee2e2; color: #991b1b; }
+.v2-table-badge--normal { background: #e0e7ff; color: #3730a3; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .v2-charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .v2-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .v2-quicklink-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .v2-hero-stats {
+    gap: 1.5rem;
+  }
+}
