@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import { getMyGroups, createGroup, joinGroup } from '../../services/collaboration.service';
 import './Collaboration.css';
 
@@ -60,6 +61,7 @@ export default function GroupsPage() {
   const goalIcon = { EXAM: '🎯', ASSIGNMENT: '📝', PROJECT: '🚀', GENERAL: '💬' };
 
   return (
+    <ProfileGuard>
     <div className="dashboard">
       <StudentSidebar />
       <div className="main-content">
@@ -219,5 +221,6 @@ export default function GroupsPage() {
         </div>
       )}
     </div>
+    </ProfileGuard>
   );
 }

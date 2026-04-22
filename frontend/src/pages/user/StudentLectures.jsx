@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './StudentLectures.css';
 
 const STATUS_FILTERS = ['All', 'Upcoming', 'Ongoing', 'Past'];
@@ -63,6 +64,7 @@ const StudentLectures = () => {
     const statusClass = { upcoming: 'lec-badge--upcoming', ongoing: 'lec-badge--ongoing', past: 'lec-badge--past' };
 
     return (
+        <ProfileGuard>
         <div className="dashboard">
             <StudentSidebar user={user} activeTab="lectures" />
 
@@ -261,6 +263,7 @@ const StudentLectures = () => {
                 )}
             </div>
         </div>
+        </ProfileGuard>
     );
 };
 

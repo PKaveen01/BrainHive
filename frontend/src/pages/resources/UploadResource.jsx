@@ -4,6 +4,7 @@ import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
 import TutorSidebar from '../peerhelp/TutorSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './UploadResource.css';
 
 function UrIcon({ name, className = '', size = 18, filled = false }) {
@@ -611,6 +612,7 @@ const UploadResource = () => {
     const isTutor = user?.role === 'TUTOR' || user?.role === 'tutor' || user?.userType === 'TUTOR' || user?.userType === 'tutor';
 
     return (
+        <ProfileGuard>
         <div className="dashboard">
             {isTutor ? <TutorSidebar user={user} /> : <StudentSidebar user={user} />}
             <div className="main-content">
@@ -945,6 +947,7 @@ const UploadResource = () => {
                 </form>
             </div>
         </div>
+        </ProfileGuard>
     );
 };
 

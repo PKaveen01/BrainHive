@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './PeerHelp.css';
 
 const RequestHelp = () => {
@@ -111,6 +112,7 @@ const RequestHelp = () => {
     const renderStars = (r) => '★'.repeat(Math.round(r||0)) + '☆'.repeat(5-Math.round(r||0));
 
     return (
+        <ProfileGuard>
         <div className="dashboard">
             <StudentSidebar user={user} />
             <div className="main-content peerhelp-main">
@@ -293,6 +295,7 @@ const RequestHelp = () => {
                 </div>
             </div>
         </div>
+        </ProfileGuard>
     );
 };
 

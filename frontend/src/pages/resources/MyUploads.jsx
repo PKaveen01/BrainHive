@@ -4,6 +4,7 @@ import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
 import TutorSidebar from '../peerhelp/TutorSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './MyUploads.css';
 
 const statusColor = { active:'#16a34a', pending:'#d97706', flagged:'#dc2626', removed:'#6b7280' };
@@ -361,6 +362,7 @@ export default function MyUploads() {
     };
 
     return (
+        <ProfileGuard>
         <div className="dashboard">
             {renderSidebar()}
             <div className="main-content">
@@ -698,5 +700,6 @@ export default function MyUploads() {
                 </div>
             )}
         </div>
+        </ProfileGuard>
     );
 }

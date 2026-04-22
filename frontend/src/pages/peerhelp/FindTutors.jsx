@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './PeerHelp.css';
 
 const FindTutors = () => {
@@ -193,6 +194,7 @@ const FindTutors = () => {
     );
 
     return (
+        <ProfileGuard>
         <div className="dashboard">
             <StudentSidebar user={user} />
             <div className="main-content peerhelp-main find-tutors-page">
@@ -425,6 +427,7 @@ const FindTutors = () => {
                 )}
             </div>
         </div>
+        </ProfileGuard>
     );
 };
 
