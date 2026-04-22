@@ -1,5 +1,6 @@
 package com.brainhive.modules.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -26,9 +27,11 @@ public class Subject {
     private LocalDateTime createdAt;
 
     // Relationships
+    @JsonIgnore
     @ManyToMany(mappedBy = "subjects")
     private Set<StudentProfile> students = new HashSet<>();
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "expertSubjects")
     private Set<TutorProfile> tutors = new HashSet<>();
 

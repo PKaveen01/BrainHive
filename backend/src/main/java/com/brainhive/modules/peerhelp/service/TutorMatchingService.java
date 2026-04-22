@@ -1,20 +1,21 @@
 package com.brainhive.modules.peerhelp.service;
 
-import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
-import com.brainhive.modules.peerhelp.model.TutorAvailability;
-import com.brainhive.modules.user.model.TutorProfile;
-import com.brainhive.modules.peerhelp.repository.TutorAvailabilityRepository;
-import com.brainhive.modules.user.repository.TutorProfileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.model.TutorAvailability;
+import com.brainhive.modules.peerhelp.repository.TutorAvailabilityRepository;
+import com.brainhive.modules.user.model.TutorProfile;
+import com.brainhive.modules.user.repository.TutorProfileRepository;
 
 /**
  * Service for matching students with suitable tutors based on subject and availability.
@@ -35,6 +36,17 @@ public class TutorMatchingService {
     public List<TutorProfileResponseDTO> findMatchingTutors(Long subjectId) {
         return tutorProfileRepository.findAvailableTutorsBySubjectOrderByCredibility(subjectId)
                 .stream()
+                .map(TutorProfileResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all approved tutors across all subjects.
+     */
+    public List<TutorProfileResponseDTO> findAllTutors(int limit) {
+        return tutorProfileRepository.findAllApprovedTutorsOrderByCredibility()
+                .stream()
+                .limit(Math.max(1, limit))
                 .map(TutorProfileResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }

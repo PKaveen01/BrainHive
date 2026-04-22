@@ -1,7 +1,15 @@
 package com.brainhive.modules.peerhelp.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.brainhive.modules.peerhelp.dto.CreateRatingDTO;
 import com.brainhive.modules.peerhelp.dto.RatingResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorQuickRatingDTO;
 import com.brainhive.modules.peerhelp.model.HelpRequest;
 import com.brainhive.modules.peerhelp.model.HelpRequestStatus;
 import com.brainhive.modules.peerhelp.model.SessionRating;
@@ -9,12 +17,6 @@ import com.brainhive.modules.peerhelp.model.TutorSession;
 import com.brainhive.modules.peerhelp.repository.HelpRequestRepository;
 import com.brainhive.modules.peerhelp.repository.SessionRatingRepository;
 import com.brainhive.modules.peerhelp.repository.TutorSessionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -63,7 +65,7 @@ public class RatingService {
         rating.setCommunicationRating(dto.getCommunicationRating());
         rating.setPunctualityRating(dto.getPunctualityRating());
         rating.setFeedback(dto.getFeedback());
-        rating.setWouldRecommend(dto.getWouldRecommend() != null ? dto.getWouldRecommend() : true);
+        rating.setWouldRecommend(dto.getWouldRecommend() == null ? Boolean.TRUE : dto.getWouldRecommend());
 
         SessionRating saved = ratingRepository.save(rating);
 
@@ -75,6 +77,38 @@ public class RatingService {
         // Update tutor's credibility score
         tutorProfileService.updateCredibilityScore(session.getTutor().getId());
 
+        return RatingResponseDTO.fromEntity(saved);
+    }
+
+    /**
+     * Quick rate a tutor using the most recent completed, unrated session between the student and tutor.
+     */
+    public RatingResponseDTO createTutorQuickRating(Long studentId, Long tutorId, TutorQuickRatingDTO dto) {
+        List<TutorSession> completedSessions = sessionRepository.findCompletedSessionsByStudentAndTutor(studentId, tutorId);
+        TutorSession eligibleSession = completedSessions.stream()
+                .filter(session -> !ratingRepository.existsBySession(session))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No completed unrated session found with this tutor. Complete a session before rating."));
+
+        SessionRating rating = new SessionRating();
+        rating.setSession(eligibleSession);
+        rating.setStudent(eligibleSession.getStudent());
+        rating.setTutor(eligibleSession.getTutor());
+        rating.setRating(dto.getRating());
+        rating.setKnowledgeRating(dto.getRating());
+        rating.setCommunicationRating(dto.getRating());
+        rating.setPunctualityRating(dto.getRating());
+        rating.setFeedback(dto.getMessage());
+        rating.setWouldRecommend(dto.getWouldRecommend() == null ? Boolean.TRUE : dto.getWouldRecommend());
+
+        SessionRating saved = ratingRepository.save(rating);
+
+        HelpRequest request = eligibleSession.getHelpRequest();
+        request.setStatus(HelpRequestStatus.RATED);
+        helpRequestRepository.save(request);
+
+        tutorProfileService.updateCredibilityScore(eligibleSession.getTutor().getId());
         return RatingResponseDTO.fromEntity(saved);
     }
 

@@ -8,7 +8,7 @@ const TutorStatsCards = ({ upcomingSessionsCount, availableRequestsCount, myLect
         </div>
         <div className="stat-card">
             <h3>{availableRequestsCount}</h3>
-            <p>Available Requests</p>
+            <p>Open Requests</p>
         </div>
         <div className="stat-card">
             <h3>{myLecturesCount}</h3>

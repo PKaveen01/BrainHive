@@ -19,7 +19,7 @@
     border-radius: 1.5rem;
     padding: 2.5rem;
     width: 100%;
-    max-width: 450px;
+    max-width: 550px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     position: relative;
     z-index: 2;
@@ -44,7 +44,11 @@
 }
 
 .auth-logo {
-    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
     font-weight: bold;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
@@ -441,4 +445,293 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+
+/* Update the input-icon styles to keep icons visible */
+.input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+
+
+.input-icon input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    background: white;
+}
+
+.input-icon input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-icon input:disabled {
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+/* Enhanced Alert Styles */
+.alert {
+    padding: 1rem 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    animation: slideIn 0.3s ease-out;
+    backdrop-filter: blur(10px);
+    border: 1px solid;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Error Alert */
+.alert-error {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+    border-color: #ef4444;
+}
+
+.alert-error .alert-icon {
+    font-size: 1.25rem;
+    animation: shake 0.5s ease-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Warning Alert for Role Mismatch */
+.alert-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+    border-color: #f59e0b;
+}
+
+.alert-warning .alert-icon {
+    font-size: 1.25rem;
+    animation: pulse 1s ease-out;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Alert Message */
+.alert-message {
+    flex: 1;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+/* Optional: Add a close button to alerts */
+.alert {
+    position: relative;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+    color: inherit;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+/* Enhanced role selector container - remove the hint text */
+.role-selector-container {
+    margin-bottom: 2rem;
+}
+
+/* Remove the role-hint class since we removed that paragraph */
+.role-hint {
+    display: none;
+}
+
+/* Add loading state for buttons */
+.btn-primary.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* Role selector enhancement */
+.role-selector {
+    display: flex;
+    gap: 1rem;
+    background: #f1f5f9;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    margin-bottom: 0;
+}
+
+.role-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background: transparent;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #64748b;
+}
+
+.role-icon {
+    font-size: 1rem;
+}
+
+.role-btn.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.role-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+.role-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .alert {
+        padding: 0.875rem;
+        font-size: 0.8125rem;
+    }
+    
+    .alert-icon {
+        font-size: 1rem;
+    }
+}
+
+
+/* Input Icon Styles - Enhanced with animation */
+.input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon .iconx {
+    position: absolute;
+    left: 1rem;
+    font-size: 1.2rem;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide icon with fade and scale effect when input is focused */
+.input-icon:focus-within .iconx {
+    opacity: 0;
+    transform: scale(0.8) translateX(-5px);
+    pointer-events: none;
+}
+
+.input-icon input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+}
+
+.input-icon input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    padding-left: 1rem; /* Shift text left when icon disappears */
+}
+
+.input-icon input:disabled {
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+/* Optional: Add a slight delay when losing focus to make icon reappear smoothly */
+.input-icon .iconx {
+    transition-delay: 0s;
+}
+
+.input-icon:focus-within .iconx {
+    transition-delay: 0s;
+}
+
+.input-icon:not(:focus-within) .iconx {
+    transition-delay: 0.05s;
+}
+
+
+
+.auth-logo-img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
 }

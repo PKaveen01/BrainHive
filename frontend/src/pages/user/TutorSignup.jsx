@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/auth.service';
 import './Signup.css';
+import logoImage from '../../assets/images/logo.png';
 
 const TutorSignup = () => {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ const TutorSignup = () => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
     const [subjects, setSubjects] = useState([]);
     
     // State for availability slots (simplified for demo)
@@ -153,9 +155,8 @@ const TutorSignup = () => {
             const response = await authService.registerTutor(formData);
             
             if (response && response.success) {
-                // Show success message and redirect
-                alert('Tutor registration successful! Your account will be reviewed by an admin. You can login after approval.');
-                navigate('/login');
+                // Show in-page success screen — tutor must wait for approval
+                setRegistrationSuccess(true);
             } else {
                 setServerError(response.message || 'Registration failed. Please try again.');
             }
@@ -181,11 +182,39 @@ const TutorSignup = () => {
     };
     const strengthCount = Object.values(passwordStrength).filter(Boolean).length;
 
+    // Show success screen after registration — tutor must wait for admin approval
+    if (registrationSuccess) {
+        return (
+            <div className="auth-container">
+                <div className="auth-card" style={{ textAlign: 'center', padding: '48px 32px' }}>
+                    <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎉</div>
+                    <h2 style={{ color: '#1f2937', marginBottom: '12px' }}>Registration Successful!</h2>
+                    <p style={{ color: '#6b7280', fontSize: '15px', lineHeight: '1.6', marginBottom: '24px' }}>
+                        Your tutor account has been created and is <strong>pending admin approval</strong>.
+                        You will be able to log in once an administrator reviews and approves your application.
+                    </p>
+                    <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px', marginBottom: '28px', textAlign: 'left' }}>
+                        <p style={{ margin: 0, color: '#92400e', fontSize: '14px' }}>
+                            ⏳ <strong>What happens next?</strong><br />
+                            An admin will review your qualification and details. Once approved, you will be able to log in with your email and password.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/login')}
+                        style={{ padding: '12px 32px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                        Go to Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="auth-container">
             <div className="auth-card tutor-signup-card">
                 <div className="auth-header">
-                    <div className="auth-logo">🧠 BrainHive</div>
+                    <div className="auth-logo"><img src={logoImage} alt="BrainHive" className="auth-logo-img" /><span>BrainHive</span></div>
                     <h2>Register as Tutor</h2>
                     <p className="auth-subtitle">Share your expertise and help students succeed</p>
                     <div className="signup-badge tutor-badge">
@@ -210,11 +239,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Full Name *</label>
                             <div className="input-icon">
-                                <span className="icon">👤</span>
+                                <span className="icon"></span>
                                 <input
                                     type="text"
                                     name="fullName"
-                                    placeholder="Dr. Sarah Mitchell"
+                                    placeholder="👤 Dr. Sarath Indika"
                                     value={formData.fullName}
                                     onChange={handleChange}
                                     className={errors.fullName ? 'error' : ''}
@@ -227,11 +256,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>University Email *</label>
                             <div className="input-icon">
-                                <span className="icon">📧</span>
+                                <span className="icon"></span>
                                 <input
                                     type="email"
                                     name="email"
-                                    placeholder="sarah.mitchell@university.edu"
+                                    placeholder="📧 sarath.indika@university.edu"
                                     value={formData.email}
                                     onChange={handleChange}
                                     className={errors.email ? 'error' : ''}
@@ -244,11 +273,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Password *</label>
                             <div className="input-icon">
-                                <span className="icon">🔒</span>
+                                <span className="icon"></span>
                                 <input
                                     type="password"
                                     name="password"
-                                    placeholder="Create a strong password"
+                                    placeholder="🔒 Create a strong password"
                                     value={formData.password}
                                     onChange={handleChange}
                                     className={errors.password ? 'error' : ''}
@@ -293,11 +322,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Confirm Password *</label>
                             <div className="input-icon">
-                                <span className="icon">✓</span>
+                                <span className="icon"></span>
                                 <input
                                     type="password"
                                     name="confirmPassword"
-                                    placeholder="Confirm your password"
+                                    placeholder="✓ Confirm your password"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                     className={errors.confirmPassword ? 'error' : ''}
@@ -315,11 +344,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Highest Qualification *</label>
                             <div className="input-icon">
-                                <span className="icon">🎓</span>
+                                <span className="icon"></span>
                                 <input
                                     type="text"
                                     name="qualification"
-                                    placeholder="e.g., M.Sc. in Computer Science, PhD Candidate"
+                                    placeholder="🎓 e.g., M.Sc. in Computer Science, PhD Candidate"
                                     value={formData.qualification}
                                     onChange={handleChange}
                                     className={errors.qualification ? 'error' : ''}
@@ -332,11 +361,11 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Years of Experience (Optional)</label>
                             <div className="input-icon">
-                                <span className="icon">📅</span>
+                                <span className="icon"></span>
                                 <input
                                     type="number"
                                     name="yearsOfExperience"
-                                    placeholder="e.g., 5"
+                                    placeholder="📅 e.g., 5"
                                     value={formData.yearsOfExperience}
                                     onChange={handleChange}
                                     disabled={loading}
@@ -388,7 +417,7 @@ const TutorSignup = () => {
                         <div className="form-group">
                             <label>Max Concurrent Students</label>
                             <div className="input-icon">
-                                <span className="icon">👥</span>
+                                <span className="icon"></span>
                                 <input
                                     type="number"
                                     name="maxConcurrentStudents"

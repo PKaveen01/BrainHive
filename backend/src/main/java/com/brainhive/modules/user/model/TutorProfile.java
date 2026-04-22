@@ -1,5 +1,6 @@
 package com.brainhive.modules.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ public class TutorProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
@@ -40,6 +42,7 @@ public class TutorProfile {
     private Boolean profileCompleted = false;
 
     // Fields from peerhelp module
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "subject_id")
     private Subject subject;
@@ -69,6 +72,7 @@ public class TutorProfile {
     private LocalDateTime updatedAt;
 
     // Many-to-many for multiple expert subjects (user module style)
+    @JsonIgnore
     @ManyToMany
     @JoinTable(
             name = "tutor_subjects",
@@ -77,6 +81,7 @@ public class TutorProfile {
     )
     private Set<Subject> expertSubjects = new HashSet<>();
 
+    @JsonIgnore
     @ElementCollection
     @CollectionTable(name = "tutor_availability_slots", joinColumns = @JoinColumn(name = "tutor_id"))
     private Set<String> availabilitySlots = new HashSet<>();

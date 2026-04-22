@@ -1,41 +1,108 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import StudentSidebar from '../../components/common/StudentSidebar';
 import './Profile.css';
+
+const API_BASE = 'http://localhost:8080/api';
 
 const StudentProfileView = () => {
     const navigate = useNavigate();
+    const [user] = useState(() => authService.getCurrentUser());
+    const [studentData, setStudentData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Dummy student data
-    const studentData = {
-        fullName: 'Alex Johnson',
-        email: 'alex.johnson@university.edu',
-        degree: 'Computer Science',
-        year: 'Year 3',
-        semester: 'Semester 1',
-        subjectsFollowing: [
-            'Data Structures', 'Algorithms', 'Database Systems', 
-            'Operating Systems', 'Web Development', 'Software Engineering'
-        ],
-        strengthAreas: ['Data Structures', 'Algorithms', 'Web Development'],
-        weakAreas: ['Database Systems', 'Operating Systems'],
-        studyStyle: 'Group',
-        availabilityHours: '3-4 hours',
-        studentId: 'CS2023001',
-        enrollmentDate: 'September 2023',
-        profileCompletion: 85
+    useEffect(() => {
+        fetchStudentProfile();
+    }, []);
+
+    const fetchStudentProfile = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await fetch(`${API_BASE}/dashboard/student/info`, {
+                credentials: 'include',
+            });
+
+            if (response.status === 401) {
+                navigate('/login');
+                return;
+            }
+            if (!response.ok) throw new Error('Failed to load profile');
+
+            const data = await response.json();
+
+            const subjects = data.focusAreas ? data.focusAreas.map(s => s.name) : [];
+            const weakSubjects = data.weakSubjects || [];
+            const strengthAreas = subjects.filter(s => !weakSubjects.includes(s));
+
+            setStudentData({
+                fullName: data.fullName || '',
+                email: data.email || '',
+                degree: data.program || '',
+                year: data.year || '',
+                semester: data.semester || '',
+                subjectsFollowing: subjects,
+                strengthAreas,
+                weakAreas: weakSubjects,
+                studyStyle: data.studyStyle || '',
+                availabilityHours: data.availabilityHours ? `${data.availabilityHours} hours` : '',
+                preferredTime: data.preferredTime || '',
+                profileCompletion: data.profileCompletion || 0,
+            });
+        } catch (err) {
+            setError(err.message || 'Failed to load profile');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    if (loading) {
+        return (
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content">
+                    <div className="profile-container">
+                        <div className="profile-error">
+                            <p>⚠️ {error}</p>
+                            <button onClick={fetchStudentProfile} className="btn-save">Retry</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!studentData) return null;
+
     return (
-        <div className="profile-container">
+        <div className="dashboard">
+            <StudentSidebar user={user} />
+            <div className="main-content">
+            <div className="profile-container">
             <div className="profile-header">
                 <button className="back-button" onClick={() => navigate('/dashboard/student')}>
                     ← Back to Dashboard
                 </button>
                 <h1>Student Profile</h1>
-                <button 
-                    className="edit-profile-button"
-                    onClick={() => navigate('/profile/edit')}
-                >
+                <button className="edit-profile-button" onClick={() => navigate('/profile/edit')}>
                     Edit Profile
                 </button>
             </div>
@@ -44,16 +111,15 @@ const StudentProfileView = () => {
                 {/* Profile Summary Card */}
                 <div className="profile-summary-card">
                     <div className="profile-avatar-large">
-                        {studentData.fullName.charAt(0)}
+                        {studentData.fullName ? studentData.fullName.charAt(0).toUpperCase() : '?'}
                     </div>
                     <div className="profile-summary-info">
-                        <h2>{studentData.fullName}</h2>
-                        <p className="student-id">ID: {studentData.studentId}</p>
+                        <h2>{studentData.fullName || 'No name set'}</h2>
                         <p className="student-email">{studentData.email}</p>
                         <div className="profile-completion-badge">
                             <div className="completion-bar-small">
-                                <div 
-                                    className="completion-fill-small" 
+                                <div
+                                    className="completion-fill-small"
                                     style={{ width: `${studentData.profileCompletion}%` }}
                                 ></div>
                             </div>
@@ -68,59 +134,60 @@ const StudentProfileView = () => {
                     <div className="info-grid">
                         <div className="info-item">
                             <label>Degree Program</label>
-                            <p>{studentData.degree}</p>
+                            <p>{studentData.degree || <span className="not-set">Not set</span>}</p>
                         </div>
                         <div className="info-item">
                             <label>Current Year</label>
-                            <p>{studentData.year}</p>
+                            <p>{studentData.year || <span className="not-set">Not set</span>}</p>
                         </div>
                         <div className="info-item">
                             <label>Current Semester</label>
-                            <p>{studentData.semester}</p>
+                            <p>{studentData.semester || <span className="not-set">Not set</span>}</p>
                         </div>
                         <div className="info-item">
-                            <label>Enrollment Date</label>
-                            <p>{studentData.enrollmentDate}</p>
+                            <label>Study Style</label>
+                            <p>{studentData.studyStyle || <span className="not-set">Not set</span>}</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Subjects Following */}
-                <div className="profile-info-card">
-                    <h3>📖 Subjects Currently Following</h3>
-                    <div className="subjects-tags">
-                        {studentData.subjectsFollowing.map((subject, index) => (
-                            <span key={index} className="subject-tag">
-                                {subject}
-                            </span>
-                        ))}
+                {studentData.subjectsFollowing.length > 0 && (
+                    <div className="profile-info-card">
+                        <h3>📖 Subjects Currently Following</h3>
+                        <div className="subjects-tags">
+                            {studentData.subjectsFollowing.map((subject, index) => (
+                                <span key={index} className="subject-tag">{subject}</span>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Strength & Weak Areas */}
-                <div className="profile-info-row">
-                    <div className="profile-info-card half-width">
-                        <h3>💪 Strength Areas</h3>
-                        <div className="strength-tags">
-                            {studentData.strengthAreas.map((area, index) => (
-                                <span key={index} className="strength-tag">
-                                    ✓ {area}
-                                </span>
-                            ))}
-                        </div>
+                {(studentData.strengthAreas.length > 0 || studentData.weakAreas.length > 0) && (
+                    <div className="profile-info-row">
+                        {studentData.strengthAreas.length > 0 && (
+                            <div className="profile-info-card half-width">
+                                <h3>💪 Strength Areas</h3>
+                                <div className="strength-tags">
+                                    {studentData.strengthAreas.map((area, index) => (
+                                        <span key={index} className="strength-tag">✓ {area}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {studentData.weakAreas.length > 0 && (
+                            <div className="profile-info-card half-width">
+                                <h3>⚠️ Weak Areas (Need Help)</h3>
+                                <div className="weak-tags">
+                                    {studentData.weakAreas.map((area, index) => (
+                                        <span key={index} className="weak-tag">! {area}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-
-                    <div className="profile-info-card half-width">
-                        <h3>⚠️ Weak Areas (Need Help)</h3>
-                        <div className="weak-tags">
-                            {studentData.weakAreas.map((area, index) => (
-                                <span key={index} className="weak-tag">
-                                    ! {area}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                )}
 
                 {/* Study Preferences */}
                 <div className="profile-info-card">
@@ -130,18 +197,39 @@ const StudentProfileView = () => {
                             <span className="preference-icon">👥</span>
                             <div>
                                 <label>Study Style</label>
-                                <p>{studentData.studyStyle}</p>
+                                <p>{studentData.studyStyle || <span className="not-set">Not set</span>}</p>
+                            </div>
+                        </div>
+                        <div className="preference-item">
+                            <span className="preference-icon">🌅</span>
+                            <div>
+                                <label>Preferred Study Time</label>
+                                <p>{studentData.preferredTime || <span className="not-set">Not set</span>}</p>
                             </div>
                         </div>
                         <div className="preference-item">
                             <span className="preference-icon">⏰</span>
                             <div>
                                 <label>Daily Study Time</label>
-                                <p>{studentData.availabilityHours}</p>
+                                <p>{studentData.availabilityHours || <span className="not-set">Not set</span>}</p>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {studentData.profileCompletion < 100 && (
+                    <div className="profile-info-card profile-incomplete-notice">
+                        <p>
+                            Your profile is <strong>{studentData.profileCompletion}%</strong> complete.{' '}
+                            <button className="link-button" onClick={() => navigate('/profile/edit')}>
+                                Complete your profile
+                            </button>{' '}
+                            to get better matches.
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
             </div>
         </div>
     );

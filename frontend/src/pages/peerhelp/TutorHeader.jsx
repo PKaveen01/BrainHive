@@ -3,7 +3,7 @@ import React from 'react';
 const TutorHeader = ({ user, dashboardData }) => (
     <header className="dashboard-header">
         <div>
-            <h1>Welcome back, Dr. {user?.name || 'Mitchell'}!</h1>
+            <h1>Welcome back, {user?.name || 'Tutor'}</h1>
             <p className="header-subtitle">
                 {dashboardData?.user?.department || user?.email || 'Tutor Portal'}
             </p>

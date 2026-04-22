@@ -5,741 +5,478 @@ import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
 import './BookMarked.css';
 
-const BookMarked = () => {
+const typeIcon = { pdf:'fileText', link:'link', doc:'fileEdit', ppt:'presentation', video:'video' };
+
+function BmIcon({ name, className = '', size = 18, filled = false }) {
+    const props = {
+        width: size,
+        height: size,
+        viewBox: '0 0 24 24',
+        fill: filled ? 'currentColor' : 'none',
+        stroke: 'currentColor',
+        strokeWidth: '2',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        className
+    };
+
+    switch (name) {
+        case 'bookmark':
+            return (
+                <svg {...props}>
+                    <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                </svg>
+            );
+        case 'search':
+            return (
+                <svg {...props}>
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.35-4.35" />
+                </svg>
+            );
+        case 'fileText':
+            return (
+                <svg {...props}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                </svg>
+            );
+        case 'link':
+            return (
+                <svg {...props}>
+                    <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4" />
+                    <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L13 20" />
+                </svg>
+            );
+        case 'fileEdit':
+            return (
+                <svg {...props}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M10 13l5-5 2 2-5 5-3 1z" />
+                </svg>
+            );
+        case 'presentation':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                    <path d="M8 20h8" />
+                    <path d="M12 16v4" />
+                    <path d="M8 10l2-2 2 2 3-3 2 2" />
+                </svg>
+            );
+        case 'video':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="6" width="15" height="12" rx="2" />
+                    <path d="M18 10l3-2v8l-3-2z" />
+                </svg>
+            );
+        case 'archive':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="4" width="18" height="4" rx="1" />
+                    <path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+                    <path d="M10 12h4" />
+                </svg>
+            );
+        case 'check':
+            return (
+                <svg {...props}>
+                    <path d="M20 6L9 17l-5-5" />
+                </svg>
+            );
+        case 'alertTriangle':
+            return (
+                <svg {...props}>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                </svg>
+            );
+        case 'calendar':
+            return (
+                <svg {...props}>
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4" />
+                    <path d="M8 3v4" />
+                    <path d="M3 10h18" />
+                </svg>
+            );
+        case 'eye':
+            return (
+                <svg {...props}>
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            );
+        case 'download':
+            return (
+                <svg {...props}>
+                    <path d="M12 3v12" />
+                    <path d="M7 10l5 5 5-5" />
+                    <path d="M5 21h14" />
+                </svg>
+            );
+        case 'star':
+            return (
+                <svg {...props}>
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            );
+        case 'x':
+            return (
+                <svg {...props}>
+                    <path d="M18 6L6 18" />
+                    <path d="M6 6l12 12" />
+                </svg>
+            );
+        case 'sparkles':
+            return (
+                <svg {...props}>
+                    <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />
+                    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+                    <path d="M5 14l.8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14z" />
+                </svg>
+            );
+        default:
+            return (
+                <svg {...props}>
+                    <circle cx="12" cy="12" r="9" />
+                </svg>
+            );
+    }
+}
+
+export default function BookMarked() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [bookmarks, setBookmarks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [detailsModal, setDetailsModal] = useState({ show: false, resource: null });
-    const [successMessage, setSuccessMessage] = useState(null);
-    const [error, setError] = useState(null);
-    const [ratingModal, setRatingModal] = useState({ show: false, resourceId: null, resourceTitle: '' });
-    const [userRating, setUserRating] = useState(5);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [search, setSearch] = useState('');
+
+    // Rate modal
+    const [rateModal, setRateModal] = useState({ show: false, resourceId: null, title: '' });
+    const [rating, setRating] = useState(5);
     const [review, setReview] = useState('');
-    const [stats, setStats] = useState({
-        total: 0,
-        pending: 0,
-        active: 0,
-        views: 0,
-        downloads: 0
-    });
+    const [rateLoading, setRateLoading] = useState(false);
 
-    // ============= USER ID MAPPING =============
-    const getDatabaseUserId = (authUser) => {
-        if (!authUser) return null;
-        if (authUser.userId) return String(authUser.userId);
-        if (authUser.id) return String(authUser.id);
-        return null;
-    };
+    const [removingId, setRemovingId] = useState(null);
 
-    // ============= INITIALIZATION =============
     useEffect(() => {
         const init = async () => {
             let currentUser = authService.getCurrentUser();
+            if (!currentUser) { navigate('/login'); return; }
 
-            if (!currentUser) {
-                navigate('/login');
-                return;
-            }
-
+            // Ensure userId is populated
             if (!currentUser.userId) {
                 try {
                     const resp = await api.get('/auth/check');
-                    if (resp.data && resp.data.success && resp.data.userId) {
+                    if (resp.data?.userId) {
                         currentUser = { ...currentUser, userId: resp.data.userId };
                         localStorage.setItem('user', JSON.stringify(currentUser));
                     }
-                } catch (e) {
-                    // session check failed - continue anyway
-                }
+                } catch (e) {}
             }
-
             setUser(currentUser);
-            const userId = getDatabaseUserId(currentUser);
-            fetchBookmarks(userId);
+            fetchBookmarks(String(currentUser.userId));
         };
         init();
-    }, []);
+    }, [navigate]);
 
-    // ============= FETCH BOOKMARKS =============
+    const showSuccess = (msg) => { setSuccess(msg); setTimeout(() => setSuccess(''), 3000); };
+    const showError   = (msg) => { setError(msg);   setTimeout(() => setError(''),   4000); };
+    const uid = () => user?.userId ? String(user.userId) : null;
+
     const fetchBookmarks = async (userIdParam) => {
+        setLoading(true);
+        setError('');
         try {
-            setLoading(true);
-            setError(null);
-
-            const userId = userIdParam != null ? userIdParam : getDatabaseUserId(user);
-
-            if (!userId) {
-                setError('Unable to identify user');
-                setLoading(false);
-                return;
-            }
-
-            let response;
-            try {
-                response = await api.get(`/resources/user/${userId}/bookmarked`);
-            } catch (err) {
-                response = await api.get(`/bookmarks/user/${userId}`);
-            }
-
-            let bookmarksData = [];
-            if (response && response.data) {
-                if (Array.isArray(response.data)) {
-                    bookmarksData = response.data;
-                } else if (response.data.content && Array.isArray(response.data.content)) {
-                    bookmarksData = response.data.content;
-                } else if (response.data.data && Array.isArray(response.data.data)) {
-                    bookmarksData = response.data.data;
-                } else if (response.data.bookmarks && Array.isArray(response.data.bookmarks)) {
-                    bookmarksData = response.data.bookmarks;
-                }
-            }
-
-            setBookmarks(bookmarksData);
-
-            const pending = bookmarksData.filter(b => b?.status === 'pending').length;
-            const active = bookmarksData.filter(b => b?.status === 'active').length;
-            const totalViews = bookmarksData.reduce((sum, b) => sum + (b?.viewCount || 0), 0);
-            const totalDownloads = bookmarksData.reduce((sum, b) => sum + (b?.downloadCount || 0), 0);
-
-            setStats({
-                total: bookmarksData.length,
-                pending,
-                active,
-                views: totalViews,
-                downloads: totalDownloads
-            });
-
-        } catch (error) {
-            console.error('Error fetching bookmarks:', error);
-
-            if (error.response?.status === 404) {
-                setError('No bookmarks found. Start bookmarking resources to see them here!');
-            } else if (error.response?.status === 401) {
-                setError('Session expired. Please log in again.');
-                setTimeout(() => navigate('/login'), 2000);
-            } else {
-                setError('Failed to load bookmarks. Please try again.');
-            }
-            setBookmarks([]);
+            const res = await api.get(`/resources/bookmarks/${userIdParam}`);
+            setBookmarks(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            if (e.response?.status === 404) setBookmarks([]);
+            else showError('Failed to load bookmarks.');
         } finally {
             setLoading(false);
         }
     };
 
-    // ============= REMOVE BOOKMARK =============
-    const handleRemoveBookmark = async (resourceId) => {
-        if (!window.confirm('Remove this bookmark?')) return;
+    // ── View ──
+    const handleView = (r) => {
+        api.post(`/resources/${r.id}/view`).catch(() => {});
+        const url = r.link || r.filePath;
+        if (url) window.open(url, '_blank');
+        else showError('No file or link for this resource.');
+    };
 
+    // ── Download ──
+    const handleDownload = (r) => {
+        api.post(`/resources/${r.id}/download`).catch(() => {});
+        const url = r.filePath || r.link;
+        if (url) {
+            const a = document.createElement('a');
+            a.href = url; a.download = r.fileName || r.title; a.target = '_blank'; a.click();
+        } else showError('No downloadable file available.');
+    };
+
+    // ── Remove Bookmark ──
+    const handleRemove = async (resourceId) => {
+        setRemovingId(resourceId);
         try {
-            const userId = getDatabaseUserId(user);
-            await api.delete(`/resources/${resourceId}/bookmark?userId=${userId}`);
-            await fetchBookmarks();
-            setSuccessMessage('Bookmark removed successfully');
-            setTimeout(() => setSuccessMessage(null), 3000);
-        } catch (error) {
-            console.error('Error removing bookmark:', error);
-            setError('Failed to remove bookmark');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
-
-    // ============= HANDLE RATING =============
-    const handleRate = async () => {
-        if (!review.trim()) {
-            setError('Please write a review before submitting.');
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-
-        try {
-            const dbUserId = getDatabaseUserId(user);
-            const currentUser = authService.getCurrentUser();
-
-            const newReview = {
-                id: Date.now(),
-                userId: dbUserId,
-                userName: currentUser?.name || currentUser?.fullName || 'Anonymous User',
-                userAvatar: (currentUser?.name?.charAt(0) || currentUser?.fullName?.charAt(0) || 'U').toUpperCase(),
-                rating: userRating,
-                review: review.trim(),
-                date: new Date().toISOString(),
-                helpful: 0
-            };
-
-            setBookmarks(prevBookmarks =>
-                prevBookmarks.map(bookmark => {
-                    if (bookmark.id === ratingModal.resourceId) {
-                        const existingReviews = bookmark.reviews || [];
-                        const updatedReviews = [...existingReviews, newReview];
-                        const newAverageRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
-
-                        return {
-                            ...bookmark,
-                            reviews: updatedReviews,
-                            averageRating: newAverageRating,
-                            ratingCount: updatedReviews.length
-                        };
-                    }
-                    return bookmark;
-                })
-            );
-
-            setSuccessMessage(`Review submitted successfully!\nRating: ${userRating} stars`);
-            setTimeout(() => setSuccessMessage(null), 3000);
-            
-            setRatingModal({ show: false, resourceId: null, resourceTitle: '' });
-            setUserRating(5);
-            setReview('');
-        } catch (error) {
-            console.error('Error submitting rating:', error);
-            setError('Failed to submit rating. Please try again.');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
-
-    // ============= VIEW DETAILS =============
-    const handleViewDetails = (resource) => {
-        setDetailsModal({ show: true, resource });
-    };
-
-    // ============= DOWNLOAD/OPEN RESOURCE =============
-    const handleOpenResource = async (resource) => {
-        try {
-            if (resource.link) {
-                window.open(resource.link, '_blank');
-                if (resource.id) {
-                    await api.post(`/resources/${resource.id}/download`);
-                }
-            } else if (resource.filePath) {
-                window.open(`http://localhost:8080${resource.filePath}`, '_blank');
-                if (resource.id) {
-                    await api.post(`/resources/${resource.id}/download`);
-                }
-            }
-        } catch (error) {
-            console.error('Error opening resource:', error);
-            setError('Failed to open resource');
-        }
-    };
-
-    // ============= UTILITY FUNCTIONS =============
-    const getStatusBadgeClass = (status) => {
-        if (!status) return 'bookmarked-status-badge';
-
-        switch (status?.toLowerCase()) {
-            case 'active': return 'bookmarked-status-badge bookmarked-active';
-            case 'pending': return 'bookmarked-status-badge bookmarked-pending';
-            case 'rejected': return 'bookmarked-status-badge bookmarked-rejected';
-            case 'flagged': return 'bookmarked-status-badge bookmarked-flagged';
-            default: return 'bookmarked-status-badge';
-        }
-    };
-
-    const getTypeIcon = (type) => {
-        switch (type?.toLowerCase()) {
-            case 'pdf': return '📄';
-            case 'document': return '📝';
-            case 'presentation': return '📊';
-            case 'image': return '🖼️';
-            case 'video': return '🎥';
-            case 'link': return '🔗';
-            case 'article': return '📰';
-            default: return '📦';
-        }
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid date';
-
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 0) return 'Today';
-            if (diffDays === 1) return 'Yesterday';
-            if (diffDays < 7) return `${diffDays} days ago`;
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
+            await api.delete(`/resources/${resourceId}/bookmark/${uid()}`);
+            setBookmarks(prev => prev.filter(r => r.id !== resourceId));
+            showSuccess('Bookmark removed.');
         } catch (e) {
-            return 'Invalid date';
+            showError('Failed to remove bookmark.');
+        } finally {
+            setRemovingId(null);
         }
     };
 
-    const renderStars = (rating) => {
-        const validRating = Number(rating) || 0;
-        const fullStars = Math.floor(validRating);
-        const hasHalfStar = validRating % 1 >= 0.5;
-        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-        return (
-            <span className="bookmarked-stars-container">
-                {[...Array(Math.max(0, fullStars))].map((_, i) => (
-                    <span key={`full-${i}`} className="bookmarked-star bookmarked-full">★</span>
-                ))}
-                {hasHalfStar && <span className="bookmarked-star bookmarked-half">½</span>}
-                {[...Array(Math.max(0, emptyStars))].map((_, i) => (
-                    <span key={`empty-${i}`} className="bookmarked-star bookmarked-empty">☆</span>
-                ))}
-            </span>
-        );
+    // ── Rate ──
+    const handleRateSubmit = async () => {
+        setRateLoading(true);
+        try {
+            await api.post(`/resources/${rateModal.resourceId}/rate`, { userId: uid(), rating, review });
+            setRateModal({ show: false, resourceId: null, title: '' });
+            setRating(5); setReview('');
+            fetchBookmarks(uid());
+            showSuccess('Rating submitted!');
+        } catch (e) {
+            showError('Failed to submit rating.');
+        } finally {
+            setRateLoading(false);
+        }
     };
 
-    const filteredBookmarks = bookmarks.filter(b => {
-        if (!b) return false;
-        const term = searchTerm.toLowerCase();
-        return (b.title?.toLowerCase() || '').includes(term) ||
-               (b.subject?.toLowerCase() || '').includes(term) ||
-               (b.description?.toLowerCase() || '').includes(term);
-    });
+    const fmt = (dt) => dt ? new Date(dt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '';
+    const fmtSize = (b) => { if (!b) return ''; if (b < 1024) return b+' B'; if (b < 1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; };
+
+    const filtered = bookmarks.filter(r =>
+        !search || r.title?.toLowerCase().includes(search.toLowerCase()) || r.subject?.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
-        <div className="bookmarked-layout">
-            {/* Sidebar */}
+        <div className="dashboard">
             <StudentSidebar user={user} />
-
-            {/* Main Content */}
-            <div className="bookmarked-main-area">
-                {/* Header */}
-                <div className="bookmarked-content-header">
-                    <div>
-                        <h1 className="bookmarked-page-title">Bookmarked Resources</h1>
-                        <p className="bookmarked-page-subtitle">Resources you've saved for later</p>
+            <div className="main-content">
+                <div className="bm-page-header">
+                    <div className="bm-page-header-left">
+                        <div className="bm-title-wrap">
+                            <span className="bm-title-icon"><BmIcon name="bookmark" size={22} /></span>
+                            <div>
+                                <h1>Bookmarked Resources</h1>
+                                <p className="bm-page-subtitle">Resources you&apos;ve saved for later</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="bookmarked-header-actions">
-                        <button onClick={() => navigate('/dashboard/student')} className="bookmarked-secondary-btn">
-                            Browse Discovery
-                        </button>
-                        <button onClick={() => navigate('/upload')} className="bookmarked-primary-btn">
-                            + Upload New
-                        </button>
-                    </div>
+                    <button className="bm-btn-primary" onClick={() => navigate('/resources/discovery')}>
+                        <BmIcon name="sparkles" size={16} />
+                        <span>Discover More</span>
+                    </button>
                 </div>
 
-                {/* Success Message */}
-                {successMessage && (
-                    <div className="bookmarked-success-message">
-                        <span className="bookmarked-success-icon">✓</span>
-                        {successMessage}
+                {/* Alert Messages */}
+                {success && (
+                    <div className="bm-alert bm-alert-success">
+                        <span className="bm-alert-icon"><BmIcon name="check" size={18} /></span>
+                        <span>{success}</span>
                     </div>
                 )}
-
-                {/* Error Message */}
                 {error && (
-                    <div className="bookmarked-error-message">
-                        <div className="bookmarked-error-content">
-                            <span className="bookmarked-error-icon">⚠</span>
-                            <span><strong>Error:</strong> {error}</span>
-                            <button onClick={() => fetchBookmarks()} className="bookmarked-retry-btn">
-                                Retry
-                            </button>
-                        </div>
+                    <div className="bm-alert bm-alert-error">
+                        <span className="bm-alert-icon"><BmIcon name="alertTriangle" size={18} /></span>
+                        <span>{error}</span>
                     </div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="bookmarked-stats-grid">
-                    <div className="bookmarked-stat-card">
-                        <div className="bookmarked-stat-icon bookmarked-blue">
-                            <span className="bookmarked-icon">🔖</span>
-                        </div>
-                        <div>
-                            <div className="bookmarked-stat-value">{stats.total}</div>
-                            <div className="bookmarked-stat-label">Total Bookmarks</div>
-                        </div>
-                    </div>
-
-                    <div className="bookmarked-stat-card">
-                        <div className="bookmarked-stat-icon bookmarked-green">
-                            <span className="bookmarked-icon">✅</span>
-                        </div>
-                        <div>
-                            <div className="bookmarked-stat-value">{stats.active}</div>
-                            <div className="bookmarked-stat-label">Active</div>
-                        </div>
-                    </div>
-
-                    <div className="bookmarked-stat-card">
-                        <div className="bookmarked-stat-icon bookmarked-orange">
-                            <span className="bookmarked-icon">⏳</span>
-                        </div>
-                        <div>
-                            <div className="bookmarked-stat-value">{stats.pending}</div>
-                            <div className="bookmarked-stat-label">Pending Review</div>
-                        </div>
-                    </div>
-
-                    <div className="bookmarked-stat-card">
-                        <div className="bookmarked-stat-icon bookmarked-purple">
-                            <span className="bookmarked-icon">👁️</span>
-                        </div>
-                        <div>
-                            <div className="bookmarked-stat-value">{stats.views}</div>
-                            <div className="bookmarked-stat-label">Total Views</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Search Bar */}
-                <div className="bookmarked-filters-section">
-                    <div className="bookmarked-search-box-wrapper">
-                        <input
-                            type="text"
-                            placeholder="Search your bookmarks..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bookmarked-search-input"
+                {/* Toolbar */}
+                <div className="bm-toolbar">
+                    <div className="bm-search-wrapper">
+                        <span className="bm-search-icon"><BmIcon name="search" size={16} /></span>
+                        <input 
+                            className="bm-search-input" 
+                            placeholder="Search bookmarks by title or subject..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
                         />
-                        {searchTerm && (
-                            <button className="bookmarked-clear-search" onClick={() => setSearchTerm('')}>
-                                ✕
-                            </button>
-                        )}
+                    </div>
+                    <div className="bm-count-badge">
+                        <span className="bm-count-icon"><BmIcon name="bookmark" size={16} /></span>
+                        <span className="bm-count-text">{bookmarks.length} saved resource{bookmarks.length !== 1 ? 's' : ''}</span>
                     </div>
                 </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="bm-loading-state">
+                        <div className="bm-spinner"></div>
+                        <p>Loading your bookmarks...</p>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && filtered.length === 0 && (
+                    <div className="bm-empty-state">
+                        <div className="bm-empty-icon"><BmIcon name="bookmark" size={42} /></div>
+                        <h3>{bookmarks.length === 0 ? "No bookmarks yet" : "No bookmarks match your search"}</h3>
+                        <p>Browse the discovery page and bookmark resources you find useful.</p>
+                        <button className="bm-btn-primary" onClick={() => navigate('/resources/discovery')}>
+                            <BmIcon name="sparkles" size={16} />
+                            <span>Discover Resources</span>
+                        </button>
+                    </div>
+                )}
 
                 {/* Bookmarks Grid */}
-                {loading ? (
-                    <div className="bookmarked-loading-spinner">Loading your bookmarks...</div>
-                ) : filteredBookmarks.length === 0 ? (
-                    <div className="bookmarked-empty-state">
-                        <div className="bookmarked-empty-icon">🔖</div>
-                        <h3>No bookmarks yet</h3>
-                        <p>
-                            {searchTerm
-                                ? `No results for "${searchTerm}"`
-                                : error
-                                    ? error
-                                    : 'Bookmark resources while browsing to see them here'}
-                        </p>
-                        {!searchTerm && !error && (
-                            <button onClick={() => navigate('/dashboard/student')} className="bookmarked-primary-btn">
-                                Browse Resources
-                            </button>
-                        )}
-                        {error && (
-                            <button onClick={() => fetchBookmarks()} className="bookmarked-secondary-btn">
-                                Try Again
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <>
-                        <div className="bookmarked-results-stats">
-                            Showing {filteredBookmarks.length} of {bookmarks.length} bookmarks
-                        </div>
-                        <div className="bookmarked-uploads-grid">
-                            {filteredBookmarks.map((resource) => (
-                                <div key={resource.id} className="bookmarked-resource-card">
-                                    <div className="bookmarked-resource-card-header">
-                                        <div 
-                                            className="bookmarked-resource-type-icon"
-                                            data-type={resource.type?.toLowerCase() || 'document'}
-                                        >
-                                            {getTypeIcon(resource.type)}
-                                        </div>
-                                        <div className="bookmarked-resource-card-actions">
-                                            <span className={getStatusBadgeClass(resource.status)}>
-                                                {resource.status || 'pending'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="bookmarked-resource-card-body" onClick={() => handleViewDetails(resource)}>
-                                        <h3 className="bookmarked-resource-card-title">{resource.title}</h3>
-                                        <div className="bookmarked-resource-meta">
-                                            <span className="bookmarked-resource-subject">{resource.subject}</span>
-                                            <span className="bookmarked-resource-semester">{resource.semester}</span>
-                                        </div>
-
-                                        {resource.description && (
-                                            <p className="bookmarked-resource-description">
-                                                {resource.description.substring(0, 100)}
-                                                {resource.description.length > 100 ? '...' : ''}
-                                            </p>
-                                        )}
-
-                                        {resource.tags && (
-                                            <div className="bookmarked-resource-tags">
-                                                {resource.tags.split(',').slice(0, 3).map((tag, i) => (
-                                                    <span key={i} className="bookmarked-tag">#{tag.trim()}</span>
-                                                ))}
-                                                {resource.tags.split(',').length > 3 && (
-                                                    <span className="bookmarked-tag-more">+{resource.tags.split(',').length - 3}</span>
-                                                )}
+                {!loading && filtered.length > 0 && (
+                    <div className="bm-bookmarks-grid">
+                        {filtered.map((r, idx) => (
+                            <div key={r.id} className="bm-bookmark-card" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                <div className="bm-card-header">
+                                    <div className="bm-title-section">
+                                        <span className="bm-type-icon"><BmIcon name={typeIcon[r.type?.toLowerCase()] || 'archive'} size={20} /></span>
+                                        <div className="bm-title-info">
+                                            <h3>{r.title}</h3>
+                                            <div className="bm-badges-horizontal">
+                                                {r.subject && <span className="bm-badge bm-badge-blue">{r.subject}</span>}
+                                                {r.type && <span className="bm-badge bm-badge-purple">{r.type.toUpperCase()}</span>}
+                                                {r.fileSize && <span className="bm-badge bm-badge-gray">{fmtSize(r.fileSize)}</span>}
                                             </div>
-                                        )}
-
-                                        <div className="bookmarked-resource-stats">
-                                            <div className="bookmarked-stat-item" title="Views">
-                                                <span>👁️</span> {resource.viewCount || 0}
-                                            </div>
-                                            <div className="bookmarked-stat-item" title="Downloads">
-                                                <span>📥</span> {resource.downloadCount || 0}
-                                            </div>
-                                            <div className="bookmarked-stat-item" title="Rating">
-                                                <span>⭐</span> {resource.averageRating?.toFixed(1) || 0}
-                                                <span className="bookmarked-review-count">({resource.ratingCount || 0})</span>
-                                            </div>
-                                            <div className="bookmarked-stat-item" title="Uploaded">
-                                                <span>📅</span> {formatDate(resource.uploadedAt)}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bookmarked-resource-card-footer">
-                                        <div className="bookmarked-action-buttons">
-                                            <button
-                                                className="bookmarked-action-btn bookmarked-view"
-                                                onClick={() => handleOpenResource(resource)}
-                                                title={resource.link ? 'Open Link' : 'Download'}
-                                            >
-                                                {resource.link ? '🔗 Open' : '📥 Download'}
-                                            </button>
-                                            <button
-                                                className="bookmarked-action-btn bookmarked-rate"
-                                                onClick={() => setRatingModal({ 
-                                                    show: true, 
-                                                    resourceId: resource.id, 
-                                                    resourceTitle: resource.title 
-                                                })}
-                                                title="Rate this resource"
-                                            >
-                                                ⭐ Rate
-                                            </button>
-                                            <button
-                                                className="bookmarked-action-btn bookmarked-delete"
-                                                onClick={() => handleRemoveBookmark(resource.id)}
-                                                title="Remove Bookmark"
-                                            >
-                                                ★ Remove
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </>
+
+                                {r.description && (
+                                    <p className="bm-description">{r.description}</p>
+                                )}
+
+                                {r.tags && (
+                                    <div className="bm-tags-container">
+                                        {r.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 4).map(t => (
+                                            <span key={t} className="bm-tag">#{t}</span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="bm-stats-section">
+                                    <div className="bm-rating-display">
+                                        <span className="bm-stars">
+                                            {[1,2,3,4,5].map(s => (
+                                                <span 
+                                                    key={s} 
+                                                    className={`bm-star ${s <= Math.round(r.averageRating || 0) ? 'bm-star-filled' : ''}`}
+                                                >
+                                                    ★
+                                                </span>
+                                            ))}
+                                        </span>
+                                        <span className="bm-rating-value">{(r.averageRating || 0).toFixed(1)}</span>
+                                        <span className="bm-rating-count">({r.ratingCount || 0} reviews)</span>
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span className="bm-stat-icon"><BmIcon name="calendar" size={14} /></span>
+                                        <span>{fmt(r.uploadedAt)}</span>
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span className="bm-stat-icon"><BmIcon name="eye" size={14} /></span>
+                                        <span>{r.viewCount || 0} views</span>
+                                    </div>
+                                    <div className="bm-stat-item">
+                                        <span className="bm-stat-icon"><BmIcon name="download" size={14} /></span>
+                                        <span>{r.downloadCount || 0} downloads</span>
+                                    </div>
+                                </div>
+
+                                <div className="bm-actions-wrapper">
+                                    <div className="bm-actions-top-row">
+                                        {r.filePath && (
+                                            <button className="bm-btn-action bm-btn-download" onClick={() => handleDownload(r)}>
+                                                <BmIcon name="download" size={14} />
+                                                <span>Download</span>
+                                            </button>
+                                        )}
+                                        <button className="bm-btn-action bm-btn-rate" onClick={() => setRateModal({ show: true, resourceId: r.id, title: r.title })}>
+                                            <BmIcon name="star" size={14} />
+                                            <span>Rate</span>
+                                        </button>
+                                        <button 
+                                            className="bm-btn-action bm-btn-remove" 
+                                            onClick={() => handleRemove(r.id)} 
+                                            disabled={removingId === r.id}
+                                        >
+                                            {removingId === r.id ? (
+                                                'Removing...'
+                                            ) : (
+                                                <>
+                                                    <BmIcon name="bookmark" size={14} />
+                                                    <span>Remove</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <button className="bm-btn-view-full" onClick={() => handleView(r)}>
+                                        <BmIcon name="eye" size={16} />
+                                        <span>View Full Resource</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
 
-            {/* Resource Details Modal */}
-            {detailsModal.show && detailsModal.resource && (
-                <div className="bookmarked-modal-overlay" onClick={() => setDetailsModal({ show: false, resource: null })}>
-                    <div className="bookmarked-details-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="bookmarked-details-modal-header">
-                            <div className="bookmarked-details-type-icon">
-                                {getTypeIcon(detailsModal.resource.type)}
-                            </div>
-                            <div className="bookmarked-details-title-section">
-                                <h2>{detailsModal.resource.title}</h2>
-                                <div className="bookmarked-details-meta">
-                                    <span className="bookmarked-details-subject">{detailsModal.resource.subject}</span>
-                                    <span className="bookmarked-details-semester">{detailsModal.resource.semester}</span>
-                                    <span className={getStatusBadgeClass(detailsModal.resource.status)}>
-                                        {detailsModal.resource.status}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                className="bookmarked-modal-close-btn"
-                                onClick={() => setDetailsModal({ show: false, resource: null })}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <div className="bookmarked-details-modal-body">
-                            {detailsModal.resource.description && (
-                                <div className="bookmarked-details-section">
-                                    <h3>Description</h3>
-                                    <p>{detailsModal.resource.description}</p>
-                                </div>
-                            )}
-
-                            {detailsModal.resource.tags && (
-                                <div className="bookmarked-details-section">
-                                    <h3>Tags</h3>
-                                    <div className="bookmarked-details-tags">
-                                        {detailsModal.resource.tags.split(',').map((tag, i) => (
-                                            <span key={i} className="bookmarked-tag">#{tag.trim()}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {detailsModal.resource.courseCode && (
-                                <div className="bookmarked-details-section">
-                                    <h3>Course Code</h3>
-                                    <p className="bookmarked-course-code">{detailsModal.resource.courseCode}</p>
-                                </div>
-                            )}
-
-                            <div className="bookmarked-details-section">
-                                <h3>Resource Details</h3>
-                                <div className="bookmarked-details-grid">
-                                    <div className="bookmarked-detail-item">
-                                        <span className="bookmarked-detail-label">License:</span>
-                                        <span className="bookmarked-detail-value">{detailsModal.resource.license || 'Not specified'}</span>
-                                    </div>
-                                    <div className="bookmarked-detail-item">
-                                        <span className="bookmarked-detail-label">Visibility:</span>
-                                        <span className="bookmarked-detail-value">{detailsModal.resource.visibility || 'public'}</span>
-                                    </div>
-                                    <div className="bookmarked-detail-item">
-                                        <span className="bookmarked-detail-label">Uploaded:</span>
-                                        <span className="bookmarked-detail-value">{formatDate(detailsModal.resource.uploadedAt)}</span>
-                                    </div>
-                                    <div className="bookmarked-detail-item">
-                                        <span className="bookmarked-detail-label">Ratings:</span>
-                                        <span className="bookmarked-detail-value">
-                                            {renderStars(detailsModal.resource.averageRating || 0)}
-                                            <span style={{ marginLeft: '8px' }}>
-                                                ⭐ {detailsModal.resource.averageRating?.toFixed(1) || 0}
-                                                ({detailsModal.resource.ratingCount || 0} reviews)
-                                            </span>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bookmarked-details-section">
-                                <h3>Settings</h3>
-                                <div className="bookmarked-settings-indicators">
-                                    <span className={`bookmarked-setting-badge ${detailsModal.resource.allowRatings ? 'bookmarked-enabled' : 'bookmarked-disabled'}`}>
-                                        {detailsModal.resource.allowRatings ? '✓ Ratings Allowed' : '✗ Ratings Disabled'}
-                                    </span>
-                                    <span className={`bookmarked-setting-badge ${detailsModal.resource.allowComments ? 'bookmarked-enabled' : 'bookmarked-disabled'}`}>
-                                        {detailsModal.resource.allowComments ? '💬 Comments Allowed' : '🔇 Comments Disabled'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="bookmarked-details-section">
-                                <h3>Statistics</h3>
-                                <div className="bookmarked-stats-row">
-                                    <div className="bookmarked-stat-box">
-                                        <span className="bookmarked-stat-number">{detailsModal.resource.viewCount || 0}</span>
-                                        <span className="bookmarked-stat-label">Views</span>
-                                    </div>
-                                    <div className="bookmarked-stat-box">
-                                        <span className="bookmarked-stat-number">{detailsModal.resource.downloadCount || 0}</span>
-                                        <span className="bookmarked-stat-label">Downloads</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bookmarked-details-modal-footer">
-                            <button
-                                className="bookmarked-download-btn"
-                                onClick={() => handleOpenResource(detailsModal.resource)}
-                            >
-                                {detailsModal.resource.link ? '🔗 Open Link' : '📥 Download'}
-                            </button>
-                            <button
-                                className="bookmarked-rate-btn"
-                                onClick={() => {
-                                    setDetailsModal({ show: false, resource: null });
-                                    setRatingModal({ 
-                                        show: true, 
-                                        resourceId: detailsModal.resource.id, 
-                                        resourceTitle: detailsModal.resource.title 
-                                    });
-                                }}
-                            >
-                                ⭐ Rate Resource
-                            </button>
-                            <button
-                                className="bookmarked-delete-btn"
-                                onClick={() => {
-                                    handleRemoveBookmark(detailsModal.resource.id);
-                                    setDetailsModal({ show: false, resource: null });
-                                }}
-                            >
-                                ★ Remove Bookmark
-                            </button>
-                            <button
-                                className="bookmarked-close-btn"
-                                onClick={() => setDetailsModal({ show: false, resource: null })}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Rating Modal */}
-            {ratingModal.show && (
-                <div className="bookmarked-modal-overlay" onClick={() => setRatingModal({ show: false, resourceId: null, resourceTitle: '' })}>
-                    <div className="bookmarked-modal-content bookmarked-rating-modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Rate: {ratingModal.resourceTitle}</h2>
-                        
-                        <div className="bookmarked-rating-input">
-                            <label>Your Rating:</label>
-                            <div className="bookmarked-rating-stars">
-                                {[5, 4, 3, 2, 1].map((star) => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        className={`bookmarked-star-btn ${userRating >= star ? 'bookmarked-active' : ''}`}
-                                        onClick={() => setUserRating(star)}
-                                        title={`${star} star${star !== 1 ? 's' : ''}`}
+            {rateModal.show && (
+                <div className="bm-modal-overlay" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                    <div className="bm-modal" onClick={e => e.stopPropagation()}>
+                        <div className="bm-modal-header">
+                            <h3>
+                                <span className="bm-modal-title-icon"><BmIcon name="star" size={18} /></span>
+                                Rate Resource
+                            </h3>
+                            <button className="bm-modal-close" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
+                                <BmIcon name="x" size={18} />
+                            </button>
+                        </div>
+                        <div className="bm-modal-body">
+                            <p className="bm-modal-subtitle">{rateModal.title}</p>
+                            <div className="bm-star-rating">
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <button 
+                                        key={s} 
+                                        className={`bm-star-btn ${s <= rating ? 'bm-star-filled' : ''}`} 
+                                        onClick={() => setRating(s)}
+                                        onMouseEnter={() => setRating(s)}
                                     >
                                         ★
                                     </button>
                                 ))}
                             </div>
-                            <select 
-                                value={userRating} 
-                                onChange={(e) => setUserRating(parseInt(e.target.value))} 
-                                className="bookmarked-rating-select"
-                            >
-                                <option value={5}>5 Stars - Excellent</option>
-                                <option value={4}>4 Stars - Very Good</option>
-                                <option value={3}>3 Stars - Good</option>
-                                <option value={2}>2 Stars - Fair</option>
-                                <option value={1}>1 Star - Poor</option>
-                            </select>
+                            <p className="bm-rating-text">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}</p>
+                            <div className="bm-form-group">
+                                <label>Review (optional)</label>
+                                <textarea 
+                                    className="bm-form-textarea"
+                                    value={review} 
+                                    onChange={e => setReview(e.target.value)} 
+                                    rows={3} 
+                                    placeholder="Share your thoughts about this resource..."
+                                />
+                            </div>
                         </div>
-
-                        <div className="bookmarked-form-group">
-                            <label>Write a Review *</label>
-                            <textarea
-                                value={review}
-                                onChange={(e) => setReview(e.target.value)}
-                                placeholder="What did you think about this resource? Share your experience to help others..."
-                                rows="4"
-                                className="bookmarked-review-textarea"
-                                required
-                            />
-                            <small className="bookmarked-input-hint">
-                                Your review will be visible to other users and helps the community.
-                            </small>
-                        </div>
-
-                        <div className="bookmarked-modal-actions">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setRatingModal({ show: false, resourceId: null, resourceTitle: '' });
-                                    setUserRating(5);
-                                    setReview('');
-                                }}
-                                className="bookmarked-cancel-btn"
-                            >
+                        <div className="bm-modal-actions">
+                            <button className="bm-btn-secondary" onClick={() => setRateModal({ show: false, resourceId: null, title: '' })}>
                                 Cancel
                             </button>
-                            <button type="button" onClick={handleRate} className="bookmarked-submit-btn">
-                                Submit Rating & Review
+                            <button className="bm-btn-primary" onClick={handleRateSubmit} disabled={rateLoading}>
+                                {rateLoading ? 'Submitting...' : 'Submit Rating'}
                             </button>
                         </div>
                     </div>
@@ -747,6 +484,4 @@ const BookMarked = () => {
             )}
         </div>
     );
-};
-
-export default BookMarked;
+}

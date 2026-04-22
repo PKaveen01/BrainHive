@@ -36,6 +36,8 @@ public class CreateHelpRequestDTO {
     @Max(value = 180, message = "Estimated duration cannot exceed 180 minutes")
     private Integer estimatedDuration;
 
+    private Long preferredTutorId;
+
     // Getters and Setters
     public Long getSubjectId() { return subjectId; }
     public void setSubjectId(Long subjectId) { this.subjectId = subjectId; }
@@ -54,4 +56,7 @@ public class CreateHelpRequestDTO {
 
     public Integer getEstimatedDuration() { return estimatedDuration; }
     public void setEstimatedDuration(Integer estimatedDuration) { this.estimatedDuration = estimatedDuration; }
+
+    public Long getPreferredTutorId() { return preferredTutorId; }
+    public void setPreferredTutorId(Long preferredTutorId) { this.preferredTutorId = preferredTutorId; }
 }

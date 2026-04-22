@@ -1,20 +1,37 @@
 package com.brainhive.modules.peerhelp.controller;
 
-import com.brainhive.modules.peerhelp.dto.*;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.brainhive.modules.peerhelp.dto.ApiResponse;
+import com.brainhive.modules.peerhelp.dto.ApproveRequestDTO;
+import com.brainhive.modules.peerhelp.dto.CreateHelpRequestDTO;
+import com.brainhive.modules.peerhelp.dto.HelpRequestMessageDTO;
+import com.brainhive.modules.peerhelp.dto.HelpRequestResponseDTO;
+import com.brainhive.modules.peerhelp.dto.PostHelpMessageDTO;
+import com.brainhive.modules.peerhelp.dto.TutorProfileResponseDTO;
+import com.brainhive.modules.peerhelp.dto.TutorSessionResponseDTO;
+import com.brainhive.modules.peerhelp.service.HelpRequestMessageService;
 import com.brainhive.modules.peerhelp.service.HelpRequestService;
 import com.brainhive.modules.peerhelp.service.TutorMatchingService;
 import com.brainhive.modules.user.model.User;
 import com.brainhive.modules.user.model.UserRole;
 import com.brainhive.modules.user.service.UserService;
+
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/peerhelp/requests")
@@ -23,6 +40,9 @@ public class HelpRequestController {
 
     @Autowired
     private HelpRequestService helpRequestService;
+
+    @Autowired
+    private HelpRequestMessageService helpRequestMessageService;
 
     @Autowired
     private TutorMatchingService tutorMatchingService;
@@ -52,6 +72,96 @@ public class HelpRequestController {
             HelpRequestResponseDTO request = helpRequestService.createHelpRequest(currentUser.getId(), dto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Help request created successfully", request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Lecture help conversations for the logged-in tutor (student name + topic + lecture).
+     */
+    @GetMapping("/lecture-conversations")
+    public ResponseEntity<ApiResponse<List<HelpRequestResponseDTO>>> getLectureConversations(HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+            if (currentUser.getRole() != UserRole.TUTOR) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Only tutors can view lecture conversations"));
+            }
+            List<HelpRequestResponseDTO> list = helpRequestService.getLectureConversationsForTutor(currentUser.getId());
+            return ResponseEntity.ok(ApiResponse.success("Lecture conversations retrieved successfully", list));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve lecture conversations"));
+        }
+    }
+
+    /**
+     * Conversation-ready requests for tutor (accepted/completed/rated).
+     */
+    @GetMapping("/conversations")
+    public ResponseEntity<ApiResponse<List<HelpRequestResponseDTO>>> getTutorConversations(HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+            if (currentUser.getRole() != UserRole.TUTOR) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Only tutors can view conversations"));
+            }
+            List<HelpRequestResponseDTO> list = helpRequestService.getTutorConversations(currentUser.getId());
+            return ResponseEntity.ok(ApiResponse.success("Conversations retrieved successfully", list));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve conversations"));
+        }
+    }
+
+    /**
+     * Messages for a help request (student who created it, or assigned tutor).
+     */
+    @GetMapping("/{requestId}/messages")
+    public ResponseEntity<ApiResponse<List<HelpRequestMessageDTO>>> getRequestMessages(
+            @PathVariable Long requestId,
+            HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+            List<HelpRequestMessageDTO> messages = helpRequestMessageService.getMessages(requestId, currentUser.getId());
+            return ResponseEntity.ok(ApiResponse.success("Messages retrieved successfully", messages));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Post a message on a help request thread.
+     */
+    @PostMapping("/{requestId}/messages")
+    public ResponseEntity<ApiResponse<HelpRequestMessageDTO>> postRequestMessage(
+            @PathVariable Long requestId,
+            @Valid @RequestBody PostHelpMessageDTO dto,
+            HttpSession session) {
+        try {
+            User currentUser = userService.getCurrentUser(session);
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Please login to continue"));
+            }
+            HelpRequestMessageDTO msg = helpRequestMessageService.postMessage(requestId, currentUser.getId(), dto.getBody());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Message sent", msg));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
@@ -239,6 +349,16 @@ public class HelpRequestController {
             @RequestParam(defaultValue = "5") int limit) {
         List<TutorProfileResponseDTO> tutors = tutorMatchingService.getTopMatches(subjectId, preferredDateTime, limit);
         return ResponseEntity.ok(ApiResponse.success("Top matches retrieved successfully", tutors));
+    }
+
+    /**
+     * Get all approved tutors from DB.
+     */
+    @GetMapping("/match/all")
+    public ResponseEntity<ApiResponse<List<TutorProfileResponseDTO>>> getAllTutors(
+            @RequestParam(defaultValue = "100") int limit) {
+        List<TutorProfileResponseDTO> tutors = tutorMatchingService.findAllTutors(limit);
+        return ResponseEntity.ok(ApiResponse.success("All tutors retrieved successfully", tutors));
     }
 
     /**

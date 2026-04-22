@@ -646,3 +646,124 @@
         grid-template-columns: 1fr;
     }
 }
+/* ===== API / Loading / Error States ===== */
+.profile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    gap: 1rem;
+    color: #6b7280;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #6c5ce7;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.profile-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 2rem;
+    color: #ef4444;
+    text-align: center;
+}
+
+.profile-alert {
+    padding: 0.875rem 1.25rem;
+    border-radius: 8px;
+    margin: 0 0 1.25rem 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.profile-alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+
+.profile-alert-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+}
+
+/* Not set placeholder */
+.not-set {
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+/* Profile incomplete notice */
+.profile-incomplete-notice {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #6c5ce7;
+    cursor: pointer;
+    font-size: inherit;
+    font-weight: 600;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.link-button:hover {
+    color: #5a4bd1;
+}
+
+/* Disabled inputs */
+.input-disabled {
+    background: #f9fafb !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+}
+
+/* Field hints */
+.field-hint {
+    display: block;
+    color: #9ca3af;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+}
+
+/* Availability status indicator */
+.availability-status {
+    font-weight: 600;
+}
+
+.availability-status.available {
+    color: #16a34a;
+}
+
+.availability-status.unavailable {
+    color: #dc2626;
+}
+
+/* Verification badge variants */
+.verification-badge.verified {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.verification-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+}

@@ -13,6 +13,7 @@ import com.brainhive.modules.user.dto.StudentRegistrationRequest;
 import com.brainhive.modules.user.dto.TutorRegistrationRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -33,15 +34,40 @@ public class UserService {
                 return new LoginResponseDTO(false, "User not found", null, null, null, null);
             }
 
-            // Check if role matches
-            UserRole role = UserRole.valueOf(loginRequest.getRole().toUpperCase());
-            if (!user.getRole().equals(role)) {
-                return new LoginResponseDTO(false, "Invalid role selected", null, null, null, null);
-            }
+            // REMOVE THIS ROLE CHECK COMPLETELY
+            // The frontend's role selector should be ignored for security
+            // User logs in with email/password only - role is determined by database
 
             // FIXED: Use password encoder to check password
             if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 return new LoginResponseDTO(false, "Invalid password", null, null, null, null);
+            }
+
+            // Block PENDING tutors from logging in until admin approves
+            if ("PENDING".equals(user.getAccountStatus())) {
+                return new LoginResponseDTO(false, "Your tutor account is pending admin approval. Please wait for approval before logging in.", null, null, null, null);
+            }
+
+            // Block SUSPENDED accounts
+            if ("SUSPENDED".equals(user.getAccountStatus())) {
+                return new LoginResponseDTO(false, "Your account has been suspended. Please contact an administrator.", null, null, null, null);
+            }
+
+            // Block TERMINATED accounts (check if termination period has expired first)
+            if ("TERMINATED".equals(user.getAccountStatus())) {
+                if (user.getTerminatedUntil() != null && LocalDateTime.now().isAfter(user.getTerminatedUntil())) {
+                    // Termination period has expired — auto-reactivate the account
+                    user.setAccountStatus("ACTIVE");
+                    user.setTerminatedUntil(null);
+                    userRepository.save(user);
+                } else {
+                    String until = user.getTerminatedUntil() != null
+                            ? " until " + user.getTerminatedUntil().toLocalDate()
+                            : "";
+                    return new LoginResponseDTO(false,
+                            "Your account has been terminated" + until + ". Please contact an administrator.",
+                            null, null, null, null);
+                }
             }
 
             // Store user in session
@@ -50,8 +76,15 @@ public class UserService {
             session.setAttribute("userName", user.getFullName());
             session.setAttribute("userRole", user.getRole().toString());
 
-            // Determine redirect URL based on role
-            String redirectUrl = user.getRole() == UserRole.STUDENT ? "/dashboard/student" : "/dashboard/tutor";
+            // Determine redirect URL based on role (from database, not frontend)
+            String redirectUrl;
+            if (user.getRole() == UserRole.ADMIN) {
+                redirectUrl = "/dashboard/admin";
+            } else if (user.getRole() == UserRole.STUDENT) {
+                redirectUrl = "/dashboard/student";
+            } else {
+                redirectUrl = "/dashboard/tutor";
+            }
 
             return new LoginResponseDTO(
                     true,

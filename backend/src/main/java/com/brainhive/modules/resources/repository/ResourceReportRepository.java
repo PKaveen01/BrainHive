@@ -14,4 +14,6 @@ public interface ResourceReportRepository extends JpaRepository<ResourceReport, 
     List<ResourceReport> findByStatus(String status);
 
     long countByResourceIdAndStatus(Long resourceId, String status);
+
+    long countByStatus(String status);
 }

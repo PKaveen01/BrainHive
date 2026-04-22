@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/auth.service';
 import './Signup.css';
+import logoImage from '../../assets/images/logo.png';
 
 const StudentSignup = () => {
     const navigate = useNavigate();
@@ -139,7 +140,7 @@ const StudentSignup = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <div className="auth-logo">🧠 BrainHive</div>
+                    <div className="auth-logo"><img src={logoImage} alt="BrainHive" className="auth-logo-img" /><span>BrainHive</span></div>
                     <h2>Create Student Account</h2>
                     <p className="auth-subtitle">Join thousands of students on BrainHive</p>
                     <div className="signup-badge student-badge">
@@ -151,11 +152,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Full Name</label>
                         <div className="input-icon">
-                            <span className="icon">👤</span>
+                            <span className="icon"></span>
                             <input
                                 type="text"
                                 name="fullName"
-                                placeholder="Pasindu Kaveen"
+                                placeholder="👤 Enter Full Name"
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 className={errors.fullName ? 'error' : ''}
@@ -168,11 +169,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>University Email</label>
                         <div className="input-icon">
-                            <span className="icon">📧</span>
+                            <span className="icon"></span>
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="student@university.edu"
+                                placeholder="📧 Enter email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 className={errors.email ? 'error' : ''}
@@ -185,11 +186,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Password</label>
                         <div className="input-icon">
-                            <span className="icon">🔒</span>
+                            <span className="icon"></span>
                             <input
                                 type="password"
                                 name="password"
-                                placeholder="Create a strong password"
+                                placeholder="🔒 Create a strong password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={errors.password ? 'error' : ''}
@@ -234,11 +235,11 @@ const StudentSignup = () => {
                     <div className="form-group">
                         <label>Confirm Password</label>
                         <div className="input-icon">
-                            <span className="icon">✓</span>
+                            <span className="icon"></span>
                             <input
                                 type="password"
                                 name="confirmPassword"
-                                placeholder="Confirm your password"
+                                placeholder="✓ Confirm your password"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 className={errors.confirmPassword ? 'error' : ''}
