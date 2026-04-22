@@ -120,7 +120,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
   const fetchLectures = async () => {
     try {
@@ -544,7 +544,23 @@ const StudentDashboard = () => {
               <h2>My Help Requests</h2>
               <button className="v2-refresh-btn" onClick={fetchMyRequests}>↻ Refresh</button>
             </div>
-            {/* Request content */}
+            {/* Request content - to be implemented */}
+            {myRequests.length === 0 ? (
+              <div className="v2-empty-full"><span>📋</span><p>No help requests yet.</p></div>
+            ) : (
+              <div className="v2-requests-list">
+                {myRequests.map(req => (
+                  <div key={req.id} className="v2-request-card">
+                    <h3>{req.title}</h3>
+                    <p>{req.description}</p>
+                    <div className="v2-request-meta">
+                      <span>Subject: {req.subject}</span>
+                      <span>Status: {req.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

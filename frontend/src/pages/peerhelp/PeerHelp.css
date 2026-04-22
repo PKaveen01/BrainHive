@@ -368,6 +368,200 @@
 .search-btn { white-space: nowrap; }
 .results-count { color: #64748b; font-size: 0.875rem; margin-bottom: 1rem; }
 
+/* ===== Find Tutors Page Professional Refresh ===== */
+.find-tutors-page {
+    --ft-border-strong: #cdddf5;
+    --ft-card-shadow: 0 14px 30px rgba(11, 45, 108, 0.08);
+    --ft-card-shadow-hover: 0 20px 36px rgba(11, 45, 108, 0.12);
+}
+
+.find-tutors-page .page-header {
+    background: linear-gradient(110deg, #f4f8ff 0%, #f7fbff 45%, #eef9f8 100%);
+    border: 1px solid var(--ft-border-strong);
+    border-radius: 1rem;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 8px 24px rgba(17, 75, 184, 0.06);
+}
+
+.find-tutors-page .page-subtitle {
+    max-width: 54ch;
+}
+
+.find-tutors-page .btn-secondary {
+    border-color: #b8cdf0;
+    color: #143a75;
+    font-weight: 700;
+}
+
+.find-tutors-page .btn-secondary:hover {
+    background: #ebf3ff;
+    border-color: #96b5e6;
+}
+
+.find-tutors-page .tutor-search-bar {
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    border: 1px solid var(--ft-border-strong);
+    border-radius: 1rem;
+    padding: 1.15rem;
+    box-shadow: 0 12px 28px rgba(15, 40, 90, 0.08);
+}
+
+.find-tutors-page .search-row {
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.find-tutors-page .subject-select {
+    border: 1px solid #b9cbea;
+    min-height: 2.6rem;
+    color: #1d3557;
+    font-weight: 500;
+}
+
+.find-tutors-page .search-btn {
+    min-width: 160px;
+    min-height: 2.6rem;
+    letter-spacing: 0.01em;
+}
+
+.find-tutors-page .search-btn:disabled {
+    opacity: 0.52;
+    box-shadow: none;
+}
+
+.find-tutors-page .results-count {
+    margin: 1rem 0 0.9rem;
+    color: #516789;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.find-tutors-page .tutors-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.1rem;
+}
+
+.find-tutors-page .tutor-card {
+    border: 1px solid var(--ft-border-strong);
+    border-radius: 1rem;
+    padding: 1rem;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 252, 255, 0.94) 100%),
+        radial-gradient(circle at 100% -10%, rgba(37, 99, 235, 0.08), transparent 56%);
+    box-shadow: var(--ft-card-shadow);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.find-tutors-page .tutor-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--ft-card-shadow-hover);
+    border-color: #aac2e8;
+}
+
+.find-tutors-page .tutor-card-header {
+    align-items: flex-start;
+    gap: 0.72rem;
+}
+
+.find-tutors-page .tutor-avatar {
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 1rem;
+    box-shadow: 0 6px 14px rgba(30, 99, 214, 0.24);
+}
+
+.find-tutors-page .tutor-card-header h3 {
+    font-size: 0.95rem;
+    margin-top: 0.05rem;
+}
+
+.find-tutors-page .tutor-subject {
+    display: inline-block;
+    margin-top: 0.1rem;
+    color: #1d4ed8;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.find-tutors-page .tutor-bio {
+    color: #4f647f;
+    font-size: 0.81rem;
+    line-height: 1.52;
+    min-height: 2.4rem;
+}
+
+.find-tutors-page .tutor-stats {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid #d5e2f5;
+    border-radius: 0.72rem;
+    padding: 0.5rem 0.55rem;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+.find-tutors-page .tutor-stat {
+    min-width: 0;
+    text-align: center;
+    flex: 1;
+}
+
+.find-tutors-page .tutor-stat .stat-value {
+    font-size: 0.82rem;
+    letter-spacing: 0.01em;
+}
+
+.find-tutors-page .tutor-stat .stat-label {
+    text-transform: uppercase;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: #7689a7;
+}
+
+.find-tutors-page .tutor-qual {
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.5rem;
+    border: 1px dashed #cad9ef;
+    background: #f8fbff;
+    color: #526a8a;
+    font-size: 0.76rem;
+}
+
+.find-tutors-page .tutor-card .btn-primary.w-full {
+    margin-top: 0.2rem;
+    border-radius: 0.6rem;
+    font-size: 0.86rem;
+}
+
+.find-tutors-page .tutor-card-actions .btn-secondary {
+    border-radius: 0.58rem;
+    font-size: 0.82rem;
+    min-height: 2.35rem;
+}
+
+.find-tutors-page .empty-state {
+    border: 1px solid var(--ft-border-strong);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.find-tutors-page .empty-icon {
+    font-size: 2.2rem;
+    opacity: 0.86;
+}
+
+@media (max-width: 900px) {
+    .find-tutors-page .page-header {
+        padding: 1rem;
+    }
+
+    .find-tutors-page .tutors-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Tutors Grid */
 .tutors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
 .tutor-card {
@@ -543,6 +737,117 @@
 .modal-success { text-align: center; padding: 1rem; }
 .modal-success .success-icon { font-size: 3rem; margin-bottom: 0.75rem; }
 .modal-success p { color: #374151; margin-bottom: 1.25rem; }
+
+/* ===== Find Tutors: Rate Tutor Modal ===== */
+.find-tutors-page .rate-tutor-modal {
+    max-width: 520px;
+    border: 1px solid #c9d8ef;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: 0 24px 46px rgba(15, 40, 90, 0.24);
+    padding: 1.2rem;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #e0e9f7;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-header h3 {
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: #15325a;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-close {
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 0.45rem;
+    color: #7a8faa;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-close:hover {
+    background: #eff5ff;
+    color: #375a89;
+}
+
+.find-tutors-page .rate-tutor-modal .form-group {
+    margin-bottom: 0.9rem;
+}
+
+.find-tutors-page .rate-tutor-modal .form-group label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #5b708f;
+    margin-bottom: 0.28rem;
+}
+
+.find-tutors-page .rate-tutor-modal .rating-group {
+    background: #f8fbff;
+    border: 1px solid #d7e5f8;
+    border-radius: 0.72rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.find-tutors-page .rate-tutor-modal .star-input {
+    gap: 0.2rem;
+}
+
+.find-tutors-page .rate-tutor-modal .star-btn {
+    font-size: 1.58rem;
+}
+
+.find-tutors-page .rate-tutor-modal .rating-inline-value {
+    margin-top: 0.35rem;
+    color: #4b6386;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.find-tutors-page .rate-tutor-modal textarea {
+    border: 1px solid #c5d4ea;
+    border-radius: 0.62rem;
+    min-height: 108px;
+}
+
+.find-tutors-page .rate-tutor-modal textarea:focus {
+    border-color: #2f6ed6;
+    box-shadow: 0 0 0 3px rgba(47, 110, 214, 0.18);
+    outline: none;
+}
+
+.find-tutors-page .rate-tutor-modal .char-count {
+    margin-top: 0.3rem;
+    color: #879ab5;
+}
+
+.find-tutors-page .rate-tutor-modal .modal-actions {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 0.58rem;
+}
+
+.find-tutors-page .rate-tutor-modal .btn-secondary,
+.find-tutors-page .rate-tutor-modal .btn-primary {
+    min-height: 2.3rem;
+    border-radius: 0.58rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .find-tutors-page .rate-tutor-modal {
+        padding: 1rem;
+    }
+
+    .find-tutors-page .rate-tutor-modal .modal-actions {
+        grid-template-columns: 1fr;
+    }
+}
 
 @media (max-width: 768px) {
     .peerhelp-form-container { grid-template-columns: 1fr; }
