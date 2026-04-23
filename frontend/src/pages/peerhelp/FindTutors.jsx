@@ -55,6 +55,9 @@ const FindTutors = () => {
         }
     };
 
+
+
+
     const fetchTutorsBySubject = async (subjectId, subjectName = '') => {
         if (!subjectId) {
             fetchAllTutors();
@@ -197,7 +200,7 @@ const FindTutors = () => {
         <ProfileGuard>
             <div className="dashboard">
                 <StudentSidebar user={user} activeTab="discovery" />
-                
+
                 <div className="main-content peerhelp-main find-tutors-page">
                     <header className="page-header">
                         <div className="header-text">
@@ -361,7 +364,7 @@ const FindTutors = () => {
                                             <div className="ph-form-group">
                                                 <label>Est. Duration</label>
                                                 <select value={requestForm.estimatedDuration} onChange={e => setRequestForm(p => ({ ...p, estimatedDuration: e.target.value }))}>
-                                                    {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d} min</option>)}
+                                                    {[15, 30, 45, 60, 90, 120].map(d => <option key={d} value={d}>{d} min</option>)}
                                                 </select>
                                             </div>
                                             <div className="ph-form-group">
@@ -389,7 +392,7 @@ const FindTutors = () => {
                                     <h3>{ratingsModal.tutor?.tutorName || ratingsModal.tutor?.name} - Reviews</h3>
                                     <button className="ph-modal-close" onClick={() => setRatingsModal({ show: false, tutor: null, ratings: [], loading: false })}>×</button>
                                 </div>
-                                
+
                                 {!ratingsModal.loading && ratingsModal.ratings.length > 0 && (
                                     <div className="ph-rating-summary">
                                         <div className="summary-stars">
@@ -438,7 +441,7 @@ const FindTutors = () => {
                                     </div>
                                     <button className="ph-modal-close" onClick={() => setRateModal({ show: false, tutor: null, rating: 5, message: '', loading: false, wouldRecommend: true })}>×</button>
                                 </div>
-                                
+
                                 <div className="pro-rate-body">
                                     <div className="rating-selector-section">
                                         <label className="section-label">Overall Quality</label>
@@ -465,9 +468,9 @@ const FindTutors = () => {
 
                                     <div className="recommendation-toggle">
                                         <label className="toggle-label">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={rateModal.wouldRecommend !== false} 
+                                            <input
+                                                type="checkbox"
+                                                checked={rateModal.wouldRecommend !== false}
                                                 onChange={(e) => setRateModal(prev => ({ ...prev, wouldRecommend: e.target.checked }))}
                                             />
                                             <span className="toggle-text">I would recommend this tutor to other students</span>
