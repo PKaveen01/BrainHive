@@ -1,141 +1,361 @@
 /* ====================== StudentLectures.css ====================== */
-/* Extends PeerHelp.css patterns — uses the same --ph-* variables    */
-/* Import this after (or alongside) PeerHelp.css if shared,          */
-/* or keep standalone: variables are redeclared here for safety.      */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-/* ── Variable re-declarations (matches PeerHelp.css exactly) ──── */
 :root {
-    --ph-bg: #f3f7fc;
+    --ph-bg: #f8fafc;
     --ph-surface: #ffffff;
-    --ph-surface-soft: #f8fbff;
-    --ph-border: #dbe7f7;
-    --ph-text: #12233d;
-    --ph-muted: #5f718c;
-    --ph-primary: #1e63d6;
-    --ph-primary-strong: #114bb8;
-    --ph-success: #0f766e;
-    --ph-danger: #c2410c;
-    --ph-warning: #a16207;
-    --ph-shadow: 0 10px 30px rgba(17, 75, 184, 0.08);
+    --ph-surface-soft: #f1f5f9;
+    --ph-border: #e2e8f0;
+    --ph-text: #0f172a;
+    --ph-muted: #64748b;
+    --ph-primary: #3b82f6;
+    --ph-primary-strong: #2563eb;
+    --ph-primary-light: #eff6ff;
+    --ph-success: #10b981;
+    --ph-danger: #ef4444;
+    --ph-warning: #f59e0b;
+    --ph-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --ph-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    --font-outfit: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard {
+    display: block; /* Disable flex to avoid conflict with fixed sidebar */
+    min-height: 100vh;
+    font-family: var(--font-outfit);
+    background-color: var(--ph-bg);
+}
+
+.dashboard .main-content.peerhelp-main {
+    margin-left: 260px !important;
+    padding: 2.5rem 3rem;
+    background-color: var(--ph-bg);
+    min-height: 100vh;
+    width: auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--ph-border);
+}
+
+.page-header h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--ph-text);
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--ph-muted);
+    font-size: 1.1rem;
+    margin-top: 0.25rem;
 }
 
 /* ── Summary strip ──────────────────────────────────────────────── */
 .lec-summary-strip {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.875rem;
-    margin-bottom: 1.2rem;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
 }
 
 .lec-summary-item {
     background: var(--ph-surface);
-    border: 1px solid var(--ph-border);
-    border-radius: 0.85rem;
-    padding: 0.9rem 1.1rem;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.5rem;
     box-shadow: var(--ph-shadow);
-    border-left: 4px solid transparent;
-    transition: transform 0.15s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--ph-border);
 }
 
-.lec-summary-item:hover { transform: translateY(-2px); }
-
-.lec-summary--live     { border-left-color: #dc2626; }
-.lec-summary--upcoming { border-left-color: var(--ph-primary); }
-.lec-summary--past     { border-left-color: #94a3b8; }
-.lec-summary--total    { border-left-color: var(--ph-success); }
+.lec-summary-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--ph-shadow-lg);
+}
 
 .lec-summary-val {
-    font-size: 1.55rem;
-    font-weight: 800;
+    font-size: 2rem;
+    font-weight: 700;
     color: var(--ph-text);
-    letter-spacing: -0.02em;
     line-height: 1;
 }
 
 .lec-summary-lbl {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: var(--ph-muted);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
 }
 
-/* ── Status badges on lecture cards ────────────────────────────── */
-.lec-status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.65rem;
+/* ── Search & Filters ─────────────────────────────────────────── */
+.tutor-search-bar {
+    margin-bottom: 2rem;
+}
+
+.search-row {
+    position: relative;
+    display: flex;
+    gap: 1rem;
+}
+
+.subject-select {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--ph-border);
+    background: var(--ph-surface);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: var(--ph-shadow);
+}
+
+.subject-select:focus {
+    outline: none;
+    border-color: var(--ph-primary);
+    box-shadow: 0 0 0 4px var(--ph-primary-light);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.filter-tab {
+    padding: 0.625rem 1.25rem;
     border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
+    background: var(--ph-surface);
+    border: 1px solid var(--ph-border);
+    color: var(--ph-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
     white-space: nowrap;
-    border: 1px solid transparent;
-    text-transform: uppercase;
-    letter-spacing: 0.035em;
 }
 
-.lec-badge--upcoming {
-    background: #eef4ff;
-    color: #164cae;
-    border-color: #d2e3ff;
+.filter-tab.active {
+    background: var(--ph-primary);
+    border-color: var(--ph-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.lec-badge--ongoing {
-    background: #fef2f2;
-    color: #b91c1c;
-    border-color: #fecaca;
+/* ── Lecture Card ──────────────────────────────────────────────── */
+.tutors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
 }
 
-.lec-badge--past {
-    background: #f1f5f9;
-    color: #64748b;
-    border-color: #e2e8f0;
+.tutor-card {
+    background: var(--ph-surface);
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+    border: 1px solid var(--ph-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Animated live pulse dot */
-.lec-live-dot {
+.tutor-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--ph-shadow-lg);
+    border-color: var(--ph-primary-light);
+}
+
+.tutor-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: transparent;
+    transition: background 0.3s;
+}
+
+.tutor-card:hover::before {
+    background: linear-gradient(90deg, var(--ph-primary), #818cf8);
+}
+
+.tutor-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.tutor-avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    background: var(--ph-primary-light);
+    color: var(--ph-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    border: 2px solid white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.tutor-subject {
     display: inline-block;
-    width: 7px;
-    height: 7px;
-    background: #dc2626;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ph-primary);
+    margin-top: 0.25rem;
+}
+
+.lec-status-badge {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.lec-badge--upcoming { background: #f1f5f9; color: #475569; }
+.lec-badge--ongoing  { background: #fee2e2; color: #ef4444; }
+.lec-badge--past     { background: #f8fafc; color: #94a3b8; border: 1px solid var(--ph-border); }
+
+.tutor-bio {
+    font-size: 0.9375rem;
+    color: var(--ph-muted);
+    line-height: 1.6;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.tutor-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--ph-border);
+    border-bottom: 1px solid var(--ph-border);
+}
+
+.tutor-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--ph-muted);
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ph-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tutor-card-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-primary, .btn-secondary {
+    font-family: inherit;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--ph-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--ph-primary-strong);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-secondary {
+    background: var(--ph-surface-soft);
+    color: var(--ph-text);
+    border: 1px solid var(--ph-border);
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+.w-full { width: 100%; }
+
+.lec-live-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
     border-radius: 50%;
-    animation: lec-pulse 1.6s infinite;
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+    animation: pulse 2s infinite;
 }
 
-@keyframes lec-pulse {
-    0%, 100% { opacity: 1;   transform: scale(1);    }
-    50%       { opacity: 0.4; transform: scale(0.75); }
-}
-
-/* ── Join Live button variant ───────────────────────────────────── */
-.lec-join-live {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25) !important;
-    animation: lec-join-glow 2s infinite;
-}
-
-.lec-join-live:hover {
-    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
-}
-
-@keyframes lec-join-glow {
-    0%, 100% { box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25); }
-    50%       { box-shadow: 0 8px 28px rgba(220, 38, 38, 0.45); }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-    .lec-summary-strip {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    .lec-summary-strip { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 768px) {
-    .lec-summary-strip {
-        grid-template-columns: repeat(2, 1fr);
-    }
+@media (max-width: 640px) {
+    .lec-summary-strip { grid-template-columns: 1fr; }
+    .tutors-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }
+
