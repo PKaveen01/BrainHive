@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
-import './Dashboard.css';
+import StudentSidebar from '../../components/common/StudentSidebar';
+import './LectureDetails.css';
 
 const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToList = null }) => {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
     const [helpThread, setHelpThread] = useState({ helpRequest: null, messages: [] });
     const [chatInput, setChatInput] = useState('');
     const [sendingChat, setSendingChat] = useState(false);
+    const [user, setUser] = useState(null);
     const [helpForm, setHelpForm] = useState({
         topic: '',
         description: '',
@@ -32,7 +34,14 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
         if (!value) return 'Not scheduled';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;
-        return date.toLocaleString();
+        return date.toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     const loadHelpThread = useCallback(async () => {
@@ -74,6 +83,7 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
             navigate('/login');
             return;
         }
+        setUser(currentUser);
         if (!lectureId) {
             setError('Missing lecture id.');
             setLoading(false);
@@ -90,7 +100,7 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
             onBackToList();
             return;
         }
-        navigate('/dashboard/student');
+        navigate('/dashboard/student/lectures');
     };
 
     const handleAttendLecture = async () => {
@@ -159,194 +169,216 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
     };
 
     if (loading) {
-        return <div className="loading">Loading lecture details...</div>;
+        return (
+            <div className="dashboard">
+                {!embedded && <StudentSidebar user={user} activeTab="lectures" />}
+                <div className="main-content lecture-main">
+                    <div className="ph-loading">
+                        <div className="ph-spinner"></div>
+                        <p>Loading session details...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     const hasThread = Boolean(helpThread.helpRequest);
 
     const detailsContent = (
-        <div className={`lecture-detail-page lecture-detail-page-pro${embedded ? ' lecture-detail-embedded' : ''}`}>
-            <button type="button" className="view-all lecture-back-btn" onClick={handleBack}>
-                {embedded ? '← Back to Lectures' : '← Back to Student Dashboard'}
-            </button>
+        <div className={`lecture-detail-page ${embedded ? 'lecture-detail-embedded' : ''}`}>
+            <header className="lecture-header-nav">
+                <button type="button" className="ph-back-btn" onClick={handleBack}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>{embedded ? 'Back to Lectures' : 'All Lectures'}</span>
+                </button>
+            </header>
 
-                <div className="lecture-detail-hero">
-                    <div className="lecture-detail-hero-inner">
-                        <span className="lecture-hero-kicker">Lecture</span>
-                        <h1 className="lecture-hero-title">{lecture?.title || 'Lecture'}</h1>
-                        <p className="lecture-hero-sub">{lecture?.subjectName} · with {lecture?.tutorName}</p>
-                        <div className="lecture-hero-meta">
-                            <span>{formatDateTime(lecture?.scheduledAt)}</span>
-                            <span>{lecture?.durationMinutes || 0} min</span>
-                            <span>{lecture?.attendeeCount || 0} attendees</span>
+            {lecture && (
+                <>
+                    <div className="lecture-hero-banner">
+                        <div className="hero-content">
+                            <div className="hero-top">
+                                <span className="subject-chip">{lecture.subjectName}</span>
+                                {lecture.status === 'LIVE' && <span className="live-pill"><span className="pulse-dot"></span> LIVE NOW</span>}
+                            </div>
+                            <h1 className="hero-title">{lecture.title}</h1>
+                            <div className="hero-meta">
+                                <div className="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    <span>Tutor: <strong>{lecture.tutorName}</strong></span>
+                                </div>
+                                <div className="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    <span>{lecture.durationMinutes} minutes</span>
+                                </div>
+                                <div className="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                    <span>{formatDateTime(lecture.scheduledAt)}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {error && <div className="lecture-alert lecture-alert-error">{error}</div>}
-                {message && <div className="lecture-alert lecture-alert-success">{message}</div>}
+                    {error && <div className="ph-alert alert-error">{error}</div>}
+                    {message && <div className="ph-alert alert-success">{message}</div>}
 
-                {lecture && (
-                    <div className="lecture-detail-layout">
-                        <div className="dashboard-card lecture-detail-card">
-                            <div className="card-header lecture-card-header-accent">
-                                <h2>About this session</h2>
-                            </div>
-                            <div className="card-content lecture-detail-content">
-                                <div className="lecture-meta-badges">
-                                    <span className="lecture-meta-badge">{lecture.subjectName}</span>
-                                    <span className="lecture-meta-badge">{lecture.durationMinutes} min</span>
-                                    <span className="lecture-meta-badge">{lecture.attendeeCount} attendees</span>
+                    <div className="lecture-content-grid">
+                        <div className="lecture-primary-col">
+                            {/* Interaction Area: Chat or Form */}
+                            <section className="ph-card conversation-main-card">
+                                <div className="card-header">
+                                    <h3>{hasThread ? 'Consultation Thread' : 'Request Consultation'}</h3>
+                                    {hasThread && <span className="live-indicator">Active</span>}
                                 </div>
-                                <div className="lecture-detail-info-list">
-                                    <div className="lecture-info-row">
-                                        <span className="lecture-info-label">Tutor</span>
-                                        <span className="lecture-info-value">{lecture.tutorName}</span>
-                                    </div>
-                                    <div className="lecture-info-row">
-                                        <span className="lecture-info-label">Scheduled</span>
-                                        <span className="lecture-info-value">{formatDateTime(lecture.scheduledAt)}</span>
-                                    </div>
-                                </div>
-                                <p className="lecture-detail-description">{lecture.description}</p>
-                                <div className="lecture-card-actions">
-                                    {lecture.meetingLink && (
-                                        <a href={lecture.meetingLink} target="_blank" rel="noreferrer" className="lecture-link-btn">
-                                            Open Lecture Link
-                                        </a>
-                                    )}
-                                    <button
-                                        type="button"
-                                        className="btn-accept lecture-attend-btn"
-                                        onClick={handleAttendLecture}
-                                        disabled={attending || lecture.attendedByCurrentUser}
-                                    >
-                                        {lecture.attendedByCurrentUser ? 'Attendance Marked' : (attending ? 'Marking...' : 'Attend Lecture')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="lecture-detail-right">
-                            <div className="dashboard-card lecture-convo-card">
-                                <div className="card-header lecture-card-header-accent">
-                                    <h2>Conversation with tutor</h2>
-                                    <span className="lecture-convo-badge">Live</span>
-                                </div>
-                                <div className="lecture-convo-body">
-                                    <p className="lecture-convo-hint">
-                                        Ask about difficult points from this lecture. Your tutor will reply here — you can also continue this thread from <strong>My Requests</strong>.
-                                    </p>
-                                    <div className="lecture-convo-messages">
-                                        {!hasThread && (
-                                            <div className="lecture-convo-empty">
-                                                No messages yet. Submit your first question using the form below.
-                                            </div>
-                                        )}
-                                        {helpThread.messages.map((m) => {
-                                            const mine = currentUserId && Number(currentUserId) === m.senderId;
-                                            return (
-                                                <div
-                                                    key={m.id}
-                                                    className={`lecture-convo-bubble ${mine ? 'is-mine' : 'is-theirs'}`}
-                                                >
-                                                    <span className="lecture-convo-who">{mine ? 'You' : m.senderName}</span>
-                                                    <p>{m.body}</p>
-                                                    <span className="lecture-convo-time">{formatDateTime(m.createdAt)}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {hasThread && (
-                                        <form className="lecture-convo-compose" onSubmit={sendChat}>
+                                
+                                {hasThread ? (
+                                    <div className="chat-container">
+                                        <div className="messages-list">
+                                            {helpThread.messages.map((m) => {
+                                                const mine = currentUserId && Number(currentUserId) === m.senderId;
+                                                return (
+                                                    <div key={m.id} className={`chat-message ${mine ? 'sent' : 'received'}`}>
+                                                        <div className="message-info">
+                                                            <span className="sender-name">{mine ? 'You' : m.senderName}</span>
+                                                            <span className="message-time">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                        <div className="message-bubble">
+                                                            <p>{m.body}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <form className="chat-composer" onSubmit={sendChat}>
                                             <textarea
                                                 rows={2}
                                                 value={chatInput}
                                                 onChange={(e) => setChatInput(e.target.value)}
-                                                placeholder="Type a message to your tutor..."
+                                                placeholder="Ask your tutor anything about this session..."
                                                 disabled={sendingChat}
                                             />
-                                            <button type="submit" className="lecture-convo-send" disabled={sendingChat || !chatInput.trim()}>
-                                                {sendingChat ? 'Sending…' : 'Send'}
+                                            <button type="submit" className="send-btn" disabled={sendingChat || !chatInput.trim()}>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                             </button>
                                         </form>
-                                    )}
-                                </div>
-                            </div>
-
-                            {!hasThread && (
-                                <div className="dashboard-card lecture-help-card">
-                                    <div className="card-header">
-                                        <h2>Start A Help Conversation</h2>
                                     </div>
-                                    <form className="lecture-form lecture-form-updated" onSubmit={handleSubmitHelpRequest}>
-                                        <div className="lecture-field">
-                                            <label className="lecture-label" htmlFor="topic">Topic</label>
-                                            <input
-                                                id="topic"
-                                                type="text"
-                                                value={helpForm.topic}
-                                                onChange={(e) => handleHelpInput('topic', e.target.value)}
-                                                required
-                                            />
+                                ) : (
+                                    <div className="form-container-pro">
+                                        <div className="form-intro">
+                                            <p>Need clarification on this lecture? Submit your questions here to start a private consultation with the tutor.</p>
                                         </div>
-                                        <div className="lecture-field">
-                                            <label className="lecture-label" htmlFor="description">What are your difficult points?</label>
-                                            <textarea
-                                                id="description"
-                                                rows={4}
-                                                value={helpForm.description}
-                                                onChange={(e) => handleHelpInput('description', e.target.value)}
-                                                placeholder="Describe concepts or problems you want help with from this lecture."
-                                                required
-                                            />
-                                        </div>
-                                        <div className="lecture-field">
-                                            <label className="lecture-label" htmlFor="preferredDateTime">Preferred Date & Time (optional)</label>
-                                            <input
-                                                id="preferredDateTime"
-                                                type="datetime-local"
-                                                value={helpForm.preferredDateTime}
-                                                onChange={(e) => handleHelpInput('preferredDateTime', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="lecture-detail-form-row">
-                                            <div className="lecture-field">
-                                                <label className="lecture-label" htmlFor="estimatedDuration">Duration (minutes)</label>
+                                        <form className="ph-form-modern" onSubmit={handleSubmitHelpRequest}>
+                                            <div className="form-group">
+                                                <label>Topic of Discussion</label>
                                                 <input
-                                                    id="estimatedDuration"
-                                                    type="number"
-                                                    min="15"
-                                                    max="180"
-                                                    value={helpForm.estimatedDuration}
-                                                    onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
+                                                    type="text"
+                                                    value={helpForm.topic}
+                                                    onChange={(e) => handleHelpInput('topic', e.target.value)}
                                                     required
                                                 />
                                             </div>
-                                            <div className="lecture-field">
-                                                <label className="lecture-label" htmlFor="urgencyLevel">Urgency (1-5)</label>
-                                                <input
-                                                    id="urgencyLevel"
-                                                    type="number"
-                                                    min="1"
-                                                    max="5"
-                                                    value={helpForm.urgencyLevel}
-                                                    onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
+                                            <div className="form-group">
+                                                <label>Your specific questions or difficult points</label>
+                                                <textarea
+                                                    rows={6}
+                                                    value={helpForm.description}
+                                                    onChange={(e) => handleHelpInput('description', e.target.value)}
+                                                    placeholder="Describe what you'd like the tutor to help you with..."
                                                     required
                                                 />
                                             </div>
-                                        </div>
-                                        <div className="lecture-form-actions">
-                                            <button type="submit" className="btn-accept lecture-help-submit-btn" disabled={submittingHelp}>
-                                                {submittingHelp ? 'Sending...' : 'Send & open conversation'}
+                                            <div className="form-row-modern">
+                                                <div className="form-group">
+                                                    <label>Urgency Level</label>
+                                                    <select 
+                                                        value={helpForm.urgencyLevel} 
+                                                        onChange={(e) => handleHelpInput('urgencyLevel', e.target.value)}
+                                                    >
+                                                        <option value="1">1 - Low Priority</option>
+                                                        <option value="2">2 - Normal</option>
+                                                        <option value="3">3 - Medium</option>
+                                                        <option value="4">4 - High</option>
+                                                        <option value="5">5 - Immediate</option>
+                                                    </select>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Est. Duration (min)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={helpForm.estimatedDuration}
+                                                        onChange={(e) => handleHelpInput('estimatedDuration', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button type="submit" className="btn-ph-primary submit-btn-lg" disabled={submittingHelp}>
+                                                {submittingHelp ? 'Sending...' : 'Start Consultation Thread'}
                                             </button>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
+                                )}
+                            </section>
+                        </div>
+
+                        <div className="lecture-secondary-col">
+                            {/* Session Details in Sidebar */}
+                            <section className="ph-card details-sidebar-card">
+                                <div className="card-header">
+                                    <h3>Session Overview</h3>
                                 </div>
-                            )}
+                                <div className="card-body">
+                                    <div className="sidebar-stats">
+                                        <div className="stat-pill">
+                                            <label>Status</label>
+                                            <span className={`status-val ${lecture.status?.toLowerCase()}`}>{lecture.status}</span>
+                                        </div>
+                                        <div className="stat-pill">
+                                            <label>Attendees</label>
+                                            <span className="status-val">{lecture.attendeeCount}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="sidebar-description">
+                                        <label>Description</label>
+                                        <p>{lecture.description}</p>
+                                    </div>
+
+                                    <div className="sidebar-actions">
+                                        {lecture.meetingLink && (
+                                            <a href={lecture.meetingLink} target="_blank" rel="noreferrer" className="btn-ph-primary w-full">
+                                                Join Live Session
+                                            </a>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className={`btn-ph-secondary w-full ${lecture.attendedByCurrentUser ? 'is-attended' : ''}`}
+                                            onClick={handleAttendLecture}
+                                            disabled={attending || lecture.attendedByCurrentUser}
+                                        >
+                                            {lecture.attendedByCurrentUser ? 'Attendance Marked' : (attending ? 'Marking...' : 'Mark Attendance')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="ph-card instructor-card">
+                                <div className="card-header">
+                                    <h3>Instructor</h3>
+                                </div>
+                                <div className="card-body instructor-brief">
+                                    <div className="instructor-avatar">
+                                        {lecture.tutorName?.charAt(0)}
+                                    </div>
+                                    <div className="instructor-info">
+                                        <h4>{lecture.tutorName}</h4>
+                                        <p>Expert in {lecture.subjectName}</p>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
-                )}
+                </>
+            )}
         </div>
     );
 
@@ -356,7 +388,8 @@ const LectureDetails = ({ embedded = false, lectureIdOverride = null, onBackToLi
 
     return (
         <div className="dashboard">
-            <div className="main-content">
+            <StudentSidebar user={user} activeTab="lectures" />
+            <div className="main-content lecture-main">
                 {detailsContent}
             </div>
         </div>
