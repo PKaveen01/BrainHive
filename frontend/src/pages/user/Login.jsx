@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../services/auth.service';
 import './Login.css';
+import logoImage from '../../assets/images/logo.png';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -76,7 +77,7 @@ const Login = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <div className="auth-logo">🧠 BrainHive</div>
+                    <div className="auth-logo"><img src={logoImage} alt="BrainHive" className="auth-logo-img" /><span>BrainHive</span></div>
                     <h2>Welcome back</h2>
                     <p className="auth-subtitle">Sign in to your academic workspace</p>
                 </div>

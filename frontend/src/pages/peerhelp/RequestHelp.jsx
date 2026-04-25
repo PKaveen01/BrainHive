@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/auth.service';
 import StudentSidebar from '../../components/common/StudentSidebar';
+import ProfileGuard from '../../components/common/ProfileGuard';
 import './PeerHelp.css';
 
 const RequestHelp = () => {
@@ -105,195 +106,198 @@ const RequestHelp = () => {
         }
     };
 
-    const urgencyLabels = { 1:'🟢 Low', 2:'🔵 Below Average', 3:'🟡 Medium', 4:'🟠 High', 5:'🔴 Urgent' };
+    const urgencyLabels = { 1: '🟢 Low', 2: '🔵 Below Average', 3: '🟡 Medium', 4: '🟠 High', 5: '🔴 Urgent' };
     const durationOptions = [15, 30, 45, 60, 90, 120, 150, 180];
 
-    const renderStars = (r) => '★'.repeat(Math.round(r||0)) + '☆'.repeat(5-Math.round(r||0));
+    const renderStars = (r) => '★'.repeat(Math.round(r || 0)) + '☆'.repeat(5 - Math.round(r || 0));
 
     return (
-        <div className="dashboard">
-            <StudentSidebar user={user} />
-            <div className="main-content peerhelp-main">
-                <div className="page-header">
-                    <div>
-                        <h1>Request Help</h1>
-                        <p className="page-subtitle">Describe what you need help with and choose a tutor</p>
+        <ProfileGuard>
+            <div className="dashboard">
+                <StudentSidebar user={user} />
+                <div className="main-content peerhelp-main">
+                    <div className="page-header">
+                        <div>
+                            <h1>Request Help</h1>
+                            <p className="page-subtitle">Describe what you need help with and choose a tutor</p>
+                        </div>
+                        <button className="btn-secondary" onClick={() => navigate('/my-requests')}>My Requests</button>
                     </div>
-                    <button className="btn-secondary" onClick={() => navigate('/my-requests')}>My Requests</button>
-                </div>
 
-                {success && (
-                    <div className="alert alert-success">
-                        <span>Success</span> {success}
-                        <button className="alert-link" onClick={() => navigate('/my-requests')}>View My Requests →</button>
-                    </div>
-                )}
-                {error && <div className="alert alert-error">{error}</div>}
+                    {success && (
+                        <div className="alert alert-success">
+                            <span>Success</span> {success}
+                            <button className="alert-link" onClick={() => navigate('/my-requests')}>View My Requests →</button>
+                        </div>
+                    )}
+                    {error && <div className="alert alert-error">{error}</div>}
 
-                <div className="peerhelp-form-container">
-                    <form onSubmit={handleSubmit} className="peerhelp-form">
+                    <div className="peerhelp-form-container">
+                        <form onSubmit={handleSubmit} className="peerhelp-form">
 
-                        {/* ── Subject ── */}
-                        <div className="form-section">
-                            <h3>Subject & Topic</h3>
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Subject <span className="required">*</span></label>
-                                    <select name="subjectId" value={formData.subjectId} onChange={handleSubjectChange} required>
-                                        <option value="">Select a subject...</option>
-                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
+                            {/* ── Subject ── */}
+                            <div className="form-section">
+                                <h3>Subject & Topic</h3>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Subject <span className="required">*</span></label>
+                                        <select name="subjectId" value={formData.subjectId} onChange={handleSubjectChange} required>
+                                            <option value="">Select a subject...</option>
+                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Estimated Duration (minutes) <span className="required">*</span></label>
+                                        <select name="estimatedDuration" value={formData.estimatedDuration} onChange={handleChange}>
+                                            {durationOptions.map(d => <option key={d} value={d}>{d} min</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>Estimated Duration (minutes) <span className="required">*</span></label>
-                                    <select name="estimatedDuration" value={formData.estimatedDuration} onChange={handleChange}>
-                                        {durationOptions.map(d => <option key={d} value={d}>{d} min</option>)}
-                                    </select>
-                                </div>
+
                             </div>
 
-                        </div>
+                            <div className="request-mode-tabs" role="tablist" aria-label="Request workflow tabs">
+                                <button
+                                    type="button"
+                                    className={`request-mode-tab ${requestTab === 'request' ? 'active' : ''}`}
+                                    onClick={() => setRequestTab('request')}
+                                >
+                                    Add Request
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`request-mode-tab ${requestTab === 'tutor' ? 'active' : ''}`}
+                                    onClick={() => setRequestTab('tutor')}
+                                    disabled={!formData.subjectId}
+                                >
+                                    Choose Tutor
+                                </button>
+                            </div>
 
-                        <div className="request-mode-tabs" role="tablist" aria-label="Request workflow tabs">
-                            <button
-                                type="button"
-                                className={`request-mode-tab ${requestTab === 'request' ? 'active' : ''}`}
-                                onClick={() => setRequestTab('request')}
-                            >
-                                Add Request
-                            </button>
-                            <button
-                                type="button"
-                                className={`request-mode-tab ${requestTab === 'tutor' ? 'active' : ''}`}
-                                onClick={() => setRequestTab('tutor')}
-                                disabled={!formData.subjectId}
-                            >
-                                Choose Tutor
-                            </button>
-                        </div>
-
-                        {requestTab === 'request' && (
-                            <>
-                                <div className="form-section">
-                                    <h3>Add Request</h3>
-                                    <div className="form-group">
-                                        <label>Topic <span className="required">*</span></label>
-                                        <input type="text" name="topic" value={formData.topic} onChange={handleChange} placeholder="e.g. Binary Search Trees, Sorting Algorithms..." maxLength={200} required />
-                                        <span className="char-count">{formData.topic.length}/200</span>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>Description <span className="required">*</span></label>
-                                        <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Describe your problem in detail — the more specific you are, the better help you'll get." rows={5} maxLength={2000} required />
-                                        <span className="char-count">{formData.description.length}/2000</span>
-                                    </div>
-                                </div>
-
-                                <div className="form-section">
-                                    <h3>Preferences</h3>
-                                    <div className="form-row">
+                            {requestTab === 'request' && (
+                                <>
+                                    <div className="form-section">
+                                        <h3>Add Request</h3>
                                         <div className="form-group">
-                                            <label>Urgency Level</label>
-                                            <div className="urgency-slider">
-                                                <input type="range" name="urgencyLevel" min={1} max={5} value={formData.urgencyLevel} onChange={handleChange} />
-                                                <div className="urgency-label">{urgencyLabels[formData.urgencyLevel]}</div>
+                                            <label>Topic <span className="required">*</span></label>
+                                            <input type="text" name="topic" value={formData.topic} onChange={handleChange} placeholder="e.g. Binary Search Trees, Sorting Algorithms..." maxLength={200} required />
+                                            <span className="char-count">{formData.topic.length}/200</span>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Description <span className="required">*</span></label>
+                                            <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Describe your problem in detail — the more specific you are, the better help you'll get." rows={5} maxLength={2000} required />
+                                            <span className="char-count">{formData.description.length}/2000</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-section">
+                                        <h3>Preferences</h3>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Urgency Level</label>
+                                                <div className="urgency-slider">
+                                                    <input type="range" name="urgencyLevel" min={1} max={5} value={formData.urgencyLevel} onChange={handleChange} />
+                                                    <div className="urgency-label">{urgencyLabels[formData.urgencyLevel]}</div>
+                                                </div>
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Preferred Date & Time (optional)</label>
+                                                <input type="datetime-local" name="preferredDateTime" value={formData.preferredDateTime} onChange={handleChange} min={new Date().toISOString().slice(0, 16)} />
                                             </div>
                                         </div>
-                                        <div className="form-group">
-                                            <label>Preferred Date & Time (optional)</label>
-                                            <input type="datetime-local" name="preferredDateTime" value={formData.preferredDateTime} onChange={handleChange} min={new Date().toISOString().slice(0,16)} />
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ── Matched Tutors ── */}
+                            {requestTab === 'tutor' && (
+                                <div className="form-section">
+                                    <h3>Choose a Tutor</h3>
+                                    {!formData.subjectId && (
+                                        <div className="no-tutors-note">Select a subject first to view matching tutors.</div>
+                                    )}
+                                    {formData.subjectId && (
+                                        <p className="tutor-hint">Pick a preferred tutor or leave unselected to let the system assign the best available tutor.</p>
+                                    )}
+                                    {tutorLoading && <div className="tutor-loading"><div className="spinner-sm" />Finding tutors...</div>}
+
+                                    {!tutorLoading && formData.subjectId && matchedTutors.length === 0 && (
+                                        <div className="no-tutors-note">
+                                            No tutors currently available for this subject. Your request will be visible to all tutors and assigned automatically.
                                         </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                                    )}
 
-                        {/* ── Matched Tutors ── */}
-                        {requestTab === 'tutor' && (
-                            <div className="form-section">
-                                <h3>Choose a Tutor</h3>
-                                {!formData.subjectId && (
-                                    <div className="no-tutors-note">Select a subject first to view matching tutors.</div>
-                                )}
-                                {formData.subjectId && (
-                                    <p className="tutor-hint">Pick a preferred tutor or leave unselected to let the system assign the best available tutor.</p>
-                                )}
-                                {tutorLoading && <div className="tutor-loading"><div className="spinner-sm" />Finding tutors...</div>}
-
-                                {!tutorLoading && formData.subjectId && matchedTutors.length === 0 && (
-                                    <div className="no-tutors-note">
-                                        No tutors currently available for this subject. Your request will be visible to all tutors and assigned automatically.
-                                    </div>
-                                )}
-
-                                {!tutorLoading && formData.subjectId && matchedTutors.length > 0 && (
-                                    <>
-                                        <div className="tutor-select-grid">
-                                            {matchedTutors.map(t => {
-                                                const tid = t.tutorId || t.id;
-                                                const selected = selectedTutorId === tid;
-                                                return (
-                                                    <div
-                                                        key={tid}
-                                                        className={`tutor-select-card ${selected ? 'selected' : ''}`}
-                                                        onClick={() => setSelectedTutorId(selected ? null : tid)}
-                                                    >
-                                                        <div className="tutor-select-avatar">{(t.tutorName||'T').charAt(0)}</div>
-                                                        <div className="tutor-select-info">
-                                                            <div className="tutor-select-name">{t.tutorName}</div>
-                                                            {t.qualification && <div className="tutor-select-qual">{t.qualification}</div>}
-                                                            <div className="tutor-select-stats">
-                                                                <span style={{ color:'#f59e0b' }}>{renderStars(t.averageRating)}</span>
-                                                                <span>{(t.averageRating||0).toFixed(1)}</span>
-                                                                <span>·</span>
-                                                                <span>{t.totalSessions||0} sessions</span>
-                                                                {t.proficiencyLevel && <><span>·</span><span>Level {t.proficiencyLevel}/5</span></>}
+                                    {!tutorLoading && formData.subjectId && matchedTutors.length > 0 && (
+                                        <>
+                                            <div className="tutor-select-grid">
+                                                {matchedTutors.map(t => {
+                                                    const tid = t.tutorId || t.id;
+                                                    const selected = selectedTutorId === tid;
+                                                    return (
+                                                        <div
+                                                            key={tid}
+                                                            className={`tutor-select-card ${selected ? 'selected' : ''}`}
+                                                            onClick={() => setSelectedTutorId(selected ? null : tid)}
+                                                        >
+                                                            <div className="tutor-select-avatar">{(t.tutorName || 'T').charAt(0)}</div>
+                                                            <div className="tutor-select-info">
+                                                                <div className="tutor-select-name">{t.tutorName}</div>
+                                                                {t.qualification && <div className="tutor-select-qual">{t.qualification}</div>}
+                                                                <div className="tutor-select-stats">
+                                                                    <span style={{ color: '#f59e0b' }}>{renderStars(t.averageRating)}</span>
+                                                                    <span>{(t.averageRating || 0).toFixed(1)}</span>
+                                                                    <span>·</span>
+                                                                    <span>{t.totalSessions || 0} sessions</span>
+                                                                    {t.proficiencyLevel && <><span>·</span><span>Level {t.proficiencyLevel}/5</span></>}
+                                                                </div>
+                                                                {t.bio && <p className="tutor-select-bio">{t.bio.slice(0, 80)}{t.bio.length > 80 ? '…' : ''}</p>}
                                                             </div>
-                                                            {t.bio && <p className="tutor-select-bio">{t.bio.slice(0,80)}{t.bio.length>80?'…':''}</p>}
+                                                            {selected && <div className="selected-check">✓ Preferred</div>}
                                                         </div>
-                                                        {selected && <div className="selected-check">✓ Preferred</div>}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </>
-                                )}
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="form-actions">
+                                <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={() => setRequestTab(requestTab === 'request' ? 'tutor' : 'request')}
+                                    disabled={!formData.subjectId && requestTab === 'request'}
+                                >
+                                    {requestTab === 'request' ? 'Choose Tutor Tab' : 'Back to Add Request'}
+                                </button>
+                                <button type="submit" className="btn-primary" disabled={loading}>
+                                    {loading ? 'Submitting...' : 'Submit Request'}
+                                </button>
                             </div>
-                        )}
+                        </form>
 
-                        <div className="form-actions">
-                            <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => setRequestTab(requestTab === 'request' ? 'tutor' : 'request')}
-                                disabled={!formData.subjectId && requestTab === 'request'}
-                            >
-                                {requestTab === 'request' ? 'Choose Tutor Tab' : 'Back to Add Request'}
-                            </button>
-                            <button type="submit" className="btn-primary" disabled={loading}>
-                                {loading ? 'Submitting...' : 'Submit Request'}
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="peerhelp-tips">
-                        <h3>Tips for a great request</h3>
-                        <ul>
-                            <li>Be specific about what you don't understand</li>
-                            <li>Mention any prior attempts or resources tried</li>
-                            <li>Select a preferred tutor for faster matching</li>
-                            <li>Higher urgency requests get prioritised</li>
-                            <li>Include a deadline if you have one</li>
-                        </ul>
-                        <div className="quick-links">
-                            <button onClick={() => navigate('/find-tutors')} className="quick-link-btn">Browse All Tutors</button>
-                            <button onClick={() => navigate('/my-requests')} className="quick-link-btn" style={{ marginTop:'0.5rem' }}>View My Requests</button>
+                        <div className="peerhelp-tips">
+                            <h3>Tips for a great request</h3>
+                            <ul>
+                                <li>Be specific about what you don't understand</li>
+                                <li>Mention any prior attempts or resources tried</li>
+                                <li>Select a preferred tutor for faster matching</li>
+                                <li>Higher urgency requests get prioritised</li>
+                                <li>Include a deadline if you have one</li>
+                            </ul>
+                            <div className="quick-links">
+                                <button onClick={() => navigate('/find-tutors')} className="quick-link-btn">Browse All Tutors</button>
+                                <button onClick={() => navigate('/my-requests')} className="quick-link-btn" style={{ marginTop: '0.5rem' }}>View My Requests</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </ProfileGuard>
     );
 };
+
 
 export default RequestHelp;

@@ -1,0 +1,174 @@
+/* ── ProfileGuard styles ──────────────────────────────────────── */
+
+:root {
+    --pg-accent: #4f46e5;
+    --pg-accent-hover: #4338ca;
+    --pg-bg: #f8f9ff;
+    --pg-card-bg: #ffffff;
+    --pg-border: #e5e7eb;
+    --pg-text-primary: #111827;
+    --pg-text-secondary: #6b7280;
+    --pg-track: #e5e7eb;
+}
+
+/* Loading state */
+.pg-loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--pg-bg);
+}
+
+.pg-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--pg-track);
+    border-top-color: var(--pg-accent);
+    border-radius: 50%;
+    animation: pg-spin 0.8s linear infinite;
+}
+
+@keyframes pg-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Wall container */
+.pg-wall {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--pg-bg);
+    min-height: 100vh;
+}
+
+/* Card */
+.pg-wall-card {
+    background: var(--pg-card-bg);
+    border: 1px solid var(--pg-border);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.06);
+}
+
+/* Icon */
+.pg-wall-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    background: #eef2ff;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+}
+
+.pg-wall-icon svg {
+    width: 38px;
+    height: 38px;
+    color: var(--pg-accent);
+}
+
+/* Title */
+.pg-wall-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--pg-text-primary);
+    margin: 0 0 0.75rem;
+}
+
+/* Body text */
+.pg-wall-body {
+    font-size: 0.925rem;
+    line-height: 1.6;
+    color: var(--pg-text-secondary);
+    margin: 0 0 1.75rem;
+}
+
+.pg-wall-body strong {
+    color: var(--pg-text-primary);
+}
+
+/* Progress bar */
+.pg-progress-wrap {
+    margin: 0 0 1.75rem;
+}
+
+.pg-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.825rem;
+    color: var(--pg-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.pg-progress-pct {
+    font-weight: 600;
+    color: var(--pg-accent);
+}
+
+.pg-progress-track {
+    height: 8px;
+    background: var(--pg-track);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.pg-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pg-accent), #818cf8);
+    border-radius: 999px;
+    transition: width 0.6s ease;
+    min-width: 4px;
+}
+
+/* Action buttons */
+.pg-wall-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.pg-btn-primary {
+    padding: 0.7rem 1.25rem;
+    background: var(--pg-accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.925rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.12s ease;
+}
+
+.pg-btn-primary:hover {
+    background: var(--pg-accent-hover);
+    transform: translateY(-1px);
+}
+
+.pg-btn-primary:active {
+    transform: translateY(0);
+}
+
+.pg-btn-secondary {
+    padding: 0.7rem 1.25rem;
+    background: transparent;
+    color: var(--pg-text-secondary);
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    font-size: 0.925rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.pg-btn-secondary:hover {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent);
+}
